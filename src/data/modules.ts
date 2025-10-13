@@ -1,0 +1,81 @@
+import { ModuleType } from '../types';
+
+export const modules: ModuleType[] = [
+  {
+    id: 'id-card-validation',
+    label: 'ID Card Validation',
+    description: 'Validate identity documents',
+    color: '#3B82F6',
+    icon: '🪪',
+  },
+  {
+    id: 'aml-search',
+    label: 'AML Search',
+    description: 'Anti-Money Laundering screening',
+    color: '#EF4444',
+    icon: '🔍',
+  },
+  {
+    id: 'selfie-liveness',
+    label: 'Selfie Liveness',
+    description: 'Detect live selfie capture',
+    color: '#10B981',
+    icon: '🤳',
+  },
+  {
+    id: 'face-match',
+    label: 'Face Match',
+    description: 'Match face with ID document',
+    color: '#8B5CF6',
+    icon: '👤',
+  },
+  {
+    id: 'field-match',
+    label: 'Field Match',
+    description: 'Validate data field consistency',
+    color: '#F59E0B',
+    icon: '📋',
+  },
+  {
+    id: 'bank-account-verification',
+    label: 'Bank Account Verification',
+    description: 'Verify bank account details',
+    color: '#06B6D4',
+    icon: '🏦',
+  },
+  {
+    id: 'nominee-collection',
+    label: 'Nominee Collection',
+    description: 'Collect nominee information',
+    color: '#EC4899',
+    icon: '👥',
+  },
+  {
+    id: 'geo-ip',
+    label: 'Geo IP',
+    description: 'Detect geographic location',
+    color: '#14B8A6',
+    icon: '🌍',
+  },
+  {
+    id: 'nsdl-pan-verification',
+    label: 'NSDL PAN Verification',
+    description: 'Verify PAN card details',
+    color: '#6366F1',
+    icon: '🆔',
+  },
+  {
+    id: 'account-aggregator',
+    label: 'Account Aggregator',
+    description: 'Aggregate financial accounts',
+    color: '#84CC16',
+    icon: '💰',
+  },
+  {
+    id: 'email-mobile-verification',
+    label: 'Email and Mobile Verification',
+    description: 'Verify contact information',
+    color: '#F97316',
+    icon: '📧',
+  },
+];
