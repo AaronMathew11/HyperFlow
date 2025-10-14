@@ -7,6 +7,8 @@ export const modules: ModuleType[] = [
     description: 'Validate identity documents',
     color: '#3B82F6',
     icon: '🪪',
+    cspUrls: ['api.hypervision.ai', 'cdn.hypervision.ai'],
+    ipAddresses: ['52.195.10.45', '13.230.115.23'],
   },
   {
     id: 'aml-search',
@@ -14,6 +16,8 @@ export const modules: ModuleType[] = [
     description: 'Anti-Money Laundering screening',
     color: '#EF4444',
     icon: '🔍',
+    cspUrls: ['aml.hypervision.ai', 'watchlist.hypervision.ai'],
+    ipAddresses: ['54.169.12.78', '18.142.85.34'],
   },
   {
     id: 'selfie-liveness',
@@ -21,6 +25,8 @@ export const modules: ModuleType[] = [
     description: 'Detect live selfie capture',
     color: '#10B981',
     icon: '🤳',
+    cspUrls: ['liveness.hypervision.ai', 'ml.hypervision.ai'],
+    ipAddresses: ['13.250.45.12', '52.77.198.45'],
   },
   {
     id: 'face-match',
@@ -28,6 +34,8 @@ export const modules: ModuleType[] = [
     description: 'Match face with ID document',
     color: '#8B5CF6',
     icon: '👤',
+    cspUrls: ['facematch.hypervision.ai', 'biometric.hypervision.ai'],
+    ipAddresses: ['18.139.67.23', '13.228.34.89'],
   },
   {
     id: 'field-match',

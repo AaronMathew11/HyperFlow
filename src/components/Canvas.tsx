@@ -11,15 +11,24 @@ import 'reactflow/dist/style.css';
 import { useFlowStore } from '../store/flowStore';
 import { modules } from '../data/modules';
 import ModuleNode from './ModuleNode';
+import ConditionNode from './ConditionNode';
+import EndStatusNode from './EndStatusNode';
+import ApiModuleNode from './ApiModuleNode';
+import StartNode from './StartNode';
 import Toolbar from './Toolbar';
+import SdkNotes from './SdkNotes';
 
 const nodeTypes = {
   moduleNode: ModuleNode,
+  conditionNode: ConditionNode,
+  endStatusNode: EndStatusNode,
+  apiModuleNode: ApiModuleNode,
+  startNode: StartNode,
 };
 
 function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode } = useFlowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge } = useFlowStore();
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -37,29 +46,152 @@ function FlowCanvas() {
         return;
       }
 
-      const module = modules.find((m) => m.id === type);
-      if (!module) return;
-
       const position = {
         x: event.clientX - reactFlowBounds.left - 100,
         y: event.clientY - reactFlowBounds.top - 50,
       };
 
-      const newNode = {
-        id: `${type}-${Date.now()}`,
-        type: 'moduleNode',
-        position,
-        data: {
-          label: module.label,
-          moduleType: module.id,
-          color: module.color,
-          icon: module.icon,
-        },
-      };
+      // Check if this is the first node (excluding start nodes)
+      const existingNodes = nodes.filter(node => node.type !== 'startNode');
+      const isFirstNode = existingNodes.length === 0;
+      
+      let startNodeId: string | null = null;
+      
+      // Create start node if this is the first module
+      if (isFirstNode) {
+        startNodeId = `start-${Date.now()}`;
+        const startNode = {
+          id: startNodeId,
+          type: 'startNode',
+          position: {
+            x: position.x,
+            y: position.y - 120,
+          },
+          data: {
+            label: 'Start',
+            color: '#22C55E',
+            icon: '',
+          },
+        };
+        addNode(startNode);
+      }
 
-      addNode(newNode);
+      if (type === 'condition') {
+        // Handle condition box
+        const newNode = {
+          id: `condition-${Date.now()}`,
+          type: 'conditionNode',
+          position,
+          data: {
+            label: 'Condition',
+            condition: 'Enter condition...',
+            color: '#F59E0B',
+            icon: '◊',
+          },
+        };
+        addNode(newNode);
+        
+        // Auto-connect to start node if this is the first module
+        if (isFirstNode && startNodeId) {
+          const edge = {
+            id: `${startNodeId}-${newNode.id}`,
+            source: startNodeId,
+            target: newNode.id,
+            type: 'default',
+          };
+          addEdge(edge);
+        }
+      } else if (type.startsWith('end-status-')) {
+        // Handle end status nodes
+        const statusType = type.replace('end-status-', '') as 'auto-approved' | 'auto-declined' | 'needs-review';
+        const statusConfig = {
+          'auto-approved': { label: 'Auto Approved', icon: '', color: '#10B981' },
+          'auto-declined': { label: 'Auto Declined', icon: '', color: '#EF4444' },
+          'needs-review': { label: 'Needs Review', icon: '', color: '#F59E0B' },
+        };
+        
+        const config = statusConfig[statusType];
+        const newNode = {
+          id: `${type}-${Date.now()}`,
+          type: 'endStatusNode',
+          position,
+          data: {
+            label: config.label,
+            status: statusType,
+            color: config.color,
+            icon: config.icon,
+          },
+        };
+        addNode(newNode);
+        
+        // Auto-connect to start node if this is the first module
+        if (isFirstNode && startNodeId) {
+          const edge = {
+            id: `${startNodeId}-${newNode.id}`,
+            source: startNodeId,
+            target: newNode.id,
+            type: 'default',
+          };
+          addEdge(edge);
+        }
+      } else if (type === 'api-module') {
+        // Handle API module
+        const newNode = {
+          id: `api-module-${Date.now()}`,
+          type: 'apiModuleNode',
+          position,
+          data: {
+            title: 'API Module',
+            endpoint: 'https://api.example.com/endpoint',
+            color: '#6366F1',
+            icon: '🔗',
+          },
+        };
+        addNode(newNode);
+        
+        // Auto-connect to start node if this is the first module
+        if (isFirstNode && startNodeId) {
+          const edge = {
+            id: `${startNodeId}-${newNode.id}`,
+            source: startNodeId,
+            target: newNode.id,
+            type: 'default',
+          };
+          addEdge(edge);
+        }
+      } else {
+        // Handle module
+        const module = modules.find((m) => m.id === type);
+        if (!module) return;
+
+        const newNode = {
+          id: `${type}-${Date.now()}`,
+          type: 'moduleNode',
+          position,
+          data: {
+            label: module.label,
+            moduleType: module.id,
+            color: module.color,
+            icon: module.icon,
+            cspUrls: module.cspUrls,
+            ipAddresses: module.ipAddresses,
+          },
+        };
+        addNode(newNode);
+        
+        // Auto-connect to start node if this is the first module
+        if (isFirstNode && startNodeId) {
+          const edge = {
+            id: `${startNodeId}-${newNode.id}`,
+            source: startNodeId,
+            target: newNode.id,
+            type: 'default',
+          };
+          addEdge(edge);
+        }
+      }
     },
-    [addNode]
+    [addNode, addEdge, nodes]
   );
 
   return (
@@ -79,6 +211,7 @@ function FlowCanvas() {
         <Controls />
         <MiniMap />
         <Toolbar />
+        <SdkNotes />
       </ReactFlow>
     </div>
   );
