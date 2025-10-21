@@ -76,13 +76,13 @@ export default function Toolbar() {
       glassElements.forEach((el, index) => {
         originalBackdrops[index] = el.style.backdropFilter;
         el.style.backdropFilter = 'none';
-        el.style.webkitBackdropFilter = 'none';
+        (el.style as any).webkitBackdropFilter = 'none';
       });
 
       // Pre-process: Get computed styles before cloning
       const originalElements = reactFlowWrapper.querySelectorAll('*');
       const computedStyles = new Map();
-      originalElements.forEach((el: any, index) => {
+      originalElements.forEach((el: Element, index: number) => {
         const computed = window.getComputedStyle(el);
         computedStyles.set(index, {
           fontSize: computed.fontSize,
@@ -103,14 +103,14 @@ export default function Toolbar() {
         useCORS: true,
         logging: false,
         imageTimeout: 0,
-        ignoreElements: (element) => {
+        ignoreElements: (element: Element) => {
           // Ignore glass overlay, sidebar, and tooltips
           return element.classList.contains('pointer-events-none') ||
                  element.tagName === 'ASIDE' ||
                  element.classList.contains('react-flow__minimap') ||
                  element.classList.contains('react-flow__controls');
         },
-        onclone: (clonedDoc) => {
+        onclone: (clonedDoc: Document) => {
           const clonedWrapper = clonedDoc.querySelector('.react-flow') as HTMLElement;
           if (clonedWrapper) {
             // Remove glass background overlay
@@ -122,26 +122,27 @@ export default function Toolbar() {
 
             // Fix clamp() styles using pre-computed values
             const allElements = clonedWrapper.querySelectorAll('*');
-            allElements.forEach((el: any, index) => {
+            allElements.forEach((el: Element, index: number) => {
               const computed = computedStyles.get(index);
               if (!computed) return;
 
+              const htmlEl = el as HTMLElement;
               // Replace clamp with computed values
-              if (el.style.fontSize && el.style.fontSize.includes('clamp')) {
-                el.style.fontSize = computed.fontSize;
+              if (htmlEl.style.fontSize && htmlEl.style.fontSize.includes('clamp')) {
+                htmlEl.style.fontSize = computed.fontSize;
               }
-              if (el.style.width && el.style.width.includes('clamp')) {
-                el.style.width = computed.width;
+              if (htmlEl.style.width && htmlEl.style.width.includes('clamp')) {
+                htmlEl.style.width = computed.width;
               }
-              if (el.style.height && el.style.height.includes('clamp')) {
-                el.style.height = computed.height;
+              if (htmlEl.style.height && htmlEl.style.height.includes('clamp')) {
+                htmlEl.style.height = computed.height;
               }
             });
 
             // Hide buttons
             const buttons = clonedWrapper.querySelectorAll('button');
-            buttons.forEach((btn: any) => {
-              btn.style.display = 'none';
+            buttons.forEach((btn: Element) => {
+              (btn as HTMLElement).style.display = 'none';
             });
           }
         }
@@ -150,7 +151,7 @@ export default function Toolbar() {
       // Restore backdrop filters
       glassElements.forEach((el, index) => {
         el.style.backdropFilter = originalBackdrops[index];
-        el.style.webkitBackdropFilter = originalBackdrops[index];
+        (el.style as any).webkitBackdropFilter = originalBackdrops[index];
       });
 
       // Restore UI elements
