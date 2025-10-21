@@ -12,11 +12,11 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
   const getStatusColor = () => {
     switch (data.status) {
       case 'auto-approved':
-        return '#10B981'; // green
+        return '#34C759'; // Apple green
       case 'auto-declined':
-        return '#EF4444'; // red
+        return '#FF3B30'; // Apple red
       case 'needs-review':
-        return '#F59E0B'; // orange
+        return '#FF9500'; // Apple orange
       default:
         return data.color;
     }
@@ -26,19 +26,16 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
 
   return (
     <div
-      className="px-6 py-4 shadow-lg rounded-full border-2 bg-white min-w-[140px] text-center"
-      style={{ 
+      className="px-6 py-4 rounded-full min-w-[140px] text-center border-2 relative shadow-md hover:shadow-lg"
+      style={{
+        backgroundColor: statusColor,
         borderColor: statusColor,
-        backgroundColor: `${statusColor}10`
       }}
     >
       <Handle type="target" position={Position.Top} className="w-3 h-3" />
 
       <div className="flex flex-col items-center justify-center">
-        <div 
-          className="font-bold text-lg"
-          style={{ color: statusColor }}
-        >
+        <div className="font-semibold text-base text-white">
           {data.label}
         </div>
       </div>

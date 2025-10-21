@@ -29,7 +29,7 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
   return (
     <div className="relative" style={{ width: '140px', height: '140px' }}>
       <NodeResizer
-        color={data.color}
+        color="rgba(147, 147, 208, 0.8)"
         isVisible={selected}
         minWidth={120}
         minHeight={120}
@@ -40,13 +40,13 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
 
       {/* Diamond shape */}
       <div
-        className="shadow-lg border-2 bg-white transform rotate-45 absolute"
-        style={{ 
-          borderColor: data.color,
+        className="border-2 transform rotate-45 absolute bg-white shadow-sm"
+        style={{
           width: '120px',
           height: '120px',
           top: '10px',
           left: '10px',
+          borderColor: selected ? '#9393D0' : '#E8E8ED',
         }}
       >
         {/* Content inside diamond (counter-rotated) */}
@@ -58,13 +58,13 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
               onChange={(e) => setCondition(e.target.value)}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
-              className="w-full h-full resize-none border-none focus:outline-none text-center bg-transparent text-gray-800 font-medium"
+              className="w-full h-full resize-none border-none focus:outline-none text-center bg-transparent text-primary-900 font-semibold placeholder-primary-400"
               style={{ fontSize: 'clamp(10px, 2vw, 14px)' }}
               autoFocus
             />
           ) : (
             <div
-              className="w-full h-full flex items-center justify-center cursor-text hover:bg-gray-50 transition-colors text-center font-medium text-gray-800"
+              className="w-full h-full flex items-center justify-center cursor-text hover:bg-primary-50 transition-colors text-center font-semibold text-primary-900"
               style={{ fontSize: 'clamp(10px, 2vw, 14px)' }}
               onDoubleClick={handleDoubleClick}
               title="Double-click to edit"
@@ -76,26 +76,26 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
       </div>
 
       {/* Output handles for True/False paths */}
-      <Handle 
-        type="source" 
-        position={Position.Left} 
+      <Handle
+        type="source"
+        position={Position.Left}
         id="false"
         className="w-3 h-3"
         style={{ top: '50%' }}
       />
-      <Handle 
-        type="source" 
-        position={Position.Right} 
+      <Handle
+        type="source"
+        position={Position.Right}
         id="true"
         className="w-3 h-3"
         style={{ top: '50%' }}
       />
-      
+
       {/* Labels for outputs */}
-      <div className="absolute text-xs text-gray-500" style={{ top: '50%', left: '-30px', transform: 'translateY(-50%)' }}>
+      <div className="absolute text-xs text-primary-700 font-semibold" style={{ top: '50%', left: '-35px', transform: 'translateY(-50%)' }}>
         False
       </div>
-      <div className="absolute text-xs text-gray-500" style={{ top: '50%', right: '-30px', transform: 'translateY(-50%)' }}>
+      <div className="absolute text-xs text-primary-700 font-semibold" style={{ top: '50%', right: '-35px', transform: 'translateY(-50%)' }}>
         True
       </div>
     </div>
