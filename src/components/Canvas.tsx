@@ -195,7 +195,15 @@ function FlowCanvas() {
   );
 
   return (
-    <div className="flex-1 h-full" ref={reactFlowWrapper}>
+    <div className="flex-1 h-full relative overflow-hidden" ref={reactFlowWrapper}>
+      {/* Glass effect background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at 20% 30%, rgba(147, 147, 208, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(6, 6, 61, 0.02) 0%, transparent 50%), linear-gradient(135deg, #FAFAFA 0%, #FFFFFF 100%)',
+        }}
+      />
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -207,9 +215,9 @@ function FlowCanvas() {
         nodeTypes={nodeTypes}
         fitView
       >
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
-        <MiniMap />
+        <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" />
         <Toolbar />
         <SdkNotes />
       </ReactFlow>

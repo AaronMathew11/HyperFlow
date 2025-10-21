@@ -10,17 +10,13 @@ interface StartNodeData {
 function StartNode({ data }: NodeProps<StartNodeData>) {
   return (
     <div
-      className="px-6 py-4 shadow-lg rounded-full border-2 bg-white min-w-[120px] text-center"
-      style={{ 
-        borderColor: data.color,
-        backgroundColor: `${data.color}10`
+      className="px-6 py-4 rounded-full min-w-[120px] text-center border-2 bg-primary-500 shadow-md hover:shadow-lg"
+      style={{
+        borderColor: '#9393D0',
       }}
     >
       <div className="flex flex-col items-center justify-center">
-        <div 
-          className="font-bold text-lg"
-          style={{ color: data.color }}
-        >
+        <div className="font-semibold text-lg text-white">
           {data.label}
         </div>
       </div>
