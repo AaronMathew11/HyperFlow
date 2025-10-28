@@ -17,6 +17,7 @@ import ApiModuleNode from './ApiModuleNode';
 import StartNode from './StartNode';
 import Toolbar from './Toolbar';
 import SdkNotes from './SdkNotes';
+import SdkPanel from './SdkPanel';
 
 const nodeTypes = {
   moduleNode: ModuleNode,
@@ -54,29 +55,17 @@ function FlowCanvas() {
       // Check if this is the first node (excluding start nodes)
       const existingNodes = nodes.filter(node => node.type !== 'startNode');
       const isFirstNode = existingNodes.length === 0;
+      const existingStartNode = nodes.find(node => node.type === 'startNode');
       
       let startNodeId: string | null = null;
-      
-      // Create start node if this is the first module
-      if (isFirstNode) {
-        startNodeId = `start-${Date.now()}`;
-        const startNode = {
-          id: startNodeId,
-          type: 'startNode',
-          position: {
-            x: position.x,
-            y: position.y - 120,
-          },
-          data: {
-            label: 'Start',
-            color: '#22C55E',
-            icon: '',
-          },
-        };
-        addNode(startNode);
-      }
 
       if (type === 'condition') {
+        // Prevent starting flow with a condition
+        if (isFirstNode) {
+          alert('Error: Cannot start a flow with a condition. Please add a module first.');
+          return;
+        }
+        
         // Handle condition box
         const newNode = {
           id: `condition-${Date.now()}`,
@@ -90,18 +79,13 @@ function FlowCanvas() {
           },
         };
         addNode(newNode);
-        
-        // Auto-connect to start node if this is the first module
-        if (isFirstNode && startNodeId) {
-          const edge = {
-            id: `${startNodeId}-${newNode.id}`,
-            source: startNodeId,
-            target: newNode.id,
-            type: 'default',
-          };
-          addEdge(edge);
-        }
       } else if (type.startsWith('end-status-')) {
+        // Prevent starting flow with end status
+        if (isFirstNode) {
+          alert('Error: Cannot start a flow with an end status. Please add a module first.');
+          return;
+        }
+        
         // Handle end status nodes
         const statusType = type.replace('end-status-', '') as 'auto-approved' | 'auto-declined' | 'needs-review';
         const statusConfig = {
@@ -123,18 +107,26 @@ function FlowCanvas() {
           },
         };
         addNode(newNode);
-        
-        // Auto-connect to start node if this is the first module
-        if (isFirstNode && startNodeId) {
-          const edge = {
-            id: `${startNodeId}-${newNode.id}`,
-            source: startNodeId,
-            target: newNode.id,
-            type: 'default',
-          };
-          addEdge(edge);
-        }
       } else if (type === 'api-module') {
+        // Create start node if this is the first module and no start node exists
+        if (isFirstNode && !existingStartNode) {
+          startNodeId = `start-${Date.now()}`;
+          const startNode = {
+            id: startNodeId,
+            type: 'startNode',
+            position: {
+              x: position.x,
+              y: position.y - 120,
+            },
+            data: {
+              label: 'Start',
+              color: '#22C55E',
+              icon: '',
+            },
+          };
+          addNode(startNode);
+        }
+        
         // Handle API module
         const newNode = {
           id: `api-module-${Date.now()}`,
@@ -160,6 +152,25 @@ function FlowCanvas() {
           addEdge(edge);
         }
       } else {
+        // Create start node if this is the first module and no start node exists
+        if (isFirstNode && !existingStartNode) {
+          startNodeId = `start-${Date.now()}`;
+          const startNode = {
+            id: startNodeId,
+            type: 'startNode',
+            position: {
+              x: position.x,
+              y: position.y - 120,
+            },
+            data: {
+              label: 'Start',
+              color: '#22C55E',
+              icon: '',
+            },
+          };
+          addNode(startNode);
+        }
+        
         // Handle module
         const module = modules.find((m) => m.id === type);
         if (!module) return;
@@ -221,6 +232,7 @@ function FlowCanvas() {
         <Toolbar />
         <SdkNotes />
       </ReactFlow>
+      <SdkPanel />
     </div>
   );
 }

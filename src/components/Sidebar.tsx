@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { modules } from '../data/modules';
-import { useFlowStore } from '../store/flowStore';
 import ModuleIcon from './ModuleIcon';
 
 export default function Sidebar() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showSdkConfig, setShowSdkConfig] = useState(false);
-  const flowInputs = useFlowStore((state) => state.flowInputs);
-  const flowOutputs = useFlowStore((state) => state.flowOutputs);
-  const setFlowInputs = useFlowStore((state) => state.setFlowInputs);
-  const setFlowOutputs = useFlowStore((state) => state.setFlowOutputs);
 
   const onDragStart = (event: React.DragEvent, moduleType: string) => {
     event.dataTransfer.setData('application/reactflow', moduleType);
@@ -102,56 +96,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* SDK Configuration */}
-      <div className="mb-6 relative z-10">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider">SDK Configuration</h3>
-          <button
-            onClick={() => setShowSdkConfig(!showSdkConfig)}
-            className="text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors"
-          >
-            {showSdkConfig ? 'Hide' : 'Configure'}
-          </button>
-        </div>
-
-        {showSdkConfig && (
-          <div className="space-y-3 bg-white/80 rounded-xl p-3 shadow-sm border border-primary-100">
-            <div>
-              <label className="text-xs font-medium text-primary-700 block mb-1.5">
-                SDK Inputs
-              </label>
-              <textarea
-                value={flowInputs}
-                onChange={(e) => setFlowInputs(e.target.value)}
-                className="w-full text-xs border border-primary-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary-400/30 focus:border-primary-400 transition-all text-primary-900 placeholder-primary-400 bg-white/80"
-                rows={3}
-                placeholder="user_id, document_type, session_token..."
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-primary-700 block mb-1.5">
-                SDK Outputs
-              </label>
-              <textarea
-                value={flowOutputs}
-                onChange={(e) => setFlowOutputs(e.target.value)}
-                className="w-full text-xs border border-primary-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary-400/30 focus:border-primary-400 transition-all text-primary-900 placeholder-primary-400 bg-white/80"
-                rows={3}
-                placeholder="verification_status, confidence_score..."
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Summary when collapsed */}
-        {!showSdkConfig && (flowInputs || flowOutputs) && (
-          <div className="text-xs text-primary-700 bg-white/80 p-3 rounded-lg shadow-sm border border-primary-100">
-            {flowInputs && <div className="mb-1"><span className="font-medium">Inputs:</span> {flowInputs.substring(0, 30)}{flowInputs.length > 30 ? '...' : ''}</div>}
-            {flowOutputs && <div><span className="font-medium">Outputs:</span> {flowOutputs.substring(0, 30)}{flowOutputs.length > 30 ? '...' : ''}</div>}
-          </div>
-        )}
-      </div>
 
       {/* Condition Box */}
       <div className="mb-6 relative z-10">
