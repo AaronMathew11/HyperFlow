@@ -50,120 +50,113 @@ export default function Toolbar() {
         return;
       }
 
-      // Store original viewport
+      // Get the React Flow wrapper
       const reactFlowWrapper = document.querySelector('.react-flow') as HTMLElement;
       if (!reactFlowWrapper) {
         alert('Could not find flowchart to export');
         return;
       }
 
-      // Hide UI elements before capturing
-      const toolbar = document.querySelector('.absolute.top-4.right-4') as HTMLElement;
-      const controls = document.querySelector('.react-flow__controls') as HTMLElement;
-      const minimap = document.querySelector('.react-flow__minimap') as HTMLElement;
-      const sdkNotes = document.querySelector('[class*="absolute"][class*="top-16"]') as HTMLElement;
-      const sidebar = document.querySelector('aside') as HTMLElement;
-      const glassOverlay = reactFlowWrapper.querySelector('.absolute.inset-0.pointer-events-none') as HTMLElement;
-
-      const elementsToHide = [toolbar, controls, minimap, sdkNotes, sidebar, glassOverlay].filter(Boolean);
-      elementsToHide.forEach(el => {
-        if (el) el.style.display = 'none';
-      });
-
-      // Temporarily remove backdrop filters for better rendering
-      const glassElements = document.querySelectorAll('[style*="backdrop-filter"]') as NodeListOf<HTMLElement>;
-      const originalBackdrops: string[] = [];
-      glassElements.forEach((el, index) => {
-        originalBackdrops[index] = el.style.backdropFilter;
-        el.style.backdropFilter = 'none';
-        (el.style as any).webkitBackdropFilter = 'none';
-      });
-
-      // Pre-process: Get computed styles before cloning
-      const originalElements = reactFlowWrapper.querySelectorAll('*');
-      const computedStyles = new Map();
-      originalElements.forEach((el: Element, index: number) => {
-        const computed = window.getComputedStyle(el);
-        computedStyles.set(index, {
-          fontSize: computed.fontSize,
-          width: computed.width,
-          height: computed.height,
-        });
-      });
-
-      // Fit all nodes into view for export
+      // Fit all nodes into view for export with generous padding
       fitView({ padding: 0.2, duration: 0 });
 
-      // Wait for the view to update and fonts to render
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait longer for the view to update and ensure all elements are rendered
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Calculate the bounds of all nodes to determine content area
+      const nodeElements = reactFlowWrapper.querySelectorAll('.react-flow__node');
+      const edgeElements = reactFlowWrapper.querySelectorAll('.react-flow__edge');
+      
+      if (nodeElements.length === 0) {
+        alert('No nodes found to export');
+        return;
+      }
+
+      // Get the viewport element for transformation info
+      const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
+      if (!viewport) {
+        alert('Could not find flowchart viewport');
+        return;
+      }
 
       const canvas = await html2canvas(reactFlowWrapper, {
         backgroundColor: '#ffffff',
-        scale: 3,
+        scale: 2,
         useCORS: true,
         logging: false,
-        imageTimeout: 0,
+        allowTaint: true,
+        imageTimeout: 15000,
+        removeContainer: false,
+        foreignObjectRendering: true,
+        width: reactFlowWrapper.offsetWidth,
+        height: reactFlowWrapper.offsetHeight,
+        x: 0,
+        y: 0,
+        // Don't ignore any elements - capture everything in the viewport
         ignoreElements: (element: Element) => {
-          // Ignore glass overlay, sidebar, and tooltips
-          return element.classList.contains('pointer-events-none') ||
-                 element.tagName === 'ASIDE' ||
+          // Only ignore UI elements that shouldn't be exported
+          return element.classList.contains('react-flow__handle') ||
+                 element.classList.contains('react-flow__controls') ||
                  element.classList.contains('react-flow__minimap') ||
-                 element.classList.contains('react-flow__controls');
+                 element.tagName === 'ASIDE' ||
+                 element.tagName === 'BUTTON' ||
+                 element.classList.contains('tooltip') ||
+                 (element as HTMLElement).style?.position === 'absolute' && 
+                 (element.classList.contains('top-4') || element.classList.contains('top-16'));
         },
         onclone: (clonedDoc: Document) => {
+          // Apply styles to ensure proper rendering
           const clonedWrapper = clonedDoc.querySelector('.react-flow') as HTMLElement;
           if (clonedWrapper) {
+            // Set clean white background and remove glass overlay
+            clonedWrapper.style.backgroundColor = '#ffffff';
+            clonedWrapper.style.background = '#ffffff';
+            
             // Remove glass background overlay
             const overlay = clonedWrapper.querySelector('.absolute.inset-0.pointer-events-none') as HTMLElement;
             if (overlay) overlay.remove();
+            
+            const clonedViewport = clonedWrapper.querySelector('.react-flow__viewport') as HTMLElement;
+            if (clonedViewport) {
+              // Ensure all edges are visible
+              const edges = clonedViewport.querySelectorAll('.react-flow__edge');
+              edges.forEach((edge: Element) => {
+                (edge as HTMLElement).style.display = 'block';
+                (edge as HTMLElement).style.visibility = 'visible';
+                (edge as HTMLElement).style.opacity = '1';
+              });
 
-            // Set clean white background
-            clonedWrapper.style.background = '#ffffff';
+              // Ensure all nodes are visible and positioned correctly
+              const nodes = clonedViewport.querySelectorAll('.react-flow__node');
+              nodes.forEach((node: Element) => {
+                (node as HTMLElement).style.display = 'block';
+                (node as HTMLElement).style.visibility = 'visible';
+                (node as HTMLElement).style.opacity = '1';
+              });
+            }
 
-            // Fix clamp() styles using pre-computed values
-            const allElements = clonedWrapper.querySelectorAll('*');
-            allElements.forEach((el: Element, index: number) => {
-              const computed = computedStyles.get(index);
-              if (!computed) return;
-
-              const htmlEl = el as HTMLElement;
-              // Replace clamp with computed values
-              if (htmlEl.style.fontSize && htmlEl.style.fontSize.includes('clamp')) {
-                htmlEl.style.fontSize = computed.fontSize;
-              }
-              if (htmlEl.style.width && htmlEl.style.width.includes('clamp')) {
-                htmlEl.style.width = computed.width;
-              }
-              if (htmlEl.style.height && htmlEl.style.height.includes('clamp')) {
-                htmlEl.style.height = computed.height;
-              }
+            // Hide all UI elements
+            const uiElements = clonedWrapper.querySelectorAll('aside, .react-flow__controls, .react-flow__minimap, .react-flow__handle, button');
+            uiElements.forEach((element: Element) => {
+              (element as HTMLElement).style.display = 'none';
             });
 
-            // Hide buttons
-            const buttons = clonedWrapper.querySelectorAll('button');
-            buttons.forEach((btn: Element) => {
-              (btn as HTMLElement).style.display = 'none';
+            // Hide toolbar and other absolute positioned UI elements
+            const toolbars = clonedWrapper.querySelectorAll('[class*="absolute"][class*="top-4"], [class*="absolute"][class*="top-16"]');
+            toolbars.forEach((element: Element) => {
+              (element as HTMLElement).style.display = 'none';
             });
           }
         }
-      } as any);
-
-      // Restore backdrop filters
-      glassElements.forEach((el, index) => {
-        el.style.backdropFilter = originalBackdrops[index];
-        (el.style as any).webkitBackdropFilter = originalBackdrops[index];
       });
 
-      // Restore UI elements
-      elementsToHide.forEach(el => {
-        if (el) el.style.display = '';
-      });
+      const imgData = canvas.toDataURL('image/png', 1.0);
 
-      const imgData = canvas.toDataURL('image/png');
-
-      // Calculate proper PDF dimensions while maintaining aspect ratio
+      // Calculate PDF dimensions
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
+      
+      // Use A4 proportions but scale to fit content
       const maxWidth = 1200;
       const maxHeight = 1600;
 

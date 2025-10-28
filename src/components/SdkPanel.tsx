@@ -16,7 +16,7 @@ export default function SdkPanel() {
 
   return (
     <div
-      className="absolute top-4 right-4 w-80 z-30 rounded-2xl shadow-2xl"
+      className="absolute bottom-4 left-4 w-80 z-30 rounded-2xl shadow-2xl"
       style={{
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%)',
         backdropFilter: 'blur(80px) saturate(180%)',

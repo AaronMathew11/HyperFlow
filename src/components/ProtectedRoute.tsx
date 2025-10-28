@@ -4,6 +4,10 @@ import Login from './Login';
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
+  // In development mode, allow bypassing authentication
+  const isDevelopment = import.meta.env.DEV;
+  const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true';
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-white">
@@ -13,6 +17,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         </div>
       </div>
     );
+  }
+
+  // Bypass authentication in development if configured
+  if (isDevelopment && bypassAuth) {
+    return <>{children}</>;
   }
 
   if (!user) {

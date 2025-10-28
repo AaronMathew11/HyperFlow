@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:localhost": "vite --mode development",
+    "dev:domain": "vite --mode staging",
     "build": "tsc && vite build",
+    "build:prod": "vite --mode production build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },

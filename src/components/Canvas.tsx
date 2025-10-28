@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -17,7 +17,8 @@ import ApiModuleNode from './ApiModuleNode';
 import StartNode from './StartNode';
 import Toolbar from './Toolbar';
 import SdkNotes from './SdkNotes';
-import SdkPanel from './SdkPanel';
+import NoteNode from './NoteNode';
+import ContextMenu from './ContextMenu';
 
 const nodeTypes = {
   moduleNode: ModuleNode,
@@ -25,15 +26,51 @@ const nodeTypes = {
   endStatusNode: EndStatusNode,
   apiModuleNode: ApiModuleNode,
   startNode: StartNode,
+  noteNode: NoteNode,
 };
 
 function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge } = useFlowStore();
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!reactFlowBounds) return;
+
+    setContextMenu({
+      x: event.clientX - reactFlowBounds.left,
+      y: event.clientY - reactFlowBounds.top,
+    });
+  }, []);
+
+  const addNote = useCallback((x: number, y: number) => {
+    const newNote = {
+      id: `note-${Date.now()}`,
+      type: 'noteNode',
+      position: { x: x - 100, y: y - 50 },
+      data: {
+        text: 'Click to edit note...',
+      },
+    };
+    addNode(newNote);
+  }, [addNode]);
+
+  const handleAddNote = useCallback(() => {
+    if (contextMenu) {
+      addNote(contextMenu.x, contextMenu.y);
+    }
+  }, [contextMenu, addNote]);
+
+  const handlePaneClick = useCallback(() => {
+    setContextMenu(null);
   }, []);
 
   const onDrop = useCallback(
@@ -223,8 +260,18 @@ function FlowCanvas() {
         onConnect={onConnect}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onContextMenu={handleContextMenu}
+        onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         fitView
+        selectionOnDrag
+        panOnDrag={[1, 2]}
+        selectionMode="full"
+        panOnScroll
+        zoomOnScroll
+        zoomOnPinch
+        panOnScrollMode="free"
+        zoomOnDoubleClick={false}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
@@ -232,7 +279,15 @@ function FlowCanvas() {
         <Toolbar />
         <SdkNotes />
       </ReactFlow>
-      <SdkPanel />
+      
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onAddNote={handleAddNote}
+        />
+      )}
     </div>
   );
 }

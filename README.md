@@ -30,6 +30,21 @@ A professional flowchart tool for Solutions Architects to create client communic
 npm install
 ```
 
+### Environment Setup
+
+Copy the environment example file and configure your variables:
+
+```bash
+cp .env.example .env
+```
+
+Key environment variables:
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `VITE_AUTH_REDIRECT_URL`: Authentication redirect URL (defaults to current origin)
+  - For local development: `http://localhost:5173`
+  - For production: `https://hypervision.in`
+
 ### Development
 
 ```bash

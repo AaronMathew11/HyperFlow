@@ -9,7 +9,7 @@ function SdkNotes() {
   if (viewMode !== 'tech' || (!flowInputs && !flowOutputs)) return null;
 
   return (
-    <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-20 flex flex-col gap-3">
+    <div className="absolute top-16 right-4 z-20 flex flex-col gap-3">
       {/* SDK Inputs Note */}
       {flowInputs && (
         <div
