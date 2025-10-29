@@ -65,7 +65,6 @@ export default function Toolbar() {
 
       // Calculate the bounds of all nodes to determine content area
       const nodeElements = reactFlowWrapper.querySelectorAll('.react-flow__node');
-      const edgeElements = reactFlowWrapper.querySelectorAll('.react-flow__edge');
       
       if (nodeElements.length === 0) {
         alert('No nodes found to export');

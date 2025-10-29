@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { NodeProps } from 'reactflow';
 
 interface NoteData {
   text: string;

@@ -266,11 +266,9 @@ function FlowCanvas() {
         fitView
         selectionOnDrag
         panOnDrag={[1, 2]}
-        selectionMode="full"
         panOnScroll
         zoomOnScroll
         zoomOnPinch
-        panOnScrollMode="free"
         zoomOnDoubleClick={false}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
