@@ -5,6 +5,7 @@ import ReactFlow, {
   MiniMap,
   ReactFlowProvider,
   BackgroundVariant,
+  Node,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -31,8 +32,8 @@ const nodeTypes = {
 
 function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge } = useFlowStore();
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string } | null>(null);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -48,6 +49,19 @@ function FlowCanvas() {
     setContextMenu({
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
+    });
+  }, []);
+
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    
+    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (!reactFlowBounds) return;
+
+    setContextMenu({
+      x: event.clientX - reactFlowBounds.left,
+      y: event.clientY - reactFlowBounds.top,
+      nodeId: node.id,
     });
   }, []);
 
@@ -68,6 +82,13 @@ function FlowCanvas() {
       addNote(contextMenu.x, contextMenu.y);
     }
   }, [contextMenu, addNote]);
+
+  const handleDeleteNode = useCallback(() => {
+    if (contextMenu?.nodeId) {
+      deleteNode(contextMenu.nodeId);
+      setContextMenu(null);
+    }
+  }, [contextMenu, deleteNode]);
 
   const handlePaneClick = useCallback(() => {
     setContextMenu(null);
@@ -261,6 +282,7 @@ function FlowCanvas() {
         onDrop={onDrop}
         onDragOver={onDragOver}
         onContextMenu={handleContextMenu}
+        onNodeContextMenu={handleNodeContextMenu}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         fitView
@@ -270,6 +292,7 @@ function FlowCanvas() {
         zoomOnScroll
         zoomOnPinch
         zoomOnDoubleClick={false}
+        deleteKeyCode={"Delete"}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
@@ -282,8 +305,10 @@ function FlowCanvas() {
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
+          nodeId={contextMenu.nodeId}
           onClose={() => setContextMenu(null)}
           onAddNote={handleAddNote}
+          onDeleteNode={handleDeleteNode}
         />
       )}
     </div>
