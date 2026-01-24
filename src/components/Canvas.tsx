@@ -33,7 +33,7 @@ const nodeTypes = {
 function FlowCanvas() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; nodeType?: string } | null>(null);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -62,6 +62,7 @@ function FlowCanvas() {
       x: event.clientX - reactFlowBounds.left,
       y: event.clientY - reactFlowBounds.top,
       nodeId: node.id,
+      nodeType: node.type,
     });
   }, []);
 
@@ -85,6 +86,12 @@ function FlowCanvas() {
 
   const handleDeleteNode = useCallback(() => {
     if (contextMenu?.nodeId) {
+      // Check if trying to delete start node
+      if (contextMenu.nodeType === 'startNode') {
+        alert('Cannot delete Start node. The Start node is required for the flow.');
+        setContextMenu(null);
+        return;
+      }
       deleteNode(contextMenu.nodeId);
       setContextMenu(null);
     }
@@ -306,6 +313,7 @@ function FlowCanvas() {
           x={contextMenu.x}
           y={contextMenu.y}
           nodeId={contextMenu.nodeId}
+          nodeType={contextMenu.nodeType}
           onClose={() => setContextMenu(null)}
           onAddNote={handleAddNote}
           onDeleteNode={handleDeleteNode}

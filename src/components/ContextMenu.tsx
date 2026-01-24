@@ -4,12 +4,13 @@ interface ContextMenuProps {
   x: number;
   y: number;
   nodeId?: string;
+  nodeType?: string;
   onClose: () => void;
   onAddNote: () => void;
   onDeleteNode?: () => void;
 }
 
-export default function ContextMenu({ x, y, nodeId, onClose, onAddNote, onDeleteNode }: ContextMenuProps) {
+export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote, onDeleteNode }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function ContextMenu({ x, y, nodeId, onClose, onAddNote, onDelete
             Add Note
           </button>
         )}
-        {nodeId && onDeleteNode && (
+        {nodeId && onDeleteNode && nodeType !== 'startNode' && (
           <button
             onClick={handleDeleteNode}
             className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
@@ -77,6 +78,11 @@ export default function ContextMenu({ x, y, nodeId, onClose, onAddNote, onDelete
             <span className="text-red-500">🗑️</span>
             Delete Node
           </button>
+        )}
+        {nodeId && nodeType === 'startNode' && (
+          <div className="px-3 py-2 text-sm text-gray-500 italic">
+            Start node cannot be deleted
+          </div>
         )}
       </div>
     </div>

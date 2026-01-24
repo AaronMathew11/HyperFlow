@@ -30,14 +30,26 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
     
-    // Find nodes that are being removed
-    const removedNodeIds = changes
+    // Filter out removal changes for start nodes
+    const filteredChanges = changes.filter((change) => {
+      if (change.type === 'remove') {
+        const nodeToDelete = currentNodes.find(node => node.id === change.id);
+        // Prevent deletion of start nodes
+        if (nodeToDelete?.type === 'startNode') {
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    // Find nodes that are being removed (after filtering)
+    const removedNodeIds = filteredChanges
       .filter((change) => change.type === 'remove')
       .map((change) => change.id)
       .filter((id): id is string => id !== undefined);
     
-    // Update nodes
-    const updatedNodes = applyNodeChanges(changes, currentNodes);
+    // Update nodes with filtered changes
+    const updatedNodes = applyNodeChanges(filteredChanges, currentNodes);
     
     // Remove edges connected to deleted nodes
     const updatedEdges = removedNodeIds.length > 0
@@ -52,8 +64,26 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     });
   },
   onEdgesChange: (changes) => {
+    const currentNodes = get().nodes;
+    const currentEdges = get().edges;
+    
+    // Filter out removal changes for edges connected to start nodes
+    const filteredChanges = changes.filter((change) => {
+      if (change.type === 'remove') {
+        const edgeToDelete = currentEdges.find(edge => edge.id === change.id);
+        if (edgeToDelete) {
+          // Check if the edge is connected to a start node
+          const sourceNode = currentNodes.find(node => node.id === edgeToDelete.source);
+          if (sourceNode?.type === 'startNode') {
+            return false; // Prevent deletion of edges from start nodes
+          }
+        }
+      }
+      return true;
+    });
+    
     set({
-      edges: applyEdgeChanges(changes, get().edges),
+      edges: applyEdgeChanges(filteredChanges, currentEdges),
     });
   },
   onConnect: (connection) => {
@@ -72,12 +102,30 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     });
   },
   deleteNode: (nodeId: string) => {
+    const nodeToDelete = get().nodes.find(node => node.id === nodeId);
+    
+    // Prevent deletion of start nodes
+    if (nodeToDelete?.type === 'startNode') {
+      return;
+    }
+    
     set({
       nodes: get().nodes.filter(node => node.id !== nodeId),
       edges: get().edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId),
     });
   },
   deleteEdge: (edgeId: string) => {
+    const currentNodes = get().nodes;
+    const edgeToDelete = get().edges.find(edge => edge.id === edgeId);
+    
+    // Prevent deletion of edges connected to start nodes
+    if (edgeToDelete) {
+      const sourceNode = currentNodes.find(node => node.id === edgeToDelete.source);
+      if (sourceNode?.type === 'startNode') {
+        return; // Prevent deletion of edges from start nodes
+      }
+    }
+    
     set({
       edges: get().edges.filter(edge => edge.id !== edgeId),
     });
