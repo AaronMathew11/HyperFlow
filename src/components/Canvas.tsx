@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -10,6 +10,8 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 
 import { useFlowStore } from '../store/flowStore';
+import { useBoardStore } from '../store/boardStore';
+import { Board } from '../types';
 import { modules } from '../data/modules';
 import ModuleNode from './ModuleNode';
 import ConditionNode from './ConditionNode';
@@ -30,10 +32,53 @@ const nodeTypes = {
   noteNode: NoteNode,
 };
 
-function FlowCanvas() {
+interface FlowCanvasProps {
+  board: Board;
+  onBack: () => void;
+}
+
+function FlowCanvas({ board, onBack }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
+  const { saveCurrentBoardData, setCurrentBoard } = useBoardStore();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; nodeType?: string } | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load board data on mount
+  useEffect(() => {
+    if (board && !isLoaded) {
+      setCurrentBoard(board);
+      // Load the flow data from the board
+      const flowData = board.flow_data;
+      if (flowData) {
+        // Clear existing nodes and edges first
+        useFlowStore.setState({
+          nodes: flowData.nodes || [],
+          edges: flowData.edges || [],
+          flowInputs: flowData.flowInputs || '',
+          flowOutputs: flowData.flowOutputs || '',
+        });
+      }
+      setIsLoaded(true);
+    }
+  }, [board, isLoaded, setCurrentBoard]);
+
+  // Auto-save functionality - save changes every 3 seconds
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const saveInterval = setInterval(() => {
+      const { flowInputs, flowOutputs } = useFlowStore.getState();
+      saveCurrentBoardData({
+        nodes,
+        edges,
+        flowInputs,
+        flowOutputs,
+      });
+    }, 3000);
+
+    return () => clearInterval(saveInterval);
+  }, [nodes, edges, isLoaded, saveCurrentBoardData]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -42,7 +87,7 @@ function FlowCanvas() {
 
   const handleContextMenu = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
-    
+
     const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!reactFlowBounds) return;
 
@@ -54,7 +99,7 @@ function FlowCanvas() {
 
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
-    
+
     const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!reactFlowBounds) return;
 
@@ -121,7 +166,7 @@ function FlowCanvas() {
       const existingNodes = nodes.filter(node => node.type !== 'startNode');
       const isFirstNode = existingNodes.length === 0;
       const existingStartNode = nodes.find(node => node.type === 'startNode');
-      
+
       let startNodeId: string | null = null;
 
       if (type === 'condition') {
@@ -130,7 +175,7 @@ function FlowCanvas() {
           alert('Error: Cannot start a flow with a condition. Please add a module first.');
           return;
         }
-        
+
         // Handle condition box
         const newNode = {
           id: `condition-${Date.now()}`,
@@ -150,7 +195,7 @@ function FlowCanvas() {
           alert('Error: Cannot start a flow with an end status. Please add a module first.');
           return;
         }
-        
+
         // Handle end status nodes
         const statusType = type.replace('end-status-', '') as 'auto-approved' | 'auto-declined' | 'needs-review';
         const statusConfig = {
@@ -158,7 +203,7 @@ function FlowCanvas() {
           'auto-declined': { label: 'Auto Declined', icon: '', color: '#EF4444' },
           'needs-review': { label: 'Needs Review', icon: '', color: '#F59E0B' },
         };
-        
+
         const config = statusConfig[statusType];
         const newNode = {
           id: `${type}-${Date.now()}`,
@@ -191,7 +236,7 @@ function FlowCanvas() {
           };
           addNode(startNode);
         }
-        
+
         // Handle API module
         const newNode = {
           id: `api-module-${Date.now()}`,
@@ -205,7 +250,7 @@ function FlowCanvas() {
           },
         };
         addNode(newNode);
-        
+
         // Auto-connect to start node if this is the first module
         if (isFirstNode && startNodeId) {
           const edge = {
@@ -235,7 +280,7 @@ function FlowCanvas() {
           };
           addNode(startNode);
         }
-        
+
         // Handle module
         const module = modules.find((m) => m.id === type);
         if (!module) return;
@@ -254,7 +299,7 @@ function FlowCanvas() {
           },
         };
         addNode(newNode);
-        
+
         // Auto-connect to start node if this is the first module
         if (isFirstNode && startNodeId) {
           const edge = {
@@ -304,10 +349,10 @@ function FlowCanvas() {
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
         <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" />
-        <Toolbar />
+        <Toolbar onBack={onBack} boardName={board.name} />
         <SdkNotes />
       </ReactFlow>
-      
+
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -323,10 +368,15 @@ function FlowCanvas() {
   );
 }
 
-export default function Canvas() {
+interface CanvasProps {
+  board: Board;
+  onBack: () => void;
+}
+
+export default function Canvas({ board, onBack }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <FlowCanvas />
+      <FlowCanvas board={board} onBack={onBack} />
     </ReactFlowProvider>
   );
 }

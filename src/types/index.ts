@@ -26,3 +26,30 @@ export interface FlowNode {
     ipAddresses?: string[];
   };
 }
+
+export interface Board {
+  id: string;
+  name: string;
+  description?: string;
+  user_id: string;
+  flow_data: {
+    nodes: any[];
+    edges: any[];
+    flowInputs?: string;
+    flowOutputs?: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Database {
+  public: {
+    Tables: {
+      boards: {
+        Row: Board;
+        Insert: Omit<Board, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Board, 'id' | 'created_at' | 'updated_at'>>;
+      };
+    };
+  };
+}

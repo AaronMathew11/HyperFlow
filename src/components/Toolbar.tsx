@@ -4,7 +4,12 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Toolbar() {
+interface ToolbarProps {
+  onBack: () => void;
+  boardName: string;
+}
+
+export default function Toolbar({ onBack, boardName }: ToolbarProps) {
   const { fitView, zoomIn, zoomOut, setNodes } = useReactFlow();
   const clearFlow = useFlowStore((state) => state.clearFlow);
   const nodes = useFlowStore((state) => state.nodes);
@@ -65,7 +70,7 @@ export default function Toolbar() {
 
       // Calculate the bounds of all nodes to determine content area
       const nodeElements = reactFlowWrapper.querySelectorAll('.react-flow__node');
-      
+
       if (nodeElements.length === 0) {
         alert('No nodes found to export');
         return;
@@ -95,13 +100,13 @@ export default function Toolbar() {
         ignoreElements: (element: Element) => {
           // Only ignore UI elements that shouldn't be exported
           return element.classList.contains('react-flow__handle') ||
-                 element.classList.contains('react-flow__controls') ||
-                 element.classList.contains('react-flow__minimap') ||
-                 element.tagName === 'ASIDE' ||
-                 element.tagName === 'BUTTON' ||
-                 element.classList.contains('tooltip') ||
-                 (element as HTMLElement).style?.position === 'absolute' && 
-                 (element.classList.contains('top-4') || element.classList.contains('top-16'));
+            element.classList.contains('react-flow__controls') ||
+            element.classList.contains('react-flow__minimap') ||
+            element.tagName === 'ASIDE' ||
+            element.tagName === 'BUTTON' ||
+            element.classList.contains('tooltip') ||
+            (element as HTMLElement).style?.position === 'absolute' &&
+            (element.classList.contains('top-4') || element.classList.contains('top-16'));
         },
         onclone: (clonedDoc: Document) => {
           // Apply styles to ensure proper rendering
@@ -110,11 +115,11 @@ export default function Toolbar() {
             // Set clean white background and remove glass overlay
             clonedWrapper.style.backgroundColor = '#ffffff';
             clonedWrapper.style.background = '#ffffff';
-            
+
             // Remove glass background overlay
             const overlay = clonedWrapper.querySelector('.absolute.inset-0.pointer-events-none') as HTMLElement;
             if (overlay) overlay.remove();
-            
+
             const clonedViewport = clonedWrapper.querySelector('.react-flow__viewport') as HTMLElement;
             if (clonedViewport) {
               // Ensure all edges are visible
@@ -154,7 +159,7 @@ export default function Toolbar() {
       // Calculate PDF dimensions
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
-      
+
       // Use A4 proportions but scale to fit content
       const maxWidth = 1200;
       const maxHeight = 1600;
@@ -187,138 +192,177 @@ export default function Toolbar() {
   };
 
   return (
-    <div
-      className="absolute top-4 right-4 z-10 rounded-xl p-2 flex gap-2 border shadow-lg"
-      style={{
-        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
-        backdropFilter: 'blur(40px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-        borderColor: 'rgba(6, 6, 61, 0.08)',
-        boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.08)',
-      }}
-    >
-      {/* View Mode Toggle */}
-      <button
-        onClick={toggleViewMode}
-        className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-          viewMode === 'business'
-            ? 'bg-primary-100 text-primary-700 border border-primary-200 shadow-sm'
-            : 'bg-primary-600 text-white border border-primary-700 shadow-sm'
-        }`}
-        title={`Switch to ${viewMode === 'business' ? 'Tech' : 'Business'} View`}
+    <>
+      {/* Back Button and Board Name */}
+      <div
+        className="absolute top-4 left-4 z-10 rounded-xl p-2 flex items-center gap-3 border shadow-lg"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
+          backdropFilter: 'blur(40px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+          borderColor: 'rgba(6, 6, 61, 0.08)',
+          boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.08)',
+        }}
       >
-        {viewMode === 'business' ? 'Business' : 'Tech'}
-      </button>
-      <div className="w-px bg-primary-200" />
-      <button
-        onClick={() => zoomIn()}
-        className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-        title="Zoom In"
-      >
-        +
-      </button>
-      <button
-        onClick={() => zoomOut()}
-        className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-        title="Zoom Out"
-      >
-        -
-      </button>
-      <button
-        onClick={() => fitView()}
-        className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-        title="Fit View"
-      >
-        Fit
-      </button>
-      <button
-        onClick={handleSelectAll}
-        className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-        title="Select All (Ctrl/Cmd + A)"
-      >
-        Select All
-      </button>
-      <div className="w-px bg-primary-200" />
-      <div className="relative group">
         <button
-          className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
-          title="Export Options"
+          onClick={onBack}
+          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200 flex items-center gap-2"
+          title="Back to Boards"
         >
-          Export ▼
-        </button>
-        <div
-          className="absolute right-0 top-full mt-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 min-w-32 border overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 100%)',
-            backdropFilter: 'blur(40px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-            borderColor: 'rgba(6, 6, 61, 0.1)',
-            boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.12)',
-          }}
-        >
-          <button
-            onClick={handleExportPDF}
-            className="block w-full px-3 py-2 text-sm text-left text-primary-700 hover:bg-primary-50 transition-colors"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            viewBox="0 0 20 20"
+            fill="currentColor"
           >
-            PDF
-          </button>
-          <button
-            onClick={handleExportJSON}
-            className="block w-full px-3 py-2 text-sm text-left text-primary-700 hover:bg-primary-50 transition-colors"
-          >
-            JSON
-          </button>
-        </div>
-      </div>
-      <button
-        onClick={handleClear}
-        className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-        title="Clear Canvas"
-      >
-        Clear
-      </button>
-      <div className="w-px bg-primary-200" />
-      {/* User Menu */}
-      <div className="relative group">
-        <button
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-          title={user?.email || 'User'}
-        >
-          {user?.user_metadata?.avatar_url ? (
-            <img
-              src={user.user_metadata.avatar_url}
-              alt="Profile"
-              className="w-6 h-6 rounded-full"
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
             />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
-              {user?.email?.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <span className="hidden md:inline">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
+          </svg>
+          Back
         </button>
-        <div
-          className="absolute right-0 top-full mt-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 min-w-48 border overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 100%)',
-            backdropFilter: 'blur(40px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-            borderColor: 'rgba(6, 6, 61, 0.1)',
-            boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.12)',
-          }}
-        >
-          <div className="px-3 py-2 border-b border-primary-100">
-            <p className="text-xs text-primary-600">Signed in as</p>
-            <p className="text-sm font-medium text-primary-900 truncate">{user?.email}</p>
-          </div>
-          <button
-            onClick={signOut}
-            className="block w-full px-3 py-2 text-sm text-left text-red-600 hover:bg-red-50 transition-colors"
-          >
-            Sign out
-          </button>
+        <div className="w-px h-6 bg-primary-200" />
+        <div className="px-2">
+          <p className="text-xs text-primary-600">Board</p>
+          <p className="text-sm font-semibold text-primary-900">{boardName}</p>
         </div>
       </div>
-    </div>
+
+      {/* Main Toolbar */}
+      <div
+        className="absolute top-4 right-4 z-10 rounded-xl p-2 flex gap-2 border shadow-lg"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
+          backdropFilter: 'blur(40px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+          borderColor: 'rgba(6, 6, 61, 0.08)',
+          boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.08)',
+        }}
+      >
+        {/* View Mode Toggle */}
+        <button
+          onClick={toggleViewMode}
+          className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${viewMode === 'business'
+              ? 'bg-primary-100 text-primary-700 border border-primary-200 shadow-sm'
+              : 'bg-primary-600 text-white border border-primary-700 shadow-sm'
+            }`}
+          title={`Switch to ${viewMode === 'business' ? 'Tech' : 'Business'} View`}
+        >
+          {viewMode === 'business' ? 'Business' : 'Tech'}
+        </button>
+        <div className="w-px bg-primary-200" />
+        <button
+          onClick={() => zoomIn()}
+          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
+          title="Zoom In"
+        >
+          +
+        </button>
+        <button
+          onClick={() => zoomOut()}
+          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
+          title="Zoom Out"
+        >
+          -
+        </button>
+        <button
+          onClick={() => fitView()}
+          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
+          title="Fit View"
+        >
+          Fit
+        </button>
+        <button
+          onClick={handleSelectAll}
+          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
+          title="Select All (Ctrl/Cmd + A)"
+        >
+          Select All
+        </button>
+        <div className="w-px bg-primary-200" />
+        <div className="relative group">
+          <button
+            className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
+            title="Export Options"
+          >
+            Export ▼
+          </button>
+          <div
+            className="absolute right-0 top-full mt-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 min-w-32 border overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 100%)',
+              backdropFilter: 'blur(40px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+              borderColor: 'rgba(6, 6, 61, 0.1)',
+              boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.12)',
+            }}
+          >
+            <button
+              onClick={handleExportPDF}
+              className="block w-full px-3 py-2 text-sm text-left text-primary-700 hover:bg-primary-50 transition-colors"
+            >
+              PDF
+            </button>
+            <button
+              onClick={handleExportJSON}
+              className="block w-full px-3 py-2 text-sm text-left text-primary-700 hover:bg-primary-50 transition-colors"
+            >
+              JSON
+            </button>
+          </div>
+        </div>
+        <button
+          onClick={handleClear}
+          className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+          title="Clear Canvas"
+        >
+          Clear
+        </button>
+        <div className="w-px bg-primary-200" />
+        {/* User Menu */}
+        <div className="relative group">
+          <button
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
+            title={user?.email || 'User'}
+          >
+            {user?.user_metadata?.avatar_url ? (
+              <img
+                src={user.user_metadata.avatar_url}
+                alt="Profile"
+                className="w-6 h-6 rounded-full"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
+                {user?.email?.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className="hidden md:inline">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
+          </button>
+          <div
+            className="absolute right-0 top-full mt-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 min-w-48 border overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 100%)',
+              backdropFilter: 'blur(40px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+              borderColor: 'rgba(6, 6, 61, 0.1)',
+              boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.12)',
+            }}
+          >
+            <div className="px-3 py-2 border-b border-primary-100">
+              <p className="text-xs text-primary-600">Signed in as</p>
+              <p className="text-sm font-medium text-primary-900 truncate">{user?.email}</p>
+            </div>
+            <button
+              onClick={signOut}
+              className="block w-full px-3 py-2 text-sm text-left text-red-600 hover:bg-red-50 transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
