@@ -53,3 +53,23 @@ export interface Database {
     };
   };
 }
+
+export interface AccessLink {
+  id: string;
+  board_id: string;
+  role: 'viewer' | 'editor';
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface CreateLinkResponse {
+  linkId: string;
+  password: string;
+  expiresAt: string | null;
+  shareUrl: string;
+}
+
+export interface PublicBoardData {
+  board: Board;
+  role: 'viewer' | 'editor';
+}

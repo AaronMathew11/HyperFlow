@@ -35,9 +35,10 @@ const nodeTypes = {
 interface FlowCanvasProps {
   board: Board;
   onBack: () => void;
+  readOnly?: boolean;
 }
 
-function FlowCanvas({ board, onBack }: FlowCanvasProps) {
+function FlowCanvas({ board, onBack, readOnly = false }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
   const { saveCurrentBoardData, setCurrentBoard } = useBoardStore();
@@ -63,9 +64,9 @@ function FlowCanvas({ board, onBack }: FlowCanvasProps) {
     }
   }, [board, isLoaded, setCurrentBoard]);
 
-  // Auto-save functionality - save changes every 3 seconds
+  // Auto-save functionality - save changes every 3 seconds (disabled in readOnly mode)
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || readOnly) return;
 
     const saveInterval = setInterval(() => {
       const { flowInputs, flowOutputs } = useFlowStore.getState();
@@ -78,7 +79,7 @@ function FlowCanvas({ board, onBack }: FlowCanvasProps) {
     }, 3000);
 
     return () => clearInterval(saveInterval);
-  }, [nodes, edges, isLoaded, saveCurrentBoardData]);
+  }, [nodes, edges, isLoaded, saveCurrentBoardData, readOnly]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -328,29 +329,32 @@ function FlowCanvas({ board, onBack }: FlowCanvasProps) {
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onContextMenu={handleContextMenu}
-        onNodeContextMenu={handleNodeContextMenu}
+        onNodesChange={readOnly ? undefined : onNodesChange}
+        onEdgesChange={readOnly ? undefined : onEdgesChange}
+        onConnect={readOnly ? undefined : onConnect}
+        onDrop={readOnly ? undefined : onDrop}
+        onDragOver={readOnly ? undefined : onDragOver}
+        onContextMenu={readOnly ? undefined : handleContextMenu}
+        onNodeContextMenu={readOnly ? undefined : handleNodeContextMenu}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         fitView
-        selectionOnDrag
+        selectionOnDrag={!readOnly}
         panOnDrag={[1, 2]}
         panOnScroll
         zoomOnScroll
         zoomOnPinch
         zoomOnDoubleClick={false}
-        deleteKeyCode={"Delete"}
+        deleteKeyCode={readOnly ? null : "Delete"}
+        nodesDraggable={!readOnly}
+        nodesConnectable={!readOnly}
+        elementsSelectable={!readOnly}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
         <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" />
-        <Toolbar onBack={onBack} boardName={board.name} />
-        <SdkNotes />
+        <Toolbar onBack={onBack} boardName={board.name} boardId={board.id} readOnly={readOnly} />
+        {!readOnly && <SdkNotes />}
       </ReactFlow>
 
       {contextMenu && (
@@ -371,12 +375,13 @@ function FlowCanvas({ board, onBack }: FlowCanvasProps) {
 interface CanvasProps {
   board: Board;
   onBack: () => void;
+  readOnly?: boolean;
 }
 
-export default function Canvas({ board, onBack }: CanvasProps) {
+export default function Canvas({ board, onBack, readOnly = false }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <FlowCanvas board={board} onBack={onBack} />
+      <FlowCanvas board={board} onBack={onBack} readOnly={readOnly} />
     </ReactFlowProvider>
   );
 }

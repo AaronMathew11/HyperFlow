@@ -1,9 +1,10 @@
-import { BrowserRouter, Routes, Route, useParams, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams, useNavigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './components/HomePage';
 import Sidebar from './components/Sidebar';
 import Canvas from './components/Canvas';
+import PublicBoardView from './components/PublicBoardView';
 import { Board } from './types';
 import { useBoardStore } from './store/boardStore';
 import { useEffect, useState } from 'react';
@@ -52,17 +53,29 @@ function BoardView() {
   );
 }
 
+function ProtectedLayout() {
+  return (
+    <ProtectedRoute>
+      <Outlet />
+    </ProtectedRoute>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
-      <ProtectedRoute>
-        <BrowserRouter>
-          <Routes>
+      <BrowserRouter>
+        <Routes>
+          {/* Public route - no auth required */}
+          <Route path="/share/:linkId" element={<PublicBoardView />} />
+
+          {/* Protected routes */}
+          <Route element={<ProtectedLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/:boardId" element={<BoardView />} />
-          </Routes>
-        </BrowserRouter>
-      </ProtectedRoute>
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

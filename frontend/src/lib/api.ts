@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Board } from '../types';
+import { Board, AccessLink, CreateLinkResponse, PublicBoardData } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -158,5 +158,154 @@ export async function deleteBoard(boardId: string): Promise<boolean> {
     } catch (error) {
         console.error('Error deleting board:', error);
         return false;
+    }
+}
+
+// Access Link Functions
+
+export async function createAccessLink(
+    boardId: string,
+    role: 'viewer' | 'editor' = 'viewer',
+    expiresIn?: number
+): Promise<CreateLinkResponse | null> {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+            console.error('No access token found');
+            return null;
+        }
+
+        const response = await fetch(`${API_URL}/api/boards/${boardId}/links`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ role, expiresIn }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Failed to create access link:', response.status, errorText);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating access link:', error);
+        return null;
+    }
+}
+
+export async function listAccessLinks(boardId: string): Promise<AccessLink[]> {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+            console.error('No access token found');
+            return [];
+        }
+
+        const response = await fetch(`${API_URL}/api/boards/${boardId}/links`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            console.error('Failed to list access links:', response.status);
+            return [];
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error listing access links:', error);
+        return [];
+    }
+}
+
+export async function revokeAccessLink(boardId: string, linkId: string): Promise<boolean> {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+            console.error('No access token found');
+            return false;
+        }
+
+        const response = await fetch(`${API_URL}/api/boards/${boardId}/links/${linkId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error revoking access link:', error);
+        return false;
+    }
+}
+
+// Public API functions (no auth required)
+
+export async function verifyLinkPassword(
+    linkId: string,
+    password: string
+): Promise<{ boardId: string; role: string } | null> {
+    try {
+        const response = await fetch(`${API_URL}/api/public/links/${linkId}/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ password }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 410) {
+                throw new Error('Link has expired');
+            }
+            if (response.status === 401) {
+                throw new Error('Invalid password');
+            }
+            throw new Error('Failed to verify link');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error verifying link password:', error);
+        throw error;
+    }
+}
+
+export async function getPublicBoard(
+    linkId: string,
+    password: string
+): Promise<PublicBoardData | null> {
+    try {
+        const response = await fetch(
+            `${API_URL}/api/public/links/${linkId}/board?token=${encodeURIComponent(password)}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        if (!response.ok) {
+            if (response.status === 410) {
+                throw new Error('Link has expired');
+            }
+            throw new Error('Failed to fetch board');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching public board:', error);
+        throw error;
     }
 }

@@ -1,15 +1,19 @@
+import { useState } from 'react';
 import { useReactFlow } from 'reactflow';
 import { useFlowStore } from '../store/flowStore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
+import ShareLinkModal from './ShareLinkModal';
 
 interface ToolbarProps {
   onBack: () => void;
   boardName: string;
+  boardId?: string;
+  readOnly?: boolean;
 }
 
-export default function Toolbar({ onBack, boardName }: ToolbarProps) {
+export default function Toolbar({ onBack, boardName, boardId, readOnly = false }: ToolbarProps) {
   const { fitView, zoomIn, zoomOut, setNodes } = useReactFlow();
   const clearFlow = useFlowStore((state) => state.clearFlow);
   const nodes = useFlowStore((state) => state.nodes);
@@ -17,6 +21,7 @@ export default function Toolbar({ onBack, boardName }: ToolbarProps) {
   const viewMode = useFlowStore((state) => state.viewMode);
   const toggleViewMode = useFlowStore((state) => state.toggleViewMode);
   const { user, signOut } = useAuth();
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const handleSelectAll = () => {
     setNodes((nds) =>
@@ -313,56 +318,84 @@ export default function Toolbar({ onBack, boardName }: ToolbarProps) {
             </button>
           </div>
         </div>
-        <button
-          onClick={handleClear}
-          className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-          title="Clear Canvas"
-        >
-          Clear
-        </button>
-        <div className="w-px bg-primary-200" />
-        {/* User Menu */}
-        <div className="relative group">
-          <button
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-            title={user?.email || 'User'}
-          >
-            {user?.user_metadata?.avatar_url ? (
-              <img
-                src={user.user_metadata.avatar_url}
-                alt="Profile"
-                className="w-6 h-6 rounded-full"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
-                {user?.email?.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <span className="hidden md:inline">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
-          </button>
-          <div
-            className="absolute right-0 top-full mt-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 min-w-48 border overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 100%)',
-              backdropFilter: 'blur(40px) saturate(200%)',
-              WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-              borderColor: 'rgba(6, 6, 61, 0.1)',
-              boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.12)',
-            }}
-          >
-            <div className="px-3 py-2 border-b border-primary-100">
-              <p className="text-xs text-primary-600">Signed in as</p>
-              <p className="text-sm font-medium text-primary-900 truncate">{user?.email}</p>
-            </div>
+        {boardId && !readOnly && (
+          <>
             <button
-              onClick={signOut}
-              className="block w-full px-3 py-2 text-sm text-left text-red-600 hover:bg-red-50 transition-colors"
+              onClick={() => setShowShareModal(true)}
+              className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 flex items-center gap-1"
+              title="Share Board"
             >
-              Sign out
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+              </svg>
+              Share
             </button>
+            <div className="w-px bg-primary-200" />
+          </>
+        )}
+        {!readOnly && (
+          <button
+            onClick={handleClear}
+            className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+            title="Clear Canvas"
+          >
+            Clear
+          </button>
+        )}
+        {!readOnly && <div className="w-px bg-primary-200" />}
+        {/* User Menu - only show when not in read-only mode */}
+        {!readOnly && (
+          <div className="relative group">
+            <button
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
+              title={user?.email || 'User'}
+            >
+              {user?.user_metadata?.avatar_url ? (
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt="Profile"
+                  className="w-6 h-6 rounded-full"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="hidden md:inline">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
+            </button>
+            <div
+              className="absolute right-0 top-full mt-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 min-w-48 border overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 100%)',
+                backdropFilter: 'blur(40px) saturate(200%)',
+                WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+                borderColor: 'rgba(6, 6, 61, 0.1)',
+                boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.12)',
+              }}
+            >
+              <div className="px-3 py-2 border-b border-primary-100">
+                <p className="text-xs text-primary-600">Signed in as</p>
+                <p className="text-sm font-medium text-primary-900 truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={signOut}
+                className="block w-full px-3 py-2 text-sm text-left text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Share Link Modal */}
+      {boardId && (
+        <ShareLinkModal
+          isOpen={showShareModal}
+          boardId={boardId}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </>
   );
 }
