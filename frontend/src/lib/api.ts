@@ -1,7 +1,302 @@
 import { supabase } from './supabase';
-import { Board } from '../types';
+import { Board, Client, BusinessUnit, Workflow } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+// ============ HELPER FUNCTION ============
+
+async function getAuthHeaders(): Promise<HeadersInit | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+        console.error('No access token found');
+        return null;
+    }
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+    };
+}
+
+// ============ CLIENTS API ============
+
+export async function fetchClients(): Promise<Client[]> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return [];
+
+        const response = await fetch(`${API_URL}/api/clients`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch clients:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching clients:', error);
+        return [];
+    }
+}
+
+export async function createClient(name: string, description?: string): Promise<Client | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/clients`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ name, description }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to create client:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating client:', error);
+        return null;
+    }
+}
+
+export async function getClient(clientId: string): Promise<Client | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/clients/${clientId}`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to get client:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error getting client:', error);
+        return null;
+    }
+}
+
+export async function deleteClient(clientId: string): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/clients/${clientId}`, {
+            method: 'DELETE',
+            headers,
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error deleting client:', error);
+        return false;
+    }
+}
+
+// ============ BUSINESS UNITS API ============
+
+export async function fetchBusinessUnits(clientId: string): Promise<BusinessUnit[]> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return [];
+
+        const response = await fetch(`${API_URL}/api/clients/${clientId}/business-units`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch business units:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching business units:', error);
+        return [];
+    }
+}
+
+export async function createBusinessUnit(clientId: string, name: string, description?: string): Promise<BusinessUnit | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/clients/${clientId}/business-units`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ name, description }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to create business unit:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating business unit:', error);
+        return null;
+    }
+}
+
+export async function getBusinessUnit(buId: string): Promise<BusinessUnit | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/business-units/${buId}`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to get business unit:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error getting business unit:', error);
+        return null;
+    }
+}
+
+export async function deleteBusinessUnit(buId: string): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/business-units/${buId}`, {
+            method: 'DELETE',
+            headers,
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error deleting business unit:', error);
+        return false;
+    }
+}
+
+// ============ WORKFLOWS API ============
+
+export async function fetchWorkflows(buId: string): Promise<Workflow[]> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return [];
+
+        const response = await fetch(`${API_URL}/api/business-units/${buId}/workflows`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch workflows:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching workflows:', error);
+        return [];
+    }
+}
+
+export async function createWorkflow(buId: string, name: string, description?: string): Promise<Workflow | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/business-units/${buId}/workflows`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ name, description }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to create workflow:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating workflow:', error);
+        return null;
+    }
+}
+
+export async function getWorkflow(workflowId: string): Promise<Workflow | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/workflows/${workflowId}`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to get workflow:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error getting workflow:', error);
+        return null;
+    }
+}
+
+export async function updateWorkflow(workflowId: string, updates: { name?: string; description?: string; flow_data?: Workflow['flow_data'] }): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/workflows/${workflowId}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(updates),
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error updating workflow:', error);
+        return false;
+    }
+}
+
+export async function deleteWorkflow(workflowId: string): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/workflows/${workflowId}`, {
+            method: 'DELETE',
+            headers,
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error deleting workflow:', error);
+        return false;
+    }
+}
+
+// ============ LEGACY BOARD API ============
 
 interface CreateBoardRequest {
     title: string;

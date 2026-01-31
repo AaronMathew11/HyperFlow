@@ -6,13 +6,44 @@ import (
 
 	"hypervision_backend/internal/auth"
 	"hypervision_backend/internal/boards"
+	"hypervision_backend/internal/businessunits"
+	"hypervision_backend/internal/clients"
 	"hypervision_backend/internal/collaborators"
 	"hypervision_backend/internal/snapshot"
+	"hypervision_backend/internal/workflows"
 )
 
 func Register(r *gin.Engine) {
 	api := r.Group("/api")
 	api.Use(auth.RequireAuth())
+
+	// ============ NEW HIERARCHY ROUTES ============
+
+	// Clients
+	api.POST("/clients", clients.Create)
+	api.GET("/clients", clients.List)
+	api.GET("/clients/:id", clients.Get)
+	api.DELETE("/clients/:id", clients.Delete)
+
+	// Business Units (nested under clients)
+	api.POST("/clients/:clientId/business-units", businessunits.Create)
+	api.GET("/clients/:clientId/business-units", businessunits.List)
+	api.GET("/business-units/:buId", businessunits.Get)
+	api.DELETE("/business-units/:buId", businessunits.Delete)
+
+	// BU Sharing
+	api.POST("/business-units/:buId/share", businessunits.Share)
+	api.GET("/business-units/:buId/collaborators", businessunits.ListCollaborators)
+	api.DELETE("/business-units/:buId/share/:userId", businessunits.RemoveCollaborator)
+
+	// Workflows (nested under business units)
+	api.POST("/business-units/:buId/workflows", workflows.Create)
+	api.GET("/business-units/:buId/workflows", workflows.List)
+	api.GET("/workflows/:id", workflows.Get)
+	api.PUT("/workflows/:id", workflows.Update)
+	api.DELETE("/workflows/:id", workflows.Delete)
+
+	// ============ LEGACY BOARD ROUTES (keep for now) ============
 
 	api.POST("/boards", boards.Create)
 	api.GET("/boards", boards.List)
