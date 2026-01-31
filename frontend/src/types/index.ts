@@ -42,6 +42,51 @@ export interface Board {
   updated_at: string;
 }
 
+// ============ NEW HIERARCHY TYPES ============
+
+export interface Client {
+  id: string;
+  name: string;
+  description?: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BusinessUnit {
+  id: string;
+  name: string;
+  description?: string;
+  client_id: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description?: string;
+  business_unit_id: string;
+  owner_id: string;
+  flow_data: {
+    nodes: any[];
+    edges: any[];
+    flowInputs?: string;
+    flowOutputs?: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BUPermission {
+  id: string;
+  business_unit_id: string;
+  user_id: string;
+  role: 'viewer' | 'editor';
+  created_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
