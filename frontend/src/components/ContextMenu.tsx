@@ -3,11 +3,14 @@ import { useEffect, useRef } from 'react';
 interface ContextMenuProps {
   x: number;
   y: number;
+  nodeId?: string;
+  nodeType?: string;
   onClose: () => void;
   onAddNote: () => void;
+  onDeleteNode?: () => void;
 }
 
-export default function ContextMenu({ x, y, onClose, onAddNote }: ContextMenuProps) {
+export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote, onDeleteNode }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +40,12 @@ export default function ContextMenu({ x, y, onClose, onAddNote }: ContextMenuPro
     onClose();
   };
 
+  const handleDeleteNode = () => {
+    if (onDeleteNode) {
+      onDeleteNode();
+    }
+  };
+
   return (
     <div
       ref={menuRef}
@@ -52,13 +61,29 @@ export default function ContextMenu({ x, y, onClose, onAddNote }: ContextMenuPro
       }}
     >
       <div className="py-1 min-w-32">
-        <button
-          onClick={handleAddNote}
-          className="w-full px-3 py-2 text-left text-sm text-primary-700 hover:bg-primary-50 transition-colors flex items-center gap-2"
-        >
-          <span className="text-yellow-500">📝</span>
-          Add Note
-        </button>
+        {!nodeId && (
+          <button
+            onClick={handleAddNote}
+            className="w-full px-3 py-2 text-left text-sm text-primary-700 hover:bg-primary-50 transition-colors flex items-center gap-2"
+          >
+            <span className="text-yellow-500">📝</span>
+            Add Note
+          </button>
+        )}
+        {nodeId && onDeleteNode && nodeType !== 'startNode' && (
+          <button
+            onClick={handleDeleteNode}
+            className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+          >
+            <span className="text-red-500">🗑️</span>
+            Delete Node
+          </button>
+        )}
+        {nodeId && nodeType === 'startNode' && (
+          <div className="px-3 py-2 text-sm text-gray-500 italic">
+            Start node cannot be deleted
+          </div>
+        )}
       </div>
     </div>
   );
