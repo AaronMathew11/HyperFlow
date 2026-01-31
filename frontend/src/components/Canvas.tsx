@@ -41,45 +41,114 @@ interface FlowCanvasProps {
 function FlowCanvas({ board, onBack, readOnly = false }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
-  const { saveCurrentBoardData, setCurrentBoard } = useBoardStore();
+  const { saveCurrentBoardData, setCurrentBoard, loadBoardSnapshot } = useBoardStore();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; nodeType?: string } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const lastSavedNodesRef = useRef<string>('');
+  const lastSavedEdgesRef = useRef<string>('');
 
-  // Load board data on mount
+  // Load board data from database on mount
   useEffect(() => {
-    if (board && !isLoaded) {
-      setCurrentBoard(board);
-      // Load the flow data from the board
-      const flowData = board.flow_data;
-      if (flowData) {
-        // Clear existing nodes and edges first
-        useFlowStore.setState({
-          nodes: flowData.nodes || [],
-          edges: flowData.edges || [],
-          flowInputs: flowData.flowInputs || '',
-          flowOutputs: flowData.flowOutputs || '',
-        });
-      }
-      setIsLoaded(true);
-    }
-  }, [board, isLoaded, setCurrentBoard]);
+    const loadData = async () => {
+      if (board && !isLoaded) {
+        setCurrentBoard(board);
 
-  // Auto-save functionality - save changes every 3 seconds (disabled in readOnly mode)
+        // Load snapshot from database
+        const snapshot = await loadBoardSnapshot(board.id);
+
+        if (snapshot) {
+          useFlowStore.setState({
+            nodes: snapshot.nodes || [],
+            edges: snapshot.edges || [],
+            flowInputs: snapshot.flowInputs || '',
+            flowOutputs: snapshot.flowOutputs || '',
+          });
+
+          // Store initial state for change detection
+          lastSavedNodesRef.current = JSON.stringify(snapshot.nodes || []);
+          lastSavedEdgesRef.current = JSON.stringify(snapshot.edges || []);
+        }
+
+        setIsLoaded(true);
+      }
+    };
+
+    loadData();
+  }, [board, isLoaded, setCurrentBoard, loadBoardSnapshot]);
+
+  // Keyboard shortcut for save (Ctrl/Cmd + S) - disabled in readOnly mode
+  useEffect(() => {
+    if (readOnly) return;
+
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        const { flowInputs, flowOutputs } = useFlowStore.getState();
+        const success = await saveCurrentBoardData({
+          nodes,
+          edges,
+          flowInputs,
+          flowOutputs,
+        });
+
+        if (success) {
+          lastSavedNodesRef.current = JSON.stringify(nodes);
+          lastSavedEdgesRef.current = JSON.stringify(edges);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nodes, edges, saveCurrentBoardData, readOnly]);
+
+  // Auto-save functionality - save changes every 30 seconds if there are changes (disabled in readOnly mode)
   useEffect(() => {
     if (!isLoaded || readOnly) return;
 
-    const saveInterval = setInterval(() => {
-      const { flowInputs, flowOutputs } = useFlowStore.getState();
-      saveCurrentBoardData({
-        nodes,
-        edges,
-        flowInputs,
-        flowOutputs,
-      });
-    }, 3000);
+    const saveInterval = setInterval(async () => {
+      const currentNodes = JSON.stringify(nodes);
+      const currentEdges = JSON.stringify(edges);
+
+      // Only save if there are actual changes
+      if (currentNodes !== lastSavedNodesRef.current ||
+          currentEdges !== lastSavedEdgesRef.current) {
+        const { flowInputs, flowOutputs } = useFlowStore.getState();
+        const success = await saveCurrentBoardData({
+          nodes,
+          edges,
+          flowInputs,
+          flowOutputs,
+        });
+
+        if (success) {
+          lastSavedNodesRef.current = currentNodes;
+          lastSavedEdgesRef.current = currentEdges;
+        }
+      }
+    }, 30000); // Auto-save every 30 seconds
 
     return () => clearInterval(saveInterval);
   }, [nodes, edges, isLoaded, saveCurrentBoardData, readOnly]);
+
+  // Warn user about unsaved changes before leaving
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const currentNodes = JSON.stringify(nodes);
+      const currentEdges = JSON.stringify(edges);
+      const hasUnsavedChanges =
+        currentNodes !== lastSavedNodesRef.current ||
+        currentEdges !== lastSavedEdgesRef.current;
+
+      if (hasUnsavedChanges && isLoaded) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [nodes, edges, isLoaded]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();

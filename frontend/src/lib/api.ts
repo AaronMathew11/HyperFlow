@@ -456,7 +456,103 @@ export async function deleteBoard(boardId: string): Promise<boolean> {
     }
 }
 
-// Access Link Functions
+// ============ WORKFLOW SNAPSHOT API ============
+
+export interface WorkflowData {
+    nodes: any[];
+    edges: any[];
+    flowInputs: string;
+    flowOutputs: string;
+}
+
+export interface SaveWorkflowResponse {
+    message: string;
+    updated_at: string;
+}
+
+export async function saveWorkflow(boardId: string, data: WorkflowData): Promise<SaveWorkflowResponse | null> {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+            console.error('No access token found');
+            return null;
+        }
+
+        const response = await fetch(`${API_URL}/api/boards/${boardId}/snapshot`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Failed to save workflow:', response.status, errorText);
+            return null;
+        }
+
+        const result: SaveWorkflowResponse = await response.json();
+        console.log('Workflow saved successfully:', result);
+        return result;
+    } catch (error) {
+        console.error('Error saving workflow:', error);
+        return null;
+    }
+}
+
+export async function fetchWorkflowSnapshot(boardId: string): Promise<WorkflowData | null> {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+            console.error('No access token found');
+            return null;
+        }
+
+        const response = await fetch(`${API_URL}/api/boards/${boardId}/snapshot`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            // No snapshot exists yet - return empty workflow
+            if (response.status === 404) {
+                return {
+                    nodes: [],
+                    edges: [],
+                    flowInputs: '',
+                    flowOutputs: '',
+                };
+            }
+            console.error('Failed to fetch workflow snapshot:', response.status);
+            return null;
+        }
+
+        const result = await response.json();
+        // Handle array response from backend
+        if (Array.isArray(result) && result.length > 0) {
+            return result[0].data as WorkflowData;
+        }
+        // Return empty workflow if no data
+        return {
+            nodes: [],
+            edges: [],
+            flowInputs: '',
+            flowOutputs: '',
+        };
+    } catch (error) {
+        console.error('Error fetching workflow snapshot:', error);
+        return null;
+    }
+}
+
+// ============ ACCESS LINK FUNCTIONS ============
 
 export async function createAccessLink(
     boardId: string,
@@ -544,7 +640,7 @@ export async function revokeAccessLink(boardId: string, linkId: string): Promise
     }
 }
 
-// Public API functions (no auth required)
+// ============ PUBLIC API FUNCTIONS (no auth required) ============
 
 export async function verifyLinkPassword(
     linkId: string,

@@ -55,7 +55,9 @@ func Register(r *gin.Engine) {
 	api.POST("/boards/:id/share", collaborators.Share)
 	api.GET("/boards/:id/collaborators", collaborators.List)
 
+	// Snapshot routes
 	api.GET("/boards/:id/snapshot", snapshot.Get)
+	api.PUT("/boards/:id/snapshot", snapshot.Save)
 
 	// Access links management (authenticated)
 	api.POST("/boards/:id/links", accesslinks.Create)

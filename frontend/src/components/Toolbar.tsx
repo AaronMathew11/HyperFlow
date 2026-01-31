@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useReactFlow } from 'reactflow';
 import { useFlowStore } from '../store/flowStore';
+import { useBoardStore } from '../store/boardStore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,10 +19,42 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false }
   const clearFlow = useFlowStore((state) => state.clearFlow);
   const nodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
+  const flowInputs = useFlowStore((state) => state.flowInputs);
+  const flowOutputs = useFlowStore((state) => state.flowOutputs);
   const viewMode = useFlowStore((state) => state.viewMode);
   const toggleViewMode = useFlowStore((state) => state.toggleViewMode);
   const { user, signOut } = useAuth();
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Save status from board store
+  const saveCurrentBoardData = useBoardStore((state) => state.saveCurrentBoardData);
+  const saveStatus = useBoardStore((state) => state.saveStatus);
+  const lastSavedAt = useBoardStore((state) => state.lastSavedAt);
+
+  const handleSave = async () => {
+    await saveCurrentBoardData({
+      nodes,
+      edges,
+      flowInputs,
+      flowOutputs,
+    });
+  };
+
+  // Save status indicator helper
+  const getSaveStatusDisplay = () => {
+    switch (saveStatus) {
+      case 'saving':
+        return { text: 'Saving...', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
+      case 'saved':
+        return { text: 'Saved', color: 'text-green-600', bgColor: 'bg-green-50' };
+      case 'error':
+        return { text: 'Error', color: 'text-red-600', bgColor: 'bg-red-50' };
+      default:
+        return null;
+    }
+  };
+
+  const statusDisplay = getSaveStatusDisplay();
 
   const handleSelectAll = () => {
     setNodes((nds) =>
@@ -233,6 +266,42 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false }
           <p className="text-xs text-primary-600">Board</p>
           <p className="text-sm font-semibold text-primary-900">{boardName}</p>
         </div>
+
+        {/* Save Status Indicator */}
+        {statusDisplay && (
+          <>
+            <div className="w-px h-6 bg-primary-200" />
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${statusDisplay.bgColor} ${statusDisplay.color}`}>
+              {saveStatus === 'saving' && (
+                <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {saveStatus === 'saved' && (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {saveStatus === 'error' && (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              <span className="text-xs font-medium">{statusDisplay.text}</span>
+            </div>
+          </>
+        )}
+
+        {/* Last saved timestamp */}
+        {lastSavedAt && saveStatus === 'idle' && (
+          <>
+            <div className="w-px h-6 bg-primary-200" />
+            <div className="text-xs text-primary-500 px-2">
+              Saved {new Date(lastSavedAt).toLocaleTimeString()}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Main Toolbar */}
@@ -246,6 +315,30 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false }
           boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.08)',
         }}
       >
+        {/* Save Button */}
+        <button
+          onClick={handleSave}
+          disabled={saveStatus === 'saving'}
+          className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+            saveStatus === 'saving'
+              ? 'bg-primary-100 text-primary-400 cursor-not-allowed'
+              : 'bg-primary-600 text-white hover:bg-primary-700'
+          }`}
+          title="Save Workflow (Ctrl/Cmd + S)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M3 5a2 2 0 012-2h8.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V15a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" />
+            <path d="M7 3v4h6V3H7z" />
+            <path d="M7 11v6h6v-6H7z" />
+          </svg>
+          {saveStatus === 'saving' ? 'Saving...' : 'Save'}
+        </button>
+        <div className="w-px bg-primary-200" />
         {/* View Mode Toggle */}
         <button
           onClick={toggleViewMode}
