@@ -3,6 +3,7 @@ package clients
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"hypervision_backend/internal/db"
@@ -36,34 +37,46 @@ func getString(m map[string]interface{}, key string) string {
 func Create(c *gin.Context) {
 	var req CreateClientReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		fmt.Println("DEBUG: Failed to bind JSON:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	userId := c.GetString("userId")
+	fmt.Println("DEBUG: Creating client for userId:", userId)
+	fmt.Println("DEBUG: Request name:", req.Name, "description:", req.Description)
 
-	data, _, err := db.Client.
+	insertData := map[string]interface{}{
+		"name":        req.Name,
+		"owner_id":    userId,
+		"description": req.Description,
+	}
+	fmt.Printf("DEBUG: Insert data: %+v\n", insertData)
+
+	data, count, err := db.Client.
 		From("test_clients").
-		Insert(map[string]interface{}{
-			"name":        req.Name,
-			"owner_id":    userId,
-			"description": req.Description,
-		}, false, "", "", "").
+		Insert(insertData, false, "", "", "").
 		Execute()
 
+	fmt.Println("DEBUG: Insert response data:", string(data))
+	fmt.Println("DEBUG: Insert response count:", count)
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		fmt.Println("DEBUG: Insert error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "userId": userId})
 		return
 	}
 
 	var dbResult []map[string]interface{}
 	if err := json.Unmarshal(data, &dbResult); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
+		fmt.Println("DEBUG: JSON unmarshal error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response", "raw": string(data)})
 		return
 	}
 
 	if len(dbResult) == 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "no client created"})
+		fmt.Println("DEBUG: No results returned")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no client created", "raw": string(data)})
 		return
 	}
 
@@ -77,11 +90,13 @@ func Create(c *gin.Context) {
 		UpdatedAt:   getString(client, "updated_at"),
 	}
 
+	fmt.Printf("DEBUG: Success! Created client: %+v\n", response)
 	c.JSON(http.StatusCreated, response)
 }
 
 func List(c *gin.Context) {
 	userId := c.GetString("userId")
+	fmt.Println("DEBUG: Listing clients for userId:", userId)
 
 	data, _, err := db.Client.
 		From("test_clients").
@@ -89,13 +104,17 @@ func List(c *gin.Context) {
 		Eq("owner_id", userId).
 		Execute()
 
+	fmt.Println("DEBUG: List response:", string(data))
+
 	if err != nil {
+		fmt.Println("DEBUG: List error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	var clients []map[string]interface{}
 	if err := json.Unmarshal(data, &clients); err != nil {
+		fmt.Println("DEBUG: JSON unmarshal error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse clients"})
 		return
 	}

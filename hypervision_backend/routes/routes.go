@@ -28,8 +28,8 @@ func Register(r *gin.Engine) {
 	api.DELETE("/clients/:id", clients.Delete)
 
 	// Business Units (nested under clients)
-	api.POST("/clients/:clientId/business-units", businessunits.Create)
-	api.GET("/clients/:clientId/business-units", businessunits.List)
+	api.POST("/clients/:id/business-units", businessunits.Create)
+	api.GET("/clients/:id/business-units", businessunits.List)
 	api.GET("/business-units/:buId", businessunits.Get)
 	api.DELETE("/business-units/:buId", businessunits.Delete)
 

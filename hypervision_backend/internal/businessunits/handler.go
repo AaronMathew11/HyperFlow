@@ -40,7 +40,7 @@ func getString(m map[string]interface{}, key string) string {
 }
 
 func Create(c *gin.Context) {
-	clientId := c.Param("clientId")
+	clientId := c.Param("id")
 	var req CreateBUReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -104,7 +104,7 @@ func Create(c *gin.Context) {
 }
 
 func List(c *gin.Context) {
-	clientId := c.Param("clientId")
+	clientId := c.Param("id")
 	userId := c.GetString("userId")
 
 	// Verify user owns the client

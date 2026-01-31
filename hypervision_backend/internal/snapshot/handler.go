@@ -102,7 +102,7 @@ func Save(c *gin.Context) {
 			"version":    1,
 			"data":       snapshotData,
 			"updated_at": now,
-		}, "board_id", "", "", "").
+		}, "board_id", "", "").
 		Execute()
 
 	if err != nil {
