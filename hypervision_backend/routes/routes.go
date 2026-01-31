@@ -23,4 +23,5 @@ func Register(r *gin.Engine) {
 	api.GET("/boards/:id/collaborators", collaborators.List)
 
 	api.GET("/boards/:id/snapshot", snapshot.Get)
+	api.PUT("/boards/:id/snapshot", snapshot.Save)
 }
