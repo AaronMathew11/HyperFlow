@@ -12,9 +12,14 @@ interface ToolbarProps {
   boardName: string;
   boardId?: string;
   readOnly?: boolean;
+  breadcrumbData?: {
+    client?: { id: string; name: string };
+    businessUnit?: { id: string; name: string };
+  };
+  onBreadcrumbNavigation?: (level: 'clients' | 'businessUnits' | 'workflows') => void;
 }
 
-export default function Toolbar({ onBack, boardName, boardId, readOnly = false }: ToolbarProps) {
+export default function Toolbar({ onBack, boardName, boardId, readOnly = false, breadcrumbData, onBreadcrumbNavigation }: ToolbarProps) {
   const { fitView, zoomIn, zoomOut, setNodes } = useReactFlow();
   const clearFlow = useFlowStore((state) => state.clearFlow);
   const nodes = useFlowStore((state) => state.nodes);
@@ -231,9 +236,9 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false }
 
   return (
     <>
-      {/* Back Button and Board Name */}
+      {/* Breadcrumb Navigation and Board Name */}
       <div
-        className="absolute top-4 left-4 z-10 rounded-xl p-2 flex items-center gap-3 border shadow-lg"
+        className="absolute top-4 left-4 z-30 rounded-xl p-2 flex items-center gap-3 border shadow-lg"
         style={{
           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
           backdropFilter: 'blur(40px) saturate(200%)',
@@ -242,30 +247,74 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false }
           boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.08)',
         }}
       >
-        <button
-          onClick={onBack}
-          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200 flex items-center gap-2"
-          title="Back to Boards"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+        {/* Breadcrumb Navigation */}
+        {breadcrumbData && onBreadcrumbNavigation ? (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onBreadcrumbNavigation('clients')}
+              className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition-all duration-200"
+              title="Go to Clients"
+            >
+              Clients
+            </button>
+            
+            {breadcrumbData.client && (
+              <>
+                <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <button
+                  onClick={() => onBreadcrumbNavigation('businessUnits')}
+                  className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition-all duration-200"
+                  title="Go to Business Units"
+                >
+                  {breadcrumbData.client.name}
+                </button>
+              </>
+            )}
+            
+            {breadcrumbData.businessUnit && (
+              <>
+                <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <button
+                  onClick={() => onBreadcrumbNavigation('workflows')}
+                  className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition-all duration-200"
+                  title="Go to Workflows"
+                >
+                  {breadcrumbData.businessUnit.name}
+                </button>
+              </>
+            )}
+            
+            <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="px-2 py-1 text-xs font-semibold text-primary-900">{boardName}</span>
+          </div>
+        ) : (
+          // Fallback to simple back button if no breadcrumb data
+          <button
+            onClick={onBack}
+            className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200 flex items-center gap-2 bg-white/50"
+            title="Back to Workflows"
           >
-            <path
-              fillRule="evenodd"
-              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back
-        </button>
-        <div className="w-px h-6 bg-primary-200" />
-        <div className="px-2">
-          <p className="text-xs text-primary-600">Board</p>
-          <p className="text-sm font-semibold text-primary-900">{boardName}</p>
-        </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Back
+          </button>
+        )}
 
         {/* Save Status Indicator */}
         {statusDisplay && (
@@ -306,7 +355,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false }
 
       {/* Main Toolbar */}
       <div
-        className="absolute top-4 right-4 z-10 rounded-xl p-2 flex gap-2 border shadow-lg"
+        className="absolute top-4 right-4 z-30 rounded-xl p-2 flex gap-2 border shadow-lg"
         style={{
           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
           backdropFilter: 'blur(40px) saturate(200%)',

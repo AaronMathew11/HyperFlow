@@ -38,9 +38,14 @@ interface FlowCanvasProps {
   board: Board;
   onBack: () => void;
   readOnly?: boolean;
+  breadcrumbData?: {
+    client?: { id: string; name: string };
+    businessUnit?: { id: string; name: string };
+  };
+  onBreadcrumbNavigation?: (level: 'clients' | 'businessUnits' | 'workflows') => void;
 }
 
-function FlowCanvas({ board, onBack, readOnly = false }: FlowCanvasProps) {
+function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
   const { saveCurrentBoardData, setCurrentBoard, loadBoardSnapshot } = useBoardStore();
@@ -460,7 +465,14 @@ function FlowCanvas({ board, onBack, readOnly = false }: FlowCanvasProps) {
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
         <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" />
-        <Toolbar onBack={onBack} boardName={board.name} boardId={board.id} readOnly={readOnly} />
+        <Toolbar 
+          onBack={onBack} 
+          boardName={board.name} 
+          boardId={board.id} 
+          readOnly={readOnly}
+          breadcrumbData={breadcrumbData}
+          onBreadcrumbNavigation={onBreadcrumbNavigation}
+        />
         {!readOnly && <SdkNotes />}
       </ReactFlow>
 
@@ -483,12 +495,23 @@ interface CanvasProps {
   board: Board;
   onBack: () => void;
   readOnly?: boolean;
+  breadcrumbData?: {
+    client?: { id: string; name: string };
+    businessUnit?: { id: string; name: string };
+  };
+  onBreadcrumbNavigation?: (level: 'clients' | 'businessUnits' | 'workflows') => void;
 }
 
-export default function Canvas({ board, onBack, readOnly = false }: CanvasProps) {
+export default function Canvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <FlowCanvas board={board} onBack={onBack} readOnly={readOnly} />
+      <FlowCanvas 
+        board={board} 
+        onBack={onBack} 
+        readOnly={readOnly} 
+        breadcrumbData={breadcrumbData}
+        onBreadcrumbNavigation={onBreadcrumbNavigation}
+      />
     </ReactFlowProvider>
   );
 }

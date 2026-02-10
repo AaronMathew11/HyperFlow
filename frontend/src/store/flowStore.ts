@@ -5,6 +5,8 @@ interface FlowState {
   nodes: Node[];
   edges: Edge[];
   viewMode: 'business' | 'tech';
+  flowType: 'sdk' | 'api';
+  sdkMode: 'general' | 'advanced';
   flowInputs: string;
   flowOutputs: string;
   onNodesChange: (changes: NodeChange[]) => void;
@@ -16,6 +18,8 @@ interface FlowState {
   deleteEdge: (edgeId: string) => void;
   clearFlow: () => void;
   toggleViewMode: () => void;
+  setFlowType: (type: 'sdk' | 'api') => void;
+  setSdkMode: (mode: 'general' | 'advanced') => void;
   setFlowInputs: (inputs: string) => void;
   setFlowOutputs: (outputs: string) => void;
 }
@@ -24,6 +28,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   nodes: [],
   edges: [],
   viewMode: 'business',
+  flowType: 'sdk',
+  sdkMode: 'general',
   flowInputs: '',
   flowOutputs: '',
   onNodesChange: (changes) => {
@@ -140,6 +146,12 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set({
       viewMode: get().viewMode === 'business' ? 'tech' : 'business',
     });
+  },
+  setFlowType: (type: 'sdk' | 'api') => {
+    set({ flowType: type });
+  },
+  setSdkMode: (mode: 'general' | 'advanced') => {
+    set({ sdkMode: mode });
   },
   setFlowInputs: (inputs: string) => {
     set({ flowInputs: inputs });

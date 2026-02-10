@@ -31,40 +31,61 @@ export default function ClientsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            {/* Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">HyperFlow</h1>
-                            <p className="text-sm text-gray-600 mt-1">Workflow Management</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            {user && (
-                                <div className="flex items-center gap-3">
-                                    <div className="text-right">
-                                        <p className="text-sm font-medium text-gray-900">{user.email}</p>
-                                    </div>
-                                    <button
-                                        onClick={signOut}
-                                        className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                                    >
-                                        Sign Out
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+            {/* Left Sidebar */}
+            <aside className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+                {/* Top Section */}
+                <div className="p-4 border-b border-gray-100">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Hypervision</h1>
+                        <p className="text-xs text-gray-600 mt-1">Workflow Management</p>
                     </div>
                 </div>
-            </header>
+
+                {/* Navigation/Content Area */}
+                <div className="flex-1 p-4">
+                    {/* Sidebar content can go here if needed */}
+                </div>
+
+                {/* Bottom Account Section */}
+                <div className="p-6 border-t border-gray-100">
+                    {user && (
+                        <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5 text-blue-600"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
+                                <button
+                                    onClick={signOut}
+                                    className="text-xs text-gray-500 hover:text-red-600 transition-colors mt-1"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </aside>
 
             {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="flex-1 p-8">
+                {/* Page Title and Create Button */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900">My Clients</h2>
-                        <p className="text-gray-600 mt-1">
+                        <h2 className="text-3xl font-bold text-gray-900">My Clients</h2>
+                        <p className="text-gray-600 mt-2">
                             {clients.length} {clients.length === 1 ? 'client' : 'clients'}
                         </p>
                     </div>
@@ -87,7 +108,6 @@ export default function ClientsPage() {
                         Create Client
                     </button>
                 </div>
-
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">

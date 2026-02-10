@@ -24,13 +24,34 @@ function WorkflowView() {
   const navigate = useNavigate();
   const { currentWorkflow, setCurrentWorkflow } = useWorkflowStore();
   const [loading, setLoading] = useState(true);
+  const [breadcrumbData, setBreadcrumbData] = useState<{
+    client?: { id: string; name: string };
+    businessUnit?: { id: string; name: string };
+  }>({});
 
   useEffect(() => {
     if (workflowId) {
       setLoading(true);
-      getWorkflow(workflowId).then((workflow) => {
+      getWorkflow(workflowId).then(async (workflow) => {
         if (workflow) {
           setCurrentWorkflow(workflow);
+          
+          // Load breadcrumb data
+          if (workflow.business_unit_id) {
+            try {
+              const { getBusinessUnit, getClient } = await import('./lib/api');
+              const businessUnit = await getBusinessUnit(workflow.business_unit_id);
+              if (businessUnit) {
+                const client = await getClient(businessUnit.client_id);
+                setBreadcrumbData({
+                  client: client ? { id: client.id, name: client.name } : undefined,
+                  businessUnit: { id: businessUnit.id, name: businessUnit.name }
+                });
+              }
+            } catch (error) {
+              console.error('Error loading breadcrumb data:', error);
+            }
+          }
         }
         setLoading(false);
       });
@@ -38,12 +59,30 @@ function WorkflowView() {
   }, [workflowId, setCurrentWorkflow]);
 
   const handleBack = () => {
-    if (currentWorkflow) {
-      // Navigate back to the workflows page
-      // We need to get the BU info to navigate correctly
-      navigate(-1); // Go back to previous page
+    // Navigate back to the workflows page for this workflow's business unit
+    if (currentWorkflow?.business_unit_id && breadcrumbData.client?.id) {
+      navigate(`/client/${breadcrumbData.client.id}/bu/${currentWorkflow.business_unit_id}`);
     } else {
-      navigate('/');
+      // Fallback: go back through browser history
+      navigate(-1);
+    }
+  };
+
+  const handleBreadcrumbNavigation = (level: 'clients' | 'businessUnits' | 'workflows') => {
+    switch (level) {
+      case 'clients':
+        navigate('/');
+        break;
+      case 'businessUnits':
+        if (breadcrumbData.client?.id) {
+          navigate(`/client/${breadcrumbData.client.id}`);
+        }
+        break;
+      case 'workflows':
+        if (currentWorkflow?.business_unit_id && breadcrumbData.client?.id) {
+          navigate(`/client/${breadcrumbData.client.id}/bu/${currentWorkflow.business_unit_id}`);
+        }
+        break;
     }
   };
 
@@ -71,7 +110,12 @@ function WorkflowView() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      <Canvas board={boardLike} onBack={handleBack} />
+      <Canvas 
+        board={boardLike} 
+        onBack={handleBack} 
+        breadcrumbData={breadcrumbData}
+        onBreadcrumbNavigation={handleBreadcrumbNavigation}
+      />
       <div className="absolute top-0 left-0 z-20 pointer-events-none h-full">
         <div className="pointer-events-auto">
           <Sidebar />
@@ -100,6 +144,7 @@ function BoardView() {
   }, [boardId, boards]);
 
   const handleBackToHome = () => {
+    // Navigate back to the clients page (home)
     navigate('/');
   };
 
