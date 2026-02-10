@@ -479,7 +479,7 @@ export async function saveWorkflow(boardId: string, data: WorkflowData): Promise
             return null;
         }
 
-        const response = await fetch(`${API_URL}/api/boards/${boardId}/snapshot`, {
+        const response = await fetch(`${API_URL}/api/workflows/${boardId}/snapshot`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -512,7 +512,7 @@ export async function fetchWorkflowSnapshot(boardId: string): Promise<WorkflowDa
             return null;
         }
 
-        const response = await fetch(`${API_URL}/api/boards/${boardId}/snapshot`, {
+        const response = await fetch(`${API_URL}/api/workflows/${boardId}/snapshot`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -535,9 +535,9 @@ export async function fetchWorkflowSnapshot(boardId: string): Promise<WorkflowDa
         }
 
         const result = await response.json();
-        // Handle array response from backend
-        if (Array.isArray(result) && result.length > 0) {
-            return result[0].data as WorkflowData;
+        // Handle object response from backend
+        if (result && result.data) {
+            return result.data as WorkflowData;
         }
         // Return empty workflow if no data
         return {

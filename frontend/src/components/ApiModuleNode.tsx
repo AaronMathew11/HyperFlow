@@ -148,14 +148,6 @@ function ApiModuleNode({ data, selected }: NodeProps<ApiModuleNodeData>) {
             <div className="space-y-2 w-full">
               <div className="w-full">
                 <label className="text-xs text-primary-700 font-medium block mb-1" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>
-                  CSP URLs:
-                </label>
-                <div className="text-xs text-primary-800 bg-primary-50 p-2 rounded-lg border border-primary-100 break-words w-full" style={{ fontSize: 'clamp(9px, 1.8vw, 11px)' }}>
-                  {data.cspUrls?.join(', ') || 'Custom API endpoints'}
-                </div>
-              </div>
-              <div className="w-full">
-                <label className="text-xs text-primary-700 font-medium block mb-1" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>
                   IP Addresses:
                 </label>
                 <div className="text-xs text-primary-800 bg-primary-50 p-2 rounded-lg border border-primary-100 break-words w-full" style={{ fontSize: 'clamp(9px, 1.8vw, 11px)' }}>

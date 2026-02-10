@@ -10,18 +10,23 @@ interface ConditionNodeData {
 
 function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
   const [isEditing, setIsEditing] = useState(false);
-  const [condition, setCondition] = useState(data.condition || 'Enter condition...');
+  const [condition, setCondition] = useState(data.condition || 'Click to edit condition');
 
   const handleDoubleClick = () => {
     setIsEditing(true);
   };
 
-  const handleBlur = () => {
+  const handleSaveCondition = () => {
     setIsEditing(false);
+    data.condition = condition;
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      handleSaveCondition();
+    }
+    if (e.key === 'Escape') {
+      setCondition(data.condition || 'Click to edit condition');
       setIsEditing(false);
     }
   };
@@ -51,23 +56,24 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
       >
         {/* Content inside diamond (counter-rotated) */}
         <div className="transform -rotate-45 w-full h-full flex justify-center items-center p-4">
-          {/* Editable condition text */}
+          {/* Condition text */}
           {isEditing ? (
             <textarea
               value={condition}
               onChange={(e) => setCondition(e.target.value)}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              className="w-full h-full resize-none border-none focus:outline-none text-center bg-transparent text-primary-900 font-semibold placeholder-primary-400"
+              onBlur={handleSaveCondition}
+              onKeyDown={handleKeyPress}
+              className="w-full h-full resize-none border-none outline-none bg-transparent text-center font-semibold text-primary-900 p-1 rounded"
               style={{ fontSize: 'clamp(10px, 2vw, 14px)' }}
+              placeholder="Enter condition..."
               autoFocus
             />
           ) : (
             <div
-              className="w-full h-full flex items-center justify-center cursor-text hover:bg-primary-50 transition-colors text-center font-semibold text-primary-900"
+              className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-primary-50 transition-colors text-center font-semibold text-primary-900 p-1 rounded break-words"
               style={{ fontSize: 'clamp(10px, 2vw, 14px)' }}
-              onDoubleClick={handleDoubleClick}
-              title="Double-click to edit"
+              onClick={handleDoubleClick}
+              title="Click to edit condition"
             >
               {condition}
             </div>
@@ -98,6 +104,7 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
       <div className="absolute text-xs text-primary-700 font-semibold" style={{ top: '50%', right: '-35px', transform: 'translateY(-50%)' }}>
         True
       </div>
+
     </div>
   );
 }

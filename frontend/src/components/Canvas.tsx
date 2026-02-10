@@ -21,6 +21,7 @@ import StartNode from './StartNode';
 import Toolbar from './Toolbar';
 import SdkNotes from './SdkNotes';
 import NoteNode from './NoteNode';
+import SdkInputsNode from './SdkInputsNode';
 import ContextMenu from './ContextMenu';
 
 const nodeTypes = {
@@ -30,6 +31,7 @@ const nodeTypes = {
   apiModuleNode: ApiModuleNode,
   startNode: StartNode,
   noteNode: NoteNode,
+  sdkInputsNode: SdkInputsNode,
 };
 
 interface FlowCanvasProps {
@@ -42,6 +44,8 @@ function FlowCanvas({ board, onBack, readOnly = false }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
   const { saveCurrentBoardData, setCurrentBoard, loadBoardSnapshot } = useBoardStore();
+  const viewMode = useFlowStore((state) => state.viewMode);
+  const flowInputs = useFlowStore((state) => state.flowInputs);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; nodeType?: string } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const lastSavedNodesRef = useRef<string>('');
@@ -149,6 +153,33 @@ function FlowCanvas({ board, onBack, readOnly = false }: FlowCanvasProps) {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [nodes, edges, isLoaded]);
+
+  // Dynamically manage SDK inputs node
+  useEffect(() => {
+    const startNode = nodes.find(node => node.type === 'startNode');
+    const existingSdkInputsNode = nodes.find(node => node.type === 'sdkInputsNode');
+    
+    const shouldShowSdkInputs = viewMode === 'tech' && flowInputs && startNode;
+    
+    if (shouldShowSdkInputs && !existingSdkInputsNode) {
+      // Add SDK inputs node
+      const sdkInputsNode = {
+        id: `sdk-inputs-${Date.now()}`,
+        type: 'sdkInputsNode',
+        position: {
+          x: startNode.position.x + 250,
+          y: startNode.position.y - 10,
+        },
+        data: {
+          label: 'SDK Inputs',
+        },
+      };
+      addNode(sdkInputsNode);
+    } else if (!shouldShowSdkInputs && existingSdkInputsNode) {
+      // Remove SDK inputs node
+      deleteNode(existingSdkInputsNode.id);
+    }
+  }, [viewMode, flowInputs, nodes, addNode, deleteNode]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -284,6 +315,13 @@ function FlowCanvas({ board, onBack, readOnly = false }: FlowCanvasProps) {
             status: statusType,
             color: config.color,
             icon: config.icon,
+            ...(statusType === 'auto-declined' && {
+              resumeFrom: 'Fetch Geo IP details',
+              reason: 'User outside India'
+            }),
+            ...(statusType === 'needs-review' && {
+              reason: 'Manual review required'
+            })
           },
         };
         addNode(newNode);

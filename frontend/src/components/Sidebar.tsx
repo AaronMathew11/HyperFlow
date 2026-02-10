@@ -6,6 +6,10 @@ import { useFlowStore } from '../store/flowStore';
 export default function Sidebar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSdkCollapsed, setIsSdkCollapsed] = useState(false);
+  const flowType = useFlowStore((state) => state.flowType);
+  const setFlowType = useFlowStore((state) => state.setFlowType);
+  const sdkMode = useFlowStore((state) => state.sdkMode);
+  const setSdkMode = useFlowStore((state) => state.setSdkMode);
   const flowInputs = useFlowStore((state) => state.flowInputs);
   const flowOutputs = useFlowStore((state) => state.flowOutputs);
   const setFlowInputs = useFlowStore((state) => state.setFlowInputs);
@@ -19,6 +23,7 @@ export default function Sidebar() {
   const filteredModules = modules.filter(module =>
     module.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
 
   const conditionBox = {
     id: 'condition',
@@ -82,7 +87,61 @@ export default function Sidebar() {
 
       <div className="mb-8 relative z-10">
         <h2 className="text-2xl font-semibold text-primary-900 mb-1 tracking-tight">Hypervision</h2>
-        <p className="text-sm text-primary-600 font-medium">Drag modules to the canvas</p>
+        <p className="text-sm text-primary-600 font-medium">
+          {flowType === 'sdk' ? 'Drag modules to the canvas' : 'Drag modules to canvas, click nodes for API details'}
+        </p>
+      </div>
+
+      {/* Flow Type Toggle */}
+      <div className="mb-6 relative z-10">
+        <div className="flex bg-white/90 rounded-xl p-1 border border-primary-200 mb-4">
+          <button
+            onClick={() => setFlowType('sdk')}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              flowType === 'sdk'
+                ? 'bg-primary-500 text-white shadow-sm'
+                : 'text-primary-600 hover:text-primary-700'
+            }`}
+          >
+            SDK Flow
+          </button>
+          <button
+            onClick={() => setFlowType('api')}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              flowType === 'api'
+                ? 'bg-primary-500 text-white shadow-sm'
+                : 'text-primary-600 hover:text-primary-700'
+            }`}
+          >
+            API Flow
+          </button>
+        </div>
+
+        {/* SDK Mode Toggle - only visible when SDK flow is selected */}
+        {flowType === 'sdk' && (
+          <div className="flex bg-white/60 rounded-full p-0.5 border border-primary-200/50 shadow-sm">
+            <button
+              onClick={() => setSdkMode('general')}
+              className={`px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                sdkMode === 'general'
+                  ? 'bg-primary-500 text-white shadow-sm'
+                  : 'text-primary-600 hover:text-primary-700 hover:bg-white/40'
+              }`}
+            >
+              General
+            </button>
+            <button
+              onClick={() => setSdkMode('advanced')}
+              className={`px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                sdkMode === 'advanced'
+                  ? 'bg-primary-500 text-white shadow-sm'
+                  : 'text-primary-600 hover:text-primary-700 hover:bg-white/40'
+              }`}
+            >
+              Advanced
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search Bar */}
@@ -102,17 +161,18 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* SDK Configuration */}
-      <div className="mb-6 relative z-10">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider">SDK Configuration</h3>
-          <button
-            onClick={() => setIsSdkCollapsed(!isSdkCollapsed)}
-            className="text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors"
-          >
-            {isSdkCollapsed ? 'Expand' : 'Collapse'}
-          </button>
-        </div>
+      {/* Configuration */}
+      {flowType === 'sdk' && (
+        <div className="mb-6 relative z-10">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider">SDK Configuration</h3>
+            <button
+              onClick={() => setIsSdkCollapsed(!isSdkCollapsed)}
+              className="text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors"
+            >
+              {isSdkCollapsed ? 'Expand' : 'Collapse'}
+            </button>
+          </div>
         
         {!isSdkCollapsed && (
           <div className="space-y-4">
@@ -163,7 +223,9 @@ export default function Sidebar() {
             )}
           </div>
         )}
-      </div>
+        </div>
+      )}
+
 
       {/* Condition Box */}
       <div className="mb-6 relative z-10">
@@ -220,7 +282,7 @@ export default function Sidebar() {
           {filteredModules.map((module) => (
             <div
               key={module.id}
-              className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100"
+              className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100 cursor-move"
               draggable
               onDragStart={(e) => onDragStart(e, module.id)}
             >
@@ -233,7 +295,7 @@ export default function Sidebar() {
                     {module.label}
                   </div>
                   <div className="text-xs text-primary-600 truncate mt-0.5">
-                    {module.description}
+                    {flowType === 'api' ? 'Drag to canvas, then click node for API details' : module.description}
                   </div>
                 </div>
               </div>

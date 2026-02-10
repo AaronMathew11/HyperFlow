@@ -7,7 +7,7 @@ interface WorkflowState {
     loading: boolean;
     error: string | null;
     loadWorkflows: (buId: string) => Promise<void>;
-    createWorkflow: (buId: string, name: string, description?: string) => Promise<Workflow | null>;
+    createWorkflow: (buId: string, name: string, description?: string, environmentIds?: string[]) => Promise<Workflow | null>;
     deleteWorkflow: (workflowId: string) => Promise<void>;
     setCurrentWorkflow: (workflow: Workflow | null) => void;
     saveCurrentWorkflowData: (flowData: Workflow['flow_data']) => Promise<void>;
@@ -32,7 +32,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         }
     },
 
-    createWorkflow: async (buId: string, name: string, description?: string) => {
+    createWorkflow: async (buId: string, name: string, description?: string, environmentIds?: string[]) => {
         set({ loading: true, error: null });
         try {
             const { createWorkflow: apiCreateWorkflow } = await import('../lib/api');

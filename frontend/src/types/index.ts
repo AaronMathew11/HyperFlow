@@ -1,3 +1,15 @@
+export interface ApiInfo {
+  endpoint: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  inputVariables: string[];
+  outputVariables: string[];
+  successCriteria: string;
+  failureCriteria?: string;
+  documentationUrl: string;
+  curlExample: string;
+  nextApiRecommendations: string[];
+}
+
 export interface ModuleType {
   id: string;
   label: string;
@@ -6,6 +18,7 @@ export interface ModuleType {
   icon: string;
   cspUrls?: string[];
   ipAddresses?: string[];
+  apiInfo?: ApiInfo;
 }
 
 export interface FlowNode {
@@ -19,6 +32,8 @@ export interface FlowNode {
     moduleType?: string;
     condition?: string;
     status?: 'auto-approved' | 'auto-declined' | 'needs-review';
+    resumeFrom?: string;
+    reason?: string;
     color: string;
     icon: string;
     // Technical info
