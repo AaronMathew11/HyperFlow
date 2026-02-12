@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Workflow } from '../../shared/types';
+import { Workflow } from '../../../shared/types';
 
 interface WorkflowState {
     workflows: Workflow[];
@@ -23,7 +23,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     loadWorkflows: async (buId: string) => {
         set({ loading: true, error: null });
         try {
-            const { fetchWorkflows } = await import('../lib/api');
+            const { fetchWorkflows } = await import('../../../shared/lib/api');
             const workflows = await fetchWorkflows(buId);
             set({ workflows, loading: false });
         } catch (error: any) {
@@ -35,7 +35,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     createWorkflow: async (buId: string, name: string, description?: string, environmentIds?: string[]) => {
         set({ loading: true, error: null });
         try {
-            const { createWorkflow: apiCreateWorkflow } = await import('../lib/api');
+            const { createWorkflow: apiCreateWorkflow } = await import('../../../shared/lib/api');
             const newWorkflow = await apiCreateWorkflow(buId, name, description);
 
             if (!newWorkflow) {
@@ -58,7 +58,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     deleteWorkflow: async (workflowId: string) => {
         set({ loading: true, error: null });
         try {
-            const { deleteWorkflow: apiDeleteWorkflow } = await import('../lib/api');
+            const { deleteWorkflow: apiDeleteWorkflow } = await import('../../../shared/lib/api');
             const success = await apiDeleteWorkflow(workflowId);
 
             if (!success) {
@@ -85,7 +85,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         if (!currentWorkflow) return;
 
         try {
-            const { updateWorkflow } = await import('../lib/api');
+            const { updateWorkflow } = await import('../../../shared/lib/api');
             await updateWorkflow(currentWorkflow.id, { flow_data: flowData });
 
             set(state => ({

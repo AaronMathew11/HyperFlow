@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Environment } from '../../shared/types';
+import { Environment } from '../../../shared/types';
 
 interface CreateEnvironmentModalProps {
     isOpen: boolean;
@@ -49,9 +49,9 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         onCreate(formData);
-        
+
         // Reset form
         setFormData({
             name: '',
@@ -120,7 +120,7 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                         {/* Integration Configuration */}
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium text-gray-900">Integration Configuration</h3>
-                            
+
                             {/* Integration Type */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -179,7 +179,7 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                             {/* API Usage Questions */}
                             <div className="space-y-3">
                                 <h4 className="text-sm font-medium text-gray-900">API Usage</h4>
-                                
+
                                 <label className="flex items-center">
                                     <input
                                         type="checkbox"

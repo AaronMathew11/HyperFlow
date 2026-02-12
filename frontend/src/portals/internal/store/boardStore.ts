@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Board } from '../../shared/types';
+import { Board } from '../../../shared/types';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -31,7 +31,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     loadBoards: async () => {
         set({ loading: true, error: null });
         try {
-            const { fetchBoards: apiFetchBoards } = await import('../lib/api');
+            const { fetchBoards: apiFetchBoards } = await import('../../../shared/lib/api');
             const boards = await apiFetchBoards();
             set({ boards, loading: false });
         } catch (error: any) {
@@ -44,7 +44,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         set({ loading: true, error: null });
         try {
             // Import the API function dynamically to avoid circular dependencies
-            const { createBoard: apiCreateBoard } = await import('../lib/api');
+            const { createBoard: apiCreateBoard } = await import('../../../shared/lib/api');
             const newBoard = await apiCreateBoard(name, description);
 
             if (!newBoard) {
@@ -87,7 +87,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     deleteBoard: async (boardId: string) => {
         set({ loading: true, error: null });
         try {
-            const { deleteBoard: apiDeleteBoard } = await import('../lib/api');
+            const { deleteBoard: apiDeleteBoard } = await import('../../../shared/lib/api');
             const success = await apiDeleteBoard(boardId);
 
             if (!success) {
@@ -120,7 +120,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         set({ saveStatus: 'saving' });
 
         try {
-            const { saveWorkflow } = await import('../lib/api');
+            const { saveWorkflow } = await import('../../../shared/lib/api');
             const result = await saveWorkflow(currentBoard.id, {
                 nodes: flowData.nodes,
                 edges: flowData.edges,
@@ -163,7 +163,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     loadBoardSnapshot: async (boardId: string) => {
         try {
-            const { fetchWorkflowSnapshot } = await import('../lib/api');
+            const { fetchWorkflowSnapshot } = await import('../../../shared/lib/api');
             const snapshot = await fetchWorkflowSnapshot(boardId);
             return snapshot;
         } catch (error: any) {

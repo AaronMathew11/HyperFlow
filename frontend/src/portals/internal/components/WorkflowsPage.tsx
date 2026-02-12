@@ -5,9 +5,9 @@ import { useEnvironmentStore } from '../store/environmentStore';
 import { useAuth } from '../contexts/AuthContext';
 import CreateWorkflowModal from './CreateWorkflowModal';
 import CreateEnvironmentModal from './CreateEnvironmentModal';
-import Breadcrumb from '../../shared/components/Breadcrumb';
-import { getClient, getBusinessUnit } from '../../shared/lib/api';
-import { Client, BusinessUnit, Workflow, Environment } from '../../shared/types';
+import Breadcrumb from '../../../shared/components/Breadcrumb';
+import { getClient, getBusinessUnit } from '../../../shared/lib/api';
+import { Client, BusinessUnit, Workflow, Environment } from '../../../shared/types';
 
 export default function WorkflowsPage() {
     const { clientId, buId } = useParams<{ clientId: string; buId: string }>();
@@ -189,21 +189,19 @@ export default function WorkflowsPage() {
                         <nav className="-mb-px flex space-x-8">
                             <button
                                 onClick={() => setActiveTab('workflows')}
-                                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                    activeTab === 'workflows'
-                                        ? 'border-green-500 text-green-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                }`}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'workflows'
+                                    ? 'border-green-500 text-green-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
                             >
                                 Workflows ({workflows.length})
                             </button>
                             <button
                                 onClick={() => setActiveTab('environments')}
-                                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                    activeTab === 'environments'
-                                        ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                }`}
+                                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === 'environments'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
                             >
                                 Environments ({environments.length})
                             </button>
@@ -214,9 +212,8 @@ export default function WorkflowsPage() {
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="text-center">
-                            <div className={`inline-block animate-spin rounded-full h-12 w-12 border-b-2 ${
-                                activeTab === 'workflows' ? 'border-green-600' : 'border-blue-600'
-                            }`}></div>
+                            <div className={`inline-block animate-spin rounded-full h-12 w-12 border-b-2 ${activeTab === 'workflows' ? 'border-green-600' : 'border-blue-600'
+                                }`}></div>
                             <p className="mt-4 text-gray-600">Loading {activeTab}...</p>
                         </div>
                     </div>
@@ -379,17 +376,16 @@ function EnvironmentCard({
     };
 
     return (
-        <div 
+        <div
             onClick={onEdit}
             className="relative group cursor-pointer bg-white rounded-xl border border-gray-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-blue-300">
             {/* Delete Button */}
             <button
                 onClick={handleDelete}
-                className={`absolute top-3 right-3 p-2 rounded-lg transition-all duration-200 ${
-                    showDeleteConfirm
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
-                }`}
+                className={`absolute top-3 right-3 p-2 rounded-lg transition-all duration-200 ${showDeleteConfirm
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
+                    }`}
                 title={showDeleteConfirm ? 'Click again to confirm' : 'Delete'}
             >
                 <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -458,11 +454,10 @@ function WorkflowCard({
             {/* Delete Button */}
             <button
                 onClick={handleDelete}
-                className={`absolute top-3 right-3 p-2 rounded-lg transition-all duration-200 ${
-                    showDeleteConfirm
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
-                }`}
+                className={`absolute top-3 right-3 p-2 rounded-lg transition-all duration-200 ${showDeleteConfirm
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gray-100 text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50'
+                    }`}
                 title={showDeleteConfirm ? 'Click again to confirm' : 'Delete'}
             >
                 <svg
@@ -512,7 +507,7 @@ function WorkflowCard({
                                 {workflow.environment_ids.slice(0, 3).map(envId => {
                                     const env = environments.find(e => e.id === envId);
                                     if (!env) return null;
-                                    
+
                                     const getEnvColorClass = (type: string) => {
                                         switch (type) {
                                             case 'production': return 'bg-red-100 text-red-700';
@@ -521,7 +516,7 @@ function WorkflowCard({
                                             default: return 'bg-blue-100 text-blue-700';
                                         }
                                     };
-                                    
+
                                     return (
                                         <span key={envId} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getEnvColorClass(env.type)}`}>
                                             <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

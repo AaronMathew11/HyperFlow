@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Environment } from '../../shared/types';
+import { Environment } from '../../../shared/types';
 import { EnvironmentFormData } from '../components/CreateEnvironmentModal';
 
 interface EnvironmentStore {
@@ -38,7 +38,7 @@ export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
           updated_at: new Date().toISOString()
         }
       ];
-      
+
       set({ environments: mockEnvironments, loading: false });
     } catch (error) {
       console.error('Error loading environments:', error);

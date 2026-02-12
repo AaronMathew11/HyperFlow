@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BusinessUnit } from '../../shared/types';
+import { BusinessUnit } from '../../../shared/types';
 
 interface BusinessUnitState {
     businessUnits: BusinessUnit[];
@@ -22,7 +22,7 @@ export const useBusinessUnitStore = create<BusinessUnitState>((set) => ({
     loadBusinessUnits: async (clientId: string) => {
         set({ loading: true, error: null });
         try {
-            const { fetchBusinessUnits } = await import('../lib/api');
+            const { fetchBusinessUnits } = await import('../../../shared/lib/api');
             const businessUnits = await fetchBusinessUnits(clientId);
             set({ businessUnits, loading: false });
         } catch (error: any) {
@@ -34,7 +34,7 @@ export const useBusinessUnitStore = create<BusinessUnitState>((set) => ({
     createBusinessUnit: async (clientId: string, name: string, description?: string) => {
         set({ loading: true, error: null });
         try {
-            const { createBusinessUnit: apiCreateBU } = await import('../lib/api');
+            const { createBusinessUnit: apiCreateBU } = await import('../../../shared/lib/api');
             const newBU = await apiCreateBU(clientId, name, description);
 
             if (!newBU) {
@@ -57,7 +57,7 @@ export const useBusinessUnitStore = create<BusinessUnitState>((set) => ({
     deleteBusinessUnit: async (buId: string) => {
         set({ loading: true, error: null });
         try {
-            const { deleteBusinessUnit: apiDeleteBU } = await import('../lib/api');
+            const { deleteBusinessUnit: apiDeleteBU } = await import('../../../shared/lib/api');
             const success = await apiDeleteBU(buId);
 
             if (!success) {

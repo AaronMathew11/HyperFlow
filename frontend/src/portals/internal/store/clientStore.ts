@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Client } from '../../shared/types';
+import { Client } from '../../../shared/types';
 
 interface ClientState {
     clients: Client[];
@@ -21,7 +21,7 @@ export const useClientStore = create<ClientState>((set) => ({
     loadClients: async () => {
         set({ loading: true, error: null });
         try {
-            const { fetchClients } = await import('../lib/api');
+            const { fetchClients } = await import('../../../shared/lib/api');
             const clients = await fetchClients();
             set({ clients, loading: false });
         } catch (error: any) {
@@ -33,7 +33,7 @@ export const useClientStore = create<ClientState>((set) => ({
     createClient: async (name: string, description?: string) => {
         set({ loading: true, error: null });
         try {
-            const { createClient: apiCreateClient } = await import('../lib/api');
+            const { createClient: apiCreateClient } = await import('../../../shared/lib/api');
             const newClient = await apiCreateClient(name, description);
 
             if (!newClient) {
@@ -56,7 +56,7 @@ export const useClientStore = create<ClientState>((set) => ({
     deleteClient: async (clientId: string) => {
         set({ loading: true, error: null });
         try {
-            const { deleteClient: apiDeleteClient } = await import('../lib/api');
+            const { deleteClient: apiDeleteClient } = await import('../../../shared/lib/api');
             const success = await apiDeleteClient(clientId);
 
             if (!success) {

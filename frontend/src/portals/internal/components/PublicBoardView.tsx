@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { verifyLinkPassword, getPublicBoard } from '../lib/api';
-import { Board } from '../types';
-import Canvas from '../../portals/internal/components/Canvas';
+import { verifyLinkPassword, getPublicBoard } from '../../../shared/lib/api';
+import { Board } from '../../../shared/types';
+import Canvas from './Canvas';
 
 export default function PublicBoardView() {
     const { linkId } = useParams<{ linkId: string }>();

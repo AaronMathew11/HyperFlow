@@ -5,7 +5,7 @@ import { useBoardStore } from '../store/boardStore';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
-import ShareLinkModal from '../../shared/components/ShareLinkModal';
+import ShareLinkModal from '../../../shared/components/ShareLinkModal';
 
 interface ToolbarProps {
   onBack: () => void;

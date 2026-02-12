@@ -35,7 +35,7 @@ function WorkflowView() {
       getWorkflow(workflowId).then(async (workflow) => {
         if (workflow) {
           setCurrentWorkflow(workflow);
-          
+
           // Load breadcrumb data
           if (workflow.business_unit_id) {
             try {
@@ -110,9 +110,9 @@ function WorkflowView() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden">
-      <Canvas 
-        board={boardLike} 
-        onBack={handleBack} 
+      <Canvas
+        board={boardLike}
+        onBack={handleBack}
         breadcrumbData={breadcrumbData}
         onBreadcrumbNavigation={handleBreadcrumbNavigation}
       />

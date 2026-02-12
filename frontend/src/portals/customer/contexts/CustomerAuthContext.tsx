@@ -20,7 +20,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     // Check for existing customer session
     const customerToken = localStorage.getItem('customer_token');
     const buId = localStorage.getItem('customer_bu_id');
-    
+
     if (customerToken && buId) {
       // Validate token with backend
       validateCustomerToken(customerToken, buId);
@@ -33,10 +33,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     try {
       // TODO: Call backend to validate customer token
       // For now, mock the validation
-      setUser({ 
-        id: 'customer-1', 
-        email: 'customer@example.com', 
-        name: 'Customer User' 
+      setUser({
+        id: 'customer-1',
+        email: 'customer@example.com',
+        name: 'Customer User'
       });
       setBusinessUnitId(buId);
     } catch (error) {
@@ -53,17 +53,17 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       // For now, mock the login
       const token = 'mock-customer-token';
       const buId = 'mock-bu-id';
-      
+
       localStorage.setItem('customer_token', token);
       localStorage.setItem('customer_bu_id', buId);
-      
-      setUser({ 
-        id: 'customer-1', 
-        email, 
-        name: 'Customer User' 
+
+      setUser({
+        id: 'customer-1',
+        email,
+        name: 'Customer User'
       });
       setBusinessUnitId(buId);
-      
+
       return true;
     } catch (error) {
       console.error('Customer sign in error:', error);
@@ -79,12 +79,12 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <CustomerAuthContext.Provider value={{ 
-      user, 
-      loading, 
-      signIn, 
-      signOut, 
-      businessUnitId 
+    <CustomerAuthContext.Provider value={{
+      user,
+      loading,
+      signIn,
+      signOut,
+      businessUnitId
     }}>
       {children}
     </CustomerAuthContext.Provider>

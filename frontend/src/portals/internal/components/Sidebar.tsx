@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { modules } from '../../shared/data/modules';
-import ModuleIcon from '../../shared/components/ModuleIcon';
+import { modules } from '../../../shared/data/modules';
+import ModuleIcon from '../../../shared/components/ModuleIcon';
 import { useFlowStore } from '../store/flowStore';
 
 export default function Sidebar() {

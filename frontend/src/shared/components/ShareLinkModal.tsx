@@ -24,14 +24,14 @@ export default function ShareLinkModal({ isOpen, boardId, onClose }: ShareLinkMo
 
     const loadLinks = async () => {
         setLoading(true);
-        const _result = await listAccessLinks(boardId);
+        const result = await listAccessLinks(boardId);
         setLinks(result);
         setLoading(false);
     };
 
     const handleGenerateLink = async () => {
         setGenerating(true);
-        const _result = await createAccessLink(boardId, 'viewer');
+        const result = await createAccessLink(boardId, 'viewer');
         if (result) {
             setNewLink(result);
             loadLinks();

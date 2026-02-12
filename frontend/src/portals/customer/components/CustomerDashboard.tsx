@@ -7,7 +7,7 @@ export default function CustomerDashboard() {
   const { buId } = useParams<{ buId: string }>();
   const navigate = useNavigate();
   const { user, signOut } = useCustomerAuth();
-  
+
   const [activeTab, setActiveTab] = useState<'workflows' | 'documentation'>('workflows');
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [environments, setEnvironments] = useState<Environment[]>([]);
@@ -25,7 +25,7 @@ export default function CustomerDashboard() {
       setLoading(true);
       // TODO: Call backend API to get customer workflows and environments
       // For now, mock the data
-      
+
       setBusinessUnitName('Sample Business Unit');
       setWorkflows([
         {
@@ -40,7 +40,7 @@ export default function CustomerDashboard() {
           updated_at: new Date().toISOString()
         },
         {
-          id: '2', 
+          id: '2',
           name: 'Document Validation',
           description: 'Document verification workflow',
           business_unit_id: businessUnitId,
@@ -51,7 +51,7 @@ export default function CustomerDashboard() {
           updated_at: new Date().toISOString()
         }
       ]);
-      
+
       setEnvironments([
         {
           id: 'env-1',
@@ -67,7 +67,7 @@ export default function CustomerDashboard() {
         {
           id: 'env-2',
           name: 'Staging',
-          type: 'staging', 
+          type: 'staging',
           baseUrl: 'https://staging-api.example.com',
           business_unit_id: businessUnitId,
           description: 'Staging environment',
@@ -76,7 +76,7 @@ export default function CustomerDashboard() {
           updated_at: new Date().toISOString()
         }
       ]);
-      
+
     } catch (error) {
       console.error('Error loading customer data:', error);
     } finally {
@@ -120,11 +120,10 @@ export default function CustomerDashboard() {
           <div className="space-y-2">
             <button
               onClick={() => setActiveTab('workflows')}
-              className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                activeTab === 'workflows'
-                  ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${activeTab === 'workflows'
+                ? 'bg-blue-100 text-blue-700 font-medium'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <div className="flex items-center">
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,11 +134,10 @@ export default function CustomerDashboard() {
             </button>
             <button
               onClick={() => setActiveTab('documentation')}
-              className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                activeTab === 'documentation'
-                  ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+              className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${activeTab === 'documentation'
+                ? 'bg-blue-100 text-blue-700 font-medium'
+                : 'text-gray-600 hover:bg-gray-100'
+                }`}
             >
               <div className="flex items-center">
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,13 +206,13 @@ export default function CustomerDashboard() {
                         {workflow.description && (
                           <p className="text-gray-600 text-sm mb-3">{workflow.description}</p>
                         )}
-                        
+
                         {workflow.environment_ids && workflow.environment_ids.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {workflow.environment_ids.map(envId => {
                               const env = environments.find(e => e.id === envId);
                               if (!env) return null;
-                              
+
                               const getEnvColor = (type: string) => {
                                 switch (type) {
                                   case 'production': return 'bg-red-100 text-red-700';
@@ -222,7 +220,7 @@ export default function CustomerDashboard() {
                                   default: return 'bg-blue-100 text-blue-700';
                                 }
                               };
-                              
+
                               return (
                                 <span key={envId} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getEnvColor(env.type)}`}>
                                   {env.name}

@@ -4,7 +4,7 @@ import { useBoardStore } from '../store/boardStore';
 import { useAuth } from '../contexts/AuthContext';
 import BoardCard from './BoardCard';
 import CreateBoardModal from './CreateBoardModal';
-import { Board } from '../../shared/types';
+import { Board } from '../../../shared/types';
 
 export default function HomePage() {
     const { boards, loading, loadBoards, createBoard, deleteBoard } = useBoardStore();

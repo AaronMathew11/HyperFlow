@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Environment } from '../../shared/types';
+import { Environment } from '../../../shared/types';
 
 interface CreateWorkflowModalProps {
     isOpen: boolean;
@@ -27,7 +27,7 @@ export default function CreateWorkflowModal({ isOpen, onClose, onCreate, environ
     };
 
     const handleEnvironmentToggle = (environmentId: string) => {
-        setSelectedEnvironments(prev => 
+        setSelectedEnvironments(prev =>
             prev.includes(environmentId)
                 ? prev.filter(id => id !== environmentId)
                 : [...prev, environmentId]

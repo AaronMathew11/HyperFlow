@@ -1,4 +1,4 @@
-import { Board } from '../../shared/types';
+import { Board } from '../../../shared/types';
 import { useState } from 'react';
 
 interface BoardCardProps {
@@ -50,8 +50,8 @@ export default function BoardCard({ board, onOpen, onDelete }: BoardCardProps) {
                     <button
                         onClick={handleDelete}
                         className={`flex-shrink-0 ml-2 p-2 rounded-md transition-colors ${showDeleteConfirm
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200 relative z-10'
-                                : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200 relative z-10'
+                            : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
                             }`}
                         title={showDeleteConfirm ? 'Click again to confirm' : 'Delete board'}
                     >

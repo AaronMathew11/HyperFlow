@@ -7,7 +7,7 @@ export default function CustomerWorkflowView() {
   const { workflowId } = useParams<{ workflowId: string }>();
   const navigate = useNavigate();
   const { businessUnitId } = useCustomerAuth();
-  
+
   const [workflow, setWorkflow] = useState<Workflow | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +22,7 @@ export default function CustomerWorkflowView() {
       setLoading(true);
       // TODO: Call backend API to get customer workflow
       // For now, mock the data
-      
+
       setWorkflow({
         id,
         name: 'User Verification Flow',
@@ -34,7 +34,7 @@ export default function CustomerWorkflowView() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
-      
+
     } catch (error) {
       console.error('Error loading workflow:', error);
     } finally {
@@ -119,7 +119,7 @@ export default function CustomerWorkflowView() {
               <br />
               Integration with the read-only workflow viewer will be implemented here.
             </p>
-            
+
             {/* Placeholder for workflow visualization */}
             <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 mt-8">
               <p className="text-gray-500">Workflow canvas will be displayed here</p>

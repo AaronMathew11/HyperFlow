@@ -5,12 +5,12 @@ interface CustomerStore {
   workflows: Workflow[];
   environments: Environment[];
   loading: boolean;
-  
+
   // Actions
   setWorkflows: (workflows: Workflow[]) => void;
   setEnvironments: (environments: Environment[]) => void;
   setLoading: (loading: boolean) => void;
-  
+
   // API calls
   loadWorkflows: (businessUnitId: string) => Promise<void>;
   loadEnvironments: (businessUnitId: string) => Promise<void>;
@@ -46,7 +46,7 @@ export const useCustomerStore = create<CustomerStore>((set) => ({
           updated_at: new Date().toISOString()
         }
       ];
-      
+
       set({ workflows: mockWorkflows });
     } catch (error) {
       console.error('Error loading workflows:', error);
@@ -73,7 +73,7 @@ export const useCustomerStore = create<CustomerStore>((set) => ({
           updated_at: new Date().toISOString()
         }
       ];
-      
+
       set({ environments: mockEnvironments });
     } catch (error) {
       console.error('Error loading environments:', error);

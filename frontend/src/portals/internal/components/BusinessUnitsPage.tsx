@@ -4,9 +4,9 @@ import { useBusinessUnitStore } from '../store/businessUnitStore';
 import { useAuth } from '../contexts/AuthContext';
 import FolderCard from './FolderCard';
 import CreateBusinessUnitModal from './CreateBusinessUnitModal';
-import Breadcrumb from '../../shared/components/Breadcrumb';
-import { getClient } from '../../shared/lib/api';
-import { Client } from '../../shared/types';
+import Breadcrumb from '../../../shared/components/Breadcrumb';
+import { getClient } from '../../../shared/lib/api';
+import { Client } from '../../../shared/types';
 
 export default function BusinessUnitsPage() {
     const { clientId } = useParams<{ clientId: string }>();

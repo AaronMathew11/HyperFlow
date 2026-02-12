@@ -11,18 +11,18 @@ import 'reactflow/dist/style.css';
 
 import { useFlowStore } from '../store/flowStore';
 import { useBoardStore } from '../store/boardStore';
-import { Board } from '../../shared/types';
-import { modules } from '../../shared/data/modules';
-import ModuleNode from '../../shared/components/ModuleNode';
-import ConditionNode from '../../shared/components/ConditionNode';
-import EndStatusNode from '../../shared/components/EndStatusNode';
-import ApiModuleNode from '../../shared/components/ApiModuleNode';
-import StartNode from '../../shared/components/StartNode';
+import { Board } from '../../../shared/types';
+import { modules } from '../../../shared/data/modules';
+import ModuleNode from '../../../shared/components/ModuleNode';
+import ConditionNode from '../../../shared/components/ConditionNode';
+import EndStatusNode from '../../../shared/components/EndStatusNode';
+import ApiModuleNode from '../../../shared/components/ApiModuleNode';
+import StartNode from '../../../shared/components/StartNode';
 import Toolbar from './Toolbar';
-import SdkNotes from '../../shared/components/SdkNotes';
-import NoteNode from '../../shared/components/NoteNode';
-import SdkInputsNode from '../../shared/components/SdkInputsNode';
-import ContextMenu from '../../shared/components/ContextMenu';
+import SdkNotes from '../../../shared/components/SdkNotes';
+import NoteNode from '../../../shared/components/NoteNode';
+import SdkInputsNode from '../../../shared/components/SdkInputsNode';
+import ContextMenu from '../../../shared/components/ContextMenu';
 
 const nodeTypes = {
   moduleNode: ModuleNode,
@@ -121,7 +121,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
 
       // Only save if there are actual changes
       if (currentNodes !== lastSavedNodesRef.current ||
-          currentEdges !== lastSavedEdgesRef.current) {
+        currentEdges !== lastSavedEdgesRef.current) {
         const { flowInputs, flowOutputs } = useFlowStore.getState();
         const success = await saveCurrentBoardData({
           nodes,
@@ -163,9 +163,9 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
   useEffect(() => {
     const startNode = nodes.find(node => node.type === 'startNode');
     const existingSdkInputsNode = nodes.find(node => node.type === 'sdkInputsNode');
-    
+
     const shouldShowSdkInputs = viewMode === 'tech' && flowInputs && startNode;
-    
+
     if (shouldShowSdkInputs && !existingSdkInputsNode) {
       // Add SDK inputs node
       const sdkInputsNode = {
@@ -465,10 +465,10 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
         <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" />
-        <Toolbar 
-          onBack={onBack} 
-          boardName={board.name} 
-          boardId={board.id} 
+        <Toolbar
+          onBack={onBack}
+          boardName={board.name}
+          boardId={board.id}
           readOnly={readOnly}
           breadcrumbData={breadcrumbData}
           onBreadcrumbNavigation={onBreadcrumbNavigation}
@@ -505,10 +505,10 @@ interface CanvasProps {
 export default function Canvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <FlowCanvas 
-        board={board} 
-        onBack={onBack} 
-        readOnly={readOnly} 
+      <FlowCanvas
+        board={board}
+        onBack={onBack}
+        readOnly={readOnly}
         breadcrumbData={breadcrumbData}
         onBreadcrumbNavigation={onBreadcrumbNavigation}
       />
