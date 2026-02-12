@@ -88,7 +88,7 @@ export default function EnvironmentDetailPage() {
                 {/* Top Section */}
                 <div className="p-4 border-b border-gray-100">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Hypervision</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">HyperFlow</h1>
                         <p className="text-xs text-gray-600 mt-1">Environment Details</p>
                     </div>
                 </div>
@@ -133,7 +133,7 @@ export default function EnvironmentDetailPage() {
 
                 {/* Content Area */}
                 <main className="flex-1 overflow-y-auto p-8">
-                    <div className="max-w-7xl mx-auto space-y-8">
+                    <div className="space-y-8">
                         {/* Environment Header */}
                         <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
                             <div className="flex items-start justify-between mb-6">
@@ -207,7 +207,7 @@ export default function EnvironmentDetailPage() {
                         </div>
 
                         {/* Swimlane Diagram */}
-                        <SwimlaneDiagram integrationType={environment.integrationType} />
+                        <SwimlaneDiagram />
 
                         {/* Documentation Section */}
                         <DocumentationSection links={environment.documentationLinks} />
