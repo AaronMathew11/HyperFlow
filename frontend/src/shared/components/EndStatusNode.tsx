@@ -12,16 +12,16 @@ interface EndStatusNodeData {
 }
 
 function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
-  const [_showDetails, _setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [editingField, setEditingField] = useState<'reason' | 'resumeFrom' | null>(null);
   const [editValues, setEditValues] = useState({
     reason: data.reason || '',
     resumeFrom: data.resumeFrom || ''
   });
-  const _viewMode = useFlowStore((state) => state.viewMode);
-  const _flowType = useFlowStore((state) => state.flowType);
-  const _sdkMode = useFlowStore((state) => state.sdkMode);
-  
+  const viewMode = useFlowStore((state) => state.viewMode);
+  const flowType = useFlowStore((state) => state.flowType);
+  const sdkMode = useFlowStore((state) => state.sdkMode);
+
   const getStatusColor = () => {
     switch (data.status) {
       case 'auto-approved':
@@ -37,11 +37,11 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
 
   const handleEditClick = (field: 'reason' | 'resumeFrom', currentValue: string) => {
     setEditingField(field);
-    setEditValues({...editValues, [field]: currentValue});
+    setEditValues({ ...editValues, [field]: currentValue });
   };
 
   const handleEditSave = (field: 'reason' | 'resumeFrom') => {
-    const _newValue = editValues[field];
+    const newValue = editValues[field];
     if (field === 'reason') {
       data.reason = newValue;
     } else if (field === 'resumeFrom') {
@@ -58,8 +58,8 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
     });
   };
 
-  const _statusColor = getStatusColor();
-  const _shouldShowExtraInfo = (data.status === 'auto-declined' || data.status === 'needs-review') && flowType === 'sdk' && sdkMode === 'advanced';
+  const statusColor = getStatusColor();
+  const shouldShowExtraInfo = (data.status === 'auto-declined' || data.status === 'needs-review') && flowType === 'sdk' && sdkMode === 'advanced';
 
   return (
     <div
@@ -85,7 +85,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
 
       {/* Additional Information for Declined/Needs Review in Tech View */}
       {shouldShowExtraInfo && (
-        <div 
+        <div
           className="mt-3 p-3 bg-white rounded-lg border-2 shadow-sm"
           style={{ borderColor: statusColor }}
         >
@@ -101,7 +101,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                     <input
                       type="text"
                       value={editValues.resumeFrom}
-                      onChange={(e) => setEditValues({...editValues, resumeFrom: e.target.value})}
+                      onChange={(e) => setEditValues({ ...editValues, resumeFrom: e.target.value })}
                       className="w-full text-xs p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
                       autoFocus
                     />
@@ -121,7 +121,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                     </div>
                   </div>
                 ) : (
-                  <div 
+                  <div
                     className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 cursor-pointer hover:bg-red-100 relative"
                     onClick={() => handleEditClick('resumeFrom', data.resumeFrom || 'ID Card Validation')}
                   >
@@ -142,7 +142,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                   <div className="space-y-1">
                     <textarea
                       value={editValues.reason}
-                      onChange={(e) => setEditValues({...editValues, reason: e.target.value})}
+                      onChange={(e) => setEditValues({ ...editValues, reason: e.target.value })}
                       className="w-full text-xs p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-1 focus:ring-red-500"
                       rows={2}
                       autoFocus
@@ -163,7 +163,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                     </div>
                   </div>
                 ) : (
-                  <div 
+                  <div
                     className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 cursor-pointer hover:bg-red-100 relative"
                     onClick={() => handleEditClick('reason', data.reason || 'Document verification failed')}
                   >
@@ -176,7 +176,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
               </div>
             </>
           )}
-          
+
           {data.status === 'needs-review' && (
             <div className="group">
               <label className="text-xs font-medium text-orange-700 block mb-1">
@@ -186,7 +186,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                 <div className="space-y-1">
                   <textarea
                     value={editValues.reason}
-                    onChange={(e) => setEditValues({...editValues, reason: e.target.value})}
+                    onChange={(e) => setEditValues({ ...editValues, reason: e.target.value })}
                     className="w-full text-xs p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-1 focus:ring-orange-500"
                     rows={2}
                     autoFocus
@@ -207,7 +207,7 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                   </div>
                 </div>
               ) : (
-                <div 
+                <div
                   className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-200 cursor-pointer hover:bg-orange-100 relative"
                   onClick={() => handleEditClick('reason', data.reason || 'Manual review required')}
                 >

@@ -309,7 +309,7 @@ export default function WorkflowsPage() {
                             <EnvironmentCard
                                 key={environment.id}
                                 environment={environment}
-                                onEdit={() => handleEditEnvironment(environment)}
+                                onClick={() => navigate(`/client/${clientId}/bu/${buId}/environment/${environment.id}`)}
                                 onDelete={() => handleDeleteEnvironment(environment.id)}
                             />
                         ))}
@@ -346,11 +346,11 @@ export default function WorkflowsPage() {
 // Inline EnvironmentCard component
 function EnvironmentCard({
     environment,
-    onEdit,
+    onClick,
     onDelete,
 }: {
     environment: Environment;
-    onEdit: () => void;
+    onClick: () => void;
     onDelete: () => void;
 }) {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -377,7 +377,7 @@ function EnvironmentCard({
 
     return (
         <div
-            onClick={onEdit}
+            onClick={onClick}
             className="relative group cursor-pointer bg-white rounded-xl border border-gray-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-blue-300">
             {/* Delete Button */}
             <button

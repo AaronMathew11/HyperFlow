@@ -14,6 +14,7 @@ import { getWorkflow } from '../../shared/lib/api';
 import ClientsPage from './components/ClientsPage';
 import BusinessUnitsPage from './components/BusinessUnitsPage';
 import WorkflowsPage from './components/WorkflowsPage';
+import EnvironmentDetailPage from './components/EnvironmentDetailPage';
 
 // Legacy imports (keep for backward compatibility)
 import HomePage from './components/HomePage';
@@ -192,6 +193,7 @@ function InternalPortalApp() {
           <Route path="/" element={<ClientsPage />} />
           <Route path="/client/:clientId" element={<BusinessUnitsPage />} />
           <Route path="/client/:clientId/bu/:buId" element={<WorkflowsPage />} />
+          <Route path="/client/:clientId/bu/:buId/environment/:environmentId" element={<EnvironmentDetailPage />} />
           <Route path="/workflow/:workflowId" element={<WorkflowView />} />
 
           {/* Legacy Routes (for backward compatibility) */}

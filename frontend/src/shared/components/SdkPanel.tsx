@@ -3,11 +3,11 @@ import { useFlowStore } from '../../portals/internal/store/flowStore';
 
 export default function SdkPanel() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const _flowInputs = useFlowStore((state) => state.flowInputs);
-  const _flowOutputs = useFlowStore((state) => state.flowOutputs);
-  const _setFlowInputs = useFlowStore((state) => state.setFlowInputs);
-  const _setFlowOutputs = useFlowStore((state) => state.setFlowOutputs);
-  const _viewMode = useFlowStore((state) => state.viewMode);
+  const flowInputs = useFlowStore((state) => state.flowInputs);
+  const flowOutputs = useFlowStore((state) => state.flowOutputs);
+  const setFlowInputs = useFlowStore((state) => state.setFlowInputs);
+  const setFlowOutputs = useFlowStore((state) => state.setFlowOutputs);
+  const viewMode = useFlowStore((state) => state.viewMode);
 
   // Only show in tech view
   if (viewMode !== 'tech') {

@@ -83,11 +83,18 @@ export interface Environment {
   name: string;
   description?: string;
   type: 'development' | 'staging' | 'production' | 'testing';
+  integrationType?: 'api' | 'sdk';
   baseUrl: string;
   apiKey?: string;
   authMethod?: 'api-key' | 'oauth' | 'basic-auth' | 'none';
   headers?: Record<string, string>;
   variables?: Record<string, string>;
+  documentationLinks?: Array<{
+    title: string;
+    url: string;
+    category?: string;
+    description?: string;
+  }>;
   business_unit_id: string;
   owner_id: string;
   created_at: string;

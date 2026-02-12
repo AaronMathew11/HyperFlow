@@ -2,8 +2,8 @@ import { memo } from 'react';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
 
 function SdkNotes() {
-  const _viewMode = useFlowStore((state) => state.viewMode);
-  const _flowOutputs = useFlowStore((state) => state.flowOutputs);
+  const viewMode = useFlowStore((state) => state.viewMode);
+  const flowOutputs = useFlowStore((state) => state.flowOutputs);
 
   if (viewMode !== 'tech') return null;
 

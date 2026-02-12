@@ -13,7 +13,7 @@ interface ApiModuleNodeData {
 }
 
 function ApiModuleNode({ data, selected }: NodeProps<ApiModuleNodeData>) {
-  const _viewMode = useFlowStore((state) => state.viewMode);
+  const viewMode = useFlowStore((state) => state.viewMode);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingEndpoint, setIsEditingEndpoint] = useState(false);
   const [showTechDetails, setShowTechDetails] = useState(false);

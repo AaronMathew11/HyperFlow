@@ -6,6 +6,7 @@ import ReactFlow, {
   ReactFlowProvider,
   BackgroundVariant,
   Node,
+  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -49,6 +50,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
   const { saveCurrentBoardData, setCurrentBoard, loadBoardSnapshot } = useBoardStore();
+  const { project } = useReactFlow();
   const viewMode = useFlowStore((state) => state.viewMode);
   const flowInputs = useFlowStore((state) => state.flowInputs);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; nodeType?: string } | null>(null);
@@ -218,16 +220,19 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
   }, []);
 
   const addNote = useCallback((x: number, y: number) => {
+    // Convert screen coordinates to flow coordinates
+    const position = project({ x, y });
+
     const newNote = {
       id: `note-${Date.now()}`,
       type: 'noteNode',
-      position: { x: x - 100, y: y - 50 },
+      position,
       data: {
         text: 'Click to edit note...',
       },
     };
     addNode(newNote);
-  }, [addNode]);
+  }, [addNode, project]);
 
   const handleAddNote = useCallback(() => {
     if (contextMenu) {
@@ -263,10 +268,12 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         return;
       }
 
-      const position = {
-        x: event.clientX - reactFlowBounds.left - 100,
-        y: event.clientY - reactFlowBounds.top - 50,
-      };
+      // Use project to convert screen coordinates to flow coordinates
+      // This accounts for zoom and pan transformations
+      const position = project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
 
       // Check if this is the first node (excluding start nodes)
       const existingNodes = nodes.filter(node => node.type !== 'startNode');
@@ -425,7 +432,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         }
       }
     },
-    [addNode, addEdge, nodes]
+    [addNode, addEdge, nodes, project]
   );
 
   return (

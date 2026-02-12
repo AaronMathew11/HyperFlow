@@ -243,7 +243,42 @@ func Get(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+	// Parse flow_data from JSON string to FlowData struct
+	var flowData FlowData
+	flowDataStr := getString(result, "flow_data")
+	if flowDataStr != "" {
+		if err := json.Unmarshal([]byte(flowDataStr), &flowData); err != nil {
+			// If parsing fails, use default empty flow data
+			flowData = FlowData{
+				Nodes:       []interface{}{},
+				Edges:       []interface{}{},
+				FlowInputs:  "",
+				FlowOutputs: "",
+			}
+		}
+	} else {
+		// Default empty flow data
+		flowData = FlowData{
+			Nodes:       []interface{}{},
+			Edges:       []interface{}{},
+			FlowInputs:  "",
+			FlowOutputs: "",
+		}
+	}
+
+	// Build properly formatted response
+	response := WorkflowResponse{
+		ID:             getString(result, "id"),
+		Name:           getString(result, "name"),
+		Description:    getString(result, "description"),
+		BusinessUnitID: getString(result, "business_unit_id"),
+		OwnerID:        getString(result, "owner_id"),
+		FlowData:       flowData,
+		CreatedAt:      getString(result, "created_at"),
+		UpdatedAt:      getString(result, "updated_at"),
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func Update(c *gin.Context) {
