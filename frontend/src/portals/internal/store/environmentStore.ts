@@ -27,7 +27,7 @@ export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
           name: 'Development',
           description: 'Development environment',
           type: 'development',
-          baseUrl: 'https://dev-api.example.com',
+          // baseUrl: 'https://dev-api.example.com',
           authMethod: 'api-key',
           apiKey: '***',
           headers: { 'Content-Type': 'application/json' },

@@ -35,14 +35,13 @@ interface Component {
 }
 
 const PREDEFINED_COMPONENTS: Component[] = [
-    { id: 'auth-api', name: 'Auth API', description: 'Authentication endpoint', defaultLane: 'hv-backend', documentationUrl: '#auth-api-docs' },
-    { id: 'results-api', name: 'Results API', description: 'Verification results retrieval', defaultLane: 'hv-backend', documentationUrl: '#results-api-docs' },
-    { id: 'outputs-api', name: 'Outputs API', description: 'Output data extraction', defaultLane: 'hv-backend', documentationUrl: '#outputs-api-docs' },
-    { id: 'webhook', name: 'Webhook', description: 'Event notifications', defaultLane: 'hv-backend', documentationUrl: '#webhook-docs' },
-    { id: 'user-request', name: 'User Request', description: 'Initiates verification', defaultLane: 'client-frontend', documentationUrl: '#user-request-docs' },
-    { id: 'validate', name: 'Validate', description: 'Process input', defaultLane: 'client-backend', documentationUrl: '#validate-docs' },
-    { id: 'display', name: 'Display', description: 'Show result to user', defaultLane: 'client-frontend', documentationUrl: '#display-docs' },
-    { id: 'process', name: 'Process', description: 'AI verification', defaultLane: 'hv-backend', documentationUrl: '#process-docs' },
+    { id: 'client-app', name: 'Client Application', description: 'Client-side application', defaultLane: 'client-frontend', documentationUrl: '#client-app' },
+    { id: 'sdk-init', name: 'SDK Initialises', description: 'Initialize HyperVerge SDK', defaultLane: 'hv-sdk', documentationUrl: '#sdk-init' },
+    { id: 'results-api', name: 'Results API', description: 'Fetch verification results', defaultLane: 'hv-backend', documentationUrl: '#results-api' },
+    { id: 'outputs-api', name: 'Outputs API', description: 'Retrieve extracted data', defaultLane: 'hv-backend', documentationUrl: '#outputs-api' },
+    { id: 'sdk-workflow', name: 'SDK Workflow', description: 'SDK interaction logic', defaultLane: 'hv-sdk', documentationUrl: '#sdk-workflow' },
+    { id: 'webhook', name: 'Webhook', description: 'Receive event notifications', defaultLane: 'hv-backend', documentationUrl: '#webhook' },
+    { id: 'end-screen', name: 'End Screen', description: 'Display final status', defaultLane: 'client-frontend', documentationUrl: '#end-screen' },
 ];
 
 const DEFAULT_LANES: Lane[] = [
@@ -179,7 +178,7 @@ function SwimlaneDiagramContent() {
     }, []);
 
     const onNodeDrag = useCallback(
-        (event: React.MouseEvent, node: Node) => {
+        (_event: React.MouseEvent, node: Node) => {
             if (node.type === 'component') {
                 const laneIndex = Math.max(0, Math.floor(node.position.x / LANE_WIDTH));
                 const color = availableColors[laneIndex % availableColors.length];
