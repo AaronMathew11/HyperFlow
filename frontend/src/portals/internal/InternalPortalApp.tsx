@@ -25,6 +25,7 @@ function WorkflowView() {
   const navigate = useNavigate();
   const { currentWorkflow, setCurrentWorkflow } = useWorkflowStore();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [breadcrumbData, setBreadcrumbData] = useState<{
     client?: { id: string; name: string };
     businessUnit?: { id: string; name: string };
@@ -33,29 +34,41 @@ function WorkflowView() {
   useEffect(() => {
     if (workflowId) {
       setLoading(true);
-      getWorkflow(workflowId).then(async (workflow) => {
-        if (workflow) {
-          setCurrentWorkflow(workflow);
+      setError(null);
+      console.log('Loading workflow:', workflowId);
+      
+      getWorkflow(workflowId)
+        .then(async (workflow) => {
+          console.log('Workflow loaded:', workflow);
+          if (workflow) {
+            setCurrentWorkflow(workflow);
 
-          // Load breadcrumb data
-          if (workflow.business_unit_id) {
-            try {
-              const { getBusinessUnit, getClient } = await import('../../shared/lib/api');
-              const businessUnit = await getBusinessUnit(workflow.business_unit_id);
-              if (businessUnit) {
-                const client = await getClient(businessUnit.client_id);
-                setBreadcrumbData({
-                  client: client ? { id: client.id, name: client.name } : undefined,
-                  businessUnit: { id: businessUnit.id, name: businessUnit.name }
-                });
+            // Load breadcrumb data
+            if (workflow.business_unit_id) {
+              try {
+                const { getBusinessUnit, getClient } = await import('../../shared/lib/api');
+                const businessUnit = await getBusinessUnit(workflow.business_unit_id);
+                if (businessUnit) {
+                  const client = await getClient(businessUnit.client_id);
+                  setBreadcrumbData({
+                    client: client ? { id: client.id, name: client.name } : undefined,
+                    businessUnit: { id: businessUnit.id, name: businessUnit.name }
+                  });
+                }
+              } catch (error) {
+                console.error('Error loading breadcrumb data:', error);
               }
-            } catch (error) {
-              console.error('Error loading breadcrumb data:', error);
             }
+          } else {
+            setError('Workflow not found');
           }
-        }
-        setLoading(false);
-      });
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error loading workflow:', error);
+          setError(error.message || 'Failed to load workflow');
+          setLoading(false);
+        });
     }
   }, [workflowId, setCurrentWorkflow]);
 
@@ -87,12 +100,56 @@ function WorkflowView() {
     }
   };
 
-  if (loading || !currentWorkflow) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
           <p className="mt-4 text-gray-600">Loading workflow...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Workflow</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentWorkflow) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="text-yellow-600 mb-4">
+            <svg className="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 20.4a7.962 7.962 0 01-5-1.709M15 9V7a3 3 0 00-6 0v2" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Workflow Not Found</h2>
+          <p className="text-gray-600 mb-4">The requested workflow could not be found.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go Home
+          </button>
         </div>
       </div>
     );

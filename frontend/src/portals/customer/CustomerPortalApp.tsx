@@ -4,6 +4,7 @@ import CustomerProtectedRoute from './components/CustomerProtectedRoute';
 import CustomerLogin from './components/CustomerLogin';
 import CustomerDashboard from './components/CustomerDashboard';
 import CustomerWorkflowView from './components/CustomerWorkflowView';
+import EnvironmentSelection from './components/EnvironmentSelection';
 
 function CustomerProtectedLayout() {
   return (
@@ -22,7 +23,8 @@ function CustomerPortalApp() {
         
         {/* Protected customer routes */}
         <Route element={<CustomerProtectedLayout />}>
-          <Route path="/dashboard/:buId" element={<CustomerDashboard />} />
+          <Route path="/environments" element={<EnvironmentSelection />} />
+          <Route path="/dashboard/:envId" element={<CustomerDashboard />} />
           <Route path="/workflow/:workflowId" element={<CustomerWorkflowView />} />
         </Route>
       </Routes>

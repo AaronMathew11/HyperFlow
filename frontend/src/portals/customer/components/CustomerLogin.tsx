@@ -23,8 +23,8 @@ export default function CustomerLogin() {
     try {
       const success = await signIn(linkId, email, password);
       if (success) {
-        // Redirect to dashboard or original destination
-        const redirectPath = searchParams.get('redirect') || `/customer/dashboard/${linkId}`;
+        // Redirect to environment selection or original destination
+        const redirectPath = searchParams.get('redirect') || '/customer/environments';
         navigate(redirectPath);
       } else {
         setError('Invalid credentials or access link expired');
