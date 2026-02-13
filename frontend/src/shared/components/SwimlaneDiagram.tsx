@@ -22,8 +22,6 @@ import CustomEdge from './flow/CustomEdge';
 interface Lane {
     id: string;
     name: string;
-    icon: string;
-    color: string;
     enabled: boolean;
 }
 
@@ -32,27 +30,26 @@ interface Component {
     name: string;
     description: string;
     defaultLane: string;
-    color: string;
     documentationUrl?: string;
     isCustom?: boolean;
 }
 
 const PREDEFINED_COMPONENTS: Component[] = [
-    { id: 'auth-api', name: 'Auth API', description: 'Authentication endpoint', defaultLane: 'hv-backend', color: 'green', documentationUrl: '#auth-api-docs' },
-    { id: 'results-api', name: 'Results API', description: 'Verification results retrieval', defaultLane: 'hv-backend', color: 'green', documentationUrl: '#results-api-docs' },
-    { id: 'outputs-api', name: 'Outputs API', description: 'Output data extraction', defaultLane: 'hv-backend', color: 'green', documentationUrl: '#outputs-api-docs' },
-    { id: 'webhook', name: 'Webhook', description: 'Event notifications', defaultLane: 'hv-backend', color: 'green', documentationUrl: '#webhook-docs' },
-    { id: 'user-request', name: 'User Request', description: 'Initiates verification', defaultLane: 'client-frontend', color: 'blue', documentationUrl: '#user-request-docs' },
-    { id: 'validate', name: 'Validate', description: 'Process input', defaultLane: 'client-backend', color: 'purple', documentationUrl: '#validate-docs' },
-    { id: 'display', name: 'Display', description: 'Show result to user', defaultLane: 'client-frontend', color: 'blue', documentationUrl: '#display-docs' },
-    { id: 'process', name: 'Process', description: 'AI verification', defaultLane: 'hv-backend', color: 'green', documentationUrl: '#process-docs' },
+    { id: 'auth-api', name: 'Auth API', description: 'Authentication endpoint', defaultLane: 'hv-backend', documentationUrl: '#auth-api-docs' },
+    { id: 'results-api', name: 'Results API', description: 'Verification results retrieval', defaultLane: 'hv-backend', documentationUrl: '#results-api-docs' },
+    { id: 'outputs-api', name: 'Outputs API', description: 'Output data extraction', defaultLane: 'hv-backend', documentationUrl: '#outputs-api-docs' },
+    { id: 'webhook', name: 'Webhook', description: 'Event notifications', defaultLane: 'hv-backend', documentationUrl: '#webhook-docs' },
+    { id: 'user-request', name: 'User Request', description: 'Initiates verification', defaultLane: 'client-frontend', documentationUrl: '#user-request-docs' },
+    { id: 'validate', name: 'Validate', description: 'Process input', defaultLane: 'client-backend', documentationUrl: '#validate-docs' },
+    { id: 'display', name: 'Display', description: 'Show result to user', defaultLane: 'client-frontend', documentationUrl: '#display-docs' },
+    { id: 'process', name: 'Process', description: 'AI verification', defaultLane: 'hv-backend', documentationUrl: '#process-docs' },
 ];
 
 const DEFAULT_LANES: Lane[] = [
-    { id: 'client-frontend', name: 'Client Frontend', icon: '📱', color: 'blue', enabled: true },
-    { id: 'client-backend', name: 'Client Backend', icon: '🖥️', color: 'purple', enabled: true },
-    { id: 'hv-sdk', name: 'HyperVerge SDK', icon: '📦', color: 'indigo', enabled: true },
-    { id: 'hv-backend', name: 'HyperVerge Backend', icon: '🛡️', color: 'green', enabled: true },
+    { id: 'client-frontend', name: 'Client Frontend', enabled: true },
+    { id: 'client-backend', name: 'Client Backend', enabled: true },
+    { id: 'hv-sdk', name: 'HyperVerge SDK', enabled: true },
+    { id: 'hv-backend', name: 'HyperVerge Backend', enabled: true },
 ];
 
 const LANE_WIDTH = 300;
@@ -69,30 +66,22 @@ function SwimlaneDiagramContent() {
     // Custom UI State
     const [showCustomLaneForm, setShowCustomLaneForm] = useState(false);
     const [customLaneName, setCustomLaneName] = useState('');
-    const [customLaneIcon, setCustomLaneIcon] = useState('📋');
+
     const [showCustomCompForm, setShowCustomCompForm] = useState(false);
     const [customCompName, setCustomCompName] = useState('');
     const [customCompDesc, setCustomCompDesc] = useState('');
+    const [customCompDocUrl, setCustomCompDocUrl] = useState('');
+
+    // Lane Drag/Drop State
+    const [draggedLaneIndex, setDraggedLaneIndex] = useState<number | null>(null);
 
     const nodeTypes = useMemo(() => ({ component: ComponentNode, table: TableNode, laneHeader: LaneHeader }), []);
     const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
 
-    const availableIcons = ['📋', '⚙️', '🔧', '💾', '🌐', '🔒', '📊', '🚀', '💡', '🎯', '📡', '🔑'];
+
     const availableColors = ['blue', 'purple', 'green', 'indigo', 'red', 'yellow', 'pink', 'teal'];
 
-    const getColorClasses = (color: string) => {
-        const colors: Record<string, { bg: string }> = {
-            blue: { bg: 'bg-blue-50' },
-            purple: { bg: 'bg-purple-50' },
-            green: { bg: 'bg-green-50' },
-            indigo: { bg: 'bg-indigo-50' },
-            red: { bg: 'bg-red-50' },
-            yellow: { bg: 'bg-yellow-50' },
-            pink: { bg: 'bg-pink-50' },
-            teal: { bg: 'bg-teal-50' },
-        };
-        return colors[color] || colors.blue;
-    };
+
 
     // Initialize Lanes
     useEffect(() => {
@@ -103,20 +92,31 @@ function SwimlaneDiagramContent() {
             position: { x: index * LANE_WIDTH, y: 0 },
             data: {
                 name: lane.name,
-                icon: lane.icon,
-                color: lane.color,
+                color: availableColors[index % availableColors.length],
                 width: LANE_WIDTH,
                 isEditMode
             } as LaneHeaderData,
+            style: { width: LANE_WIDTH, height: 2000 },
             draggable: false,
             selectable: false,
-            zIndex: 1,
+            zIndex: -1,
         }));
 
         setNodes(nds => {
             // Keep existing component nodes, update lane headers
+            // Also update component colors based on their position
             const components = nds.filter(n => n.type === 'component');
-            return [...laneNodes, ...components];
+
+            const updatedComponents = components.map(node => {
+                const laneIndex = Math.max(0, Math.floor(node.position.x / LANE_WIDTH));
+                const color = availableColors[laneIndex % availableColors.length];
+                return {
+                    ...node,
+                    data: { ...node.data, color }
+                };
+            });
+
+            return [...laneNodes, ...updatedComponents];
         });
     }, [lanes, isEditMode, setNodes]);
 
@@ -178,6 +178,29 @@ function SwimlaneDiagramContent() {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    const onNodeDrag = useCallback(
+        (event: React.MouseEvent, node: Node) => {
+            if (node.type === 'component') {
+                const laneIndex = Math.max(0, Math.floor(node.position.x / LANE_WIDTH));
+                const color = availableColors[laneIndex % availableColors.length];
+
+                // Only update if color changes to avoid excessive re-renders
+                if (node.data.color !== color) {
+                    setNodes((nds) => nds.map((n) => {
+                        if (n.id === node.id) {
+                            return {
+                                ...n,
+                                data: { ...n.data, color },
+                            };
+                        }
+                        return n;
+                    }));
+                }
+            }
+        },
+        [setNodes]
+    );
+
     const onDrop = useCallback(
         (event: React.DragEvent) => {
             event.preventDefault();
@@ -198,6 +221,10 @@ function SwimlaneDiagramContent() {
                     y: event.clientY - reactFlowBounds.top - 40,
                 };
 
+                // Determine color based on drop position
+                const laneIndex = Math.max(0, Math.floor(position.x / LANE_WIDTH));
+                const color = availableColors[laneIndex % availableColors.length];
+
                 let newNode: Node;
 
                 if (type === 'component') {
@@ -207,6 +234,7 @@ function SwimlaneDiagramContent() {
                         position,
                         data: {
                             ...componentData,
+                            color, // Assign dynamic color
                             isEditMode,
                             onDelete: (id: string) => setNodes((nds) => nds.filter((n) => n.id !== id)),
                             onViewDocs: (url: string) => window.location.hash = url
@@ -269,13 +297,46 @@ function SwimlaneDiagramContent() {
         event.dataTransfer.effectAllowed = 'move';
     };
 
+
+
+    const handleLaneDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedLaneIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        // Use a generic type to allow generic drag - but maybe customize so it doesn't conflict with node drops
+        e.dataTransfer.setData('application/lane', index.toString());
+    };
+
+    const handleLaneDragOver = (e: React.DragEvent) => {
+        if (e.dataTransfer.types.includes('application/lane')) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+    };
+
+    const handleLaneDrop = (e: React.DragEvent, targetIndex: number) => {
+        e.preventDefault();
+        const draggedIdxStr = e.dataTransfer.getData('application/lane');
+        if (!draggedIdxStr) return;
+
+        const draggedIdx = parseInt(draggedIdxStr, 10);
+        if (isNaN(draggedIdx) || draggedIdx === targetIndex) {
+            setDraggedLaneIndex(null);
+            return;
+        }
+
+        const newLanes = [...lanes];
+        const [movedLane] = newLanes.splice(draggedIdx, 1);
+        newLanes.splice(targetIndex, 0, movedLane);
+
+        setLanes(newLanes);
+        setDraggedLaneIndex(null);
+    };
+
     const addCustomLane = () => {
         if (!customLaneName.trim()) return;
         const newLane: Lane = {
             id: `custom-${Date.now()}`,
             name: customLaneName,
-            icon: customLaneIcon,
-            color: availableColors[Math.floor(Math.random() * availableColors.length)],
             enabled: true,
         };
         setLanes(prev => [...prev, newLane]);
@@ -290,16 +351,17 @@ function SwimlaneDiagramContent() {
             name: customCompName,
             description: customCompDesc || 'Custom Component',
             defaultLane: 'client-frontend',
-            color: 'blue',
+            documentationUrl: customCompDocUrl,
             isCustom: true,
         };
         PREDEFINED_COMPONENTS.push(newComp);
         setCustomCompName('');
         setCustomCompDesc('');
+        setCustomCompDocUrl('');
         setShowCustomCompForm(false);
     };
 
-    const enabledLanes = lanes.filter(l => l.enabled);
+
 
     return (
         <div className="flex flex-col h-[800px] bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -327,16 +389,25 @@ function SwimlaneDiagramContent() {
                         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                             <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider">Lanes</h3>
                             <div className="space-y-2">
-                                {lanes.map(lane => (
-                                    <div key={lane.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-100">
+                                {lanes.map((lane, index) => (
+                                    <div
+                                        key={lane.id}
+                                        draggable
+                                        onDragStart={(e) => handleLaneDragStart(e, index)}
+                                        onDragOver={handleLaneDragOver}
+                                        onDrop={(e) => handleLaneDrop(e, index)}
+                                        className={`flex items-center gap-2 p-2 rounded border border-gray-100 cursor-grab active:cursor-grabbing transition-colors ${draggedLaneIndex === index ? 'bg-blue-50 border-blue-200 opacity-50' : 'bg-gray-50 hover:bg-gray-100'
+                                            }`}
+                                    >
+                                        <div className="mr-1 text-gray-400 cursor-grab">⋮⋮</div>
                                         <input
                                             type="checkbox"
                                             checked={lane.enabled}
                                             onChange={() => setLanes(ls => ls.map(l => l.id === lane.id ? { ...l, enabled: !l.enabled } : l))}
                                             className="rounded text-blue-600 focus:ring-blue-500"
                                         />
-                                        <span className="text-xl">{lane.icon}</span>
-                                        <span className="text-sm font-medium text-gray-700 flex-1">{lane.name}</span>
+                                        <span className="text-sm font-medium text-gray-700 flex-1 select-none">{lane.name}</span>
+
                                     </div>
                                 ))}
                                 {/* Custom Lane Form */}
@@ -349,17 +420,7 @@ function SwimlaneDiagramContent() {
                                             onChange={e => setCustomLaneName(e.target.value)}
                                             className="w-full px-2 py-1 text-sm border rounded"
                                         />
-                                        <div className="flex gap-1 overflow-x-auto pb-2">
-                                            {availableIcons.map(icon => (
-                                                <button
-                                                    key={icon}
-                                                    onClick={() => setCustomLaneIcon(icon)}
-                                                    className={`p-1 rounded ${customLaneIcon === icon ? 'bg-blue-200' : 'hover:bg-gray-200'}`}
-                                                >
-                                                    {icon}
-                                                </button>
-                                            ))}
-                                        </div>
+
                                         <div className="flex gap-2">
                                             <button onClick={addCustomLane} className="flex-1 bg-blue-600 text-white text-xs py-1 rounded">Add</button>
                                             <button onClick={() => setShowCustomLaneForm(false)} className="flex-1 bg-gray-300 text-gray-700 text-xs py-1 rounded">Cancel</button>
@@ -387,7 +448,7 @@ function SwimlaneDiagramContent() {
                                         draggable
                                         className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm cursor-move hover:shadow-md transition-shadow flex items-center gap-3"
                                     >
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-${comp.color}-500`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-gray-400`}>
                                             {comp.name[0]}
                                         </div>
                                         <div>
@@ -400,10 +461,22 @@ function SwimlaneDiagramContent() {
                                 {showCustomCompForm ? (
                                     <div className="mt-3 p-3 bg-yellow-50 rounded border border-yellow-100 space-y-2">
                                         <input
-                                            type="text"
-                                            placeholder="Component Name"
                                             value={customCompName}
                                             onChange={e => setCustomCompName(e.target.value)}
+                                            className="w-full px-2 py-1 text-sm border rounded"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Description"
+                                            value={customCompDesc}
+                                            onChange={e => setCustomCompDesc(e.target.value)}
+                                            className="w-full px-2 py-1 text-sm border rounded"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Documentation URL (optional)"
+                                            value={customCompDocUrl}
+                                            onChange={e => setCustomCompDocUrl(e.target.value)}
                                             className="w-full px-2 py-1 text-sm border rounded"
                                         />
                                         <div className="flex gap-2">
@@ -426,16 +499,7 @@ function SwimlaneDiagramContent() {
 
                 {/* React Flow Canvas */}
                 <div className="flex-1 relative bg-gray-50">
-                    {/* Lane Backgrounds */}
-                    <div className="absolute inset-0 flex pointer-events-none">
-                        {enabledLanes.map(lane => (
-                            <div
-                                key={lane.id}
-                                className={`h-full border-r border-gray-200/50 ${getColorClasses(lane.color).bg} bg-opacity-30`}
-                                style={{ width: LANE_WIDTH, minWidth: LANE_WIDTH }}
-                            />
-                        ))}
-                    </div>
+
 
                     <ReactFlow
                         nodes={nodes}
@@ -445,6 +509,7 @@ function SwimlaneDiagramContent() {
                         onConnect={onConnect}
                         onDragOver={onDragOver}
                         onDrop={onDrop}
+                        onNodeDrag={onNodeDrag}
                         nodeTypes={nodeTypes}
                         edgeTypes={edgeTypes}
                         panOnScroll
