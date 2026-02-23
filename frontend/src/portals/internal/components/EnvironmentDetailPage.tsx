@@ -5,6 +5,7 @@ import Breadcrumb from '../../../shared/components/Breadcrumb';
 import SwimlaneDiagram from '../../../shared/components/SwimlaneDiagram';
 import { getClient, getBusinessUnit } from '../../../shared/lib/api';
 import { Client, BusinessUnit } from '../../../shared/types';
+import TopNav from './TopNav';
 
 export default function EnvironmentDetailPage() {
     const { clientId, buId, environmentId } = useParams<{ clientId: string; buId: string; environmentId: string }>();
@@ -59,7 +60,8 @@ export default function EnvironmentDetailPage() {
     }
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden">
+        <div className="h-screen flex flex-col overflow-hidden min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+            <TopNav />
             {/* Compact Header */}
             <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
                 <Breadcrumb items={breadcrumbItems} />

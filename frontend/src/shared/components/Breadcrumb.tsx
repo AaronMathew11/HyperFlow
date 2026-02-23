@@ -10,7 +10,7 @@ interface BreadcrumbProps {
 }
 
 export default function Breadcrumb({ items }: BreadcrumbProps) {
-    const _navigate = useNavigate();
+    const navigate = useNavigate();
 
     return (
         <nav className="flex items-center space-x-2 text-sm mb-6">

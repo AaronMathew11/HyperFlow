@@ -44,9 +44,15 @@ interface FlowCanvasProps {
     businessUnit?: { id: string; name: string };
   };
   onBreadcrumbNavigation?: (level: 'clients' | 'businessUnits' | 'workflows') => void;
+  initialData?: {
+    nodes?: any[];
+    edges?: any[];
+    flowInputs?: string;
+    flowOutputs?: string;
+  } | null;
 }
 
-function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation }: FlowCanvasProps) {
+function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation, initialData }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
   const { saveCurrentBoardData, setCurrentBoard, loadBoardSnapshot } = useBoardStore();
@@ -61,6 +67,18 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
   // Load board data from database on mount
   useEffect(() => {
     const loadData = async () => {
+      // If initialData is provided, use it directly (for public access like customer portal)
+      if (initialData && !isLoaded) {
+        useFlowStore.setState({
+          nodes: initialData.nodes || [],
+          edges: initialData.edges || [],
+          flowInputs: initialData.flowInputs || '',
+          flowOutputs: initialData.flowOutputs || '',
+        });
+        setIsLoaded(true);
+        return;
+      }
+
       if (board && !isLoaded) {
         setCurrentBoard(board);
 
@@ -85,7 +103,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
     };
 
     loadData();
-  }, [board, isLoaded, setCurrentBoard, loadBoardSnapshot]);
+  }, [board, isLoaded, setCurrentBoard, loadBoardSnapshot, initialData]);
 
   // Keyboard shortcut for save (Ctrl/Cmd + S) - disabled in readOnly mode
   useEffect(() => {
@@ -507,9 +525,15 @@ interface CanvasProps {
     businessUnit?: { id: string; name: string };
   };
   onBreadcrumbNavigation?: (level: 'clients' | 'businessUnits' | 'workflows') => void;
+  initialData?: {
+    nodes?: any[];
+    edges?: any[];
+    flowInputs?: string;
+    flowOutputs?: string;
+  } | null;
 }
 
-export default function Canvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation }: CanvasProps) {
+export default function Canvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation, initialData }: CanvasProps) {
   return (
     <ReactFlowProvider>
       <FlowCanvas
@@ -518,6 +542,7 @@ export default function Canvas({ board, onBack, readOnly = false, breadcrumbData
         readOnly={readOnly}
         breadcrumbData={breadcrumbData}
         onBreadcrumbNavigation={onBreadcrumbNavigation}
+        initialData={initialData}
       />
     </ReactFlowProvider>
   );

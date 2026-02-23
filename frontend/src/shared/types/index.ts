@@ -177,3 +177,26 @@ export interface CustomerUser {
   email: string;
   name?: string;
 }
+
+// ============ BU ACCESS LINK TYPES ============
+
+export interface BUAccessLink {
+  id: string;
+  business_unit_id: string;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface CreateBULinkResponse {
+  linkId: string;
+  password: string;
+  expiresAt: string | null;
+  shareUrl: string;
+}
+
+export interface PublicBUData {
+  businessUnit: { id: string; name: string; description?: string };
+  environments: Environment[];
+  workflows: Workflow[];
+  workflowEnvironments: any[];
+}

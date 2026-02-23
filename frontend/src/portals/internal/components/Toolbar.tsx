@@ -28,7 +28,20 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
   const flowOutputs = useFlowStore((state) => state.flowOutputs);
   const viewMode = useFlowStore((state) => state.viewMode);
   const toggleViewMode = useFlowStore((state) => state.toggleViewMode);
-  const { user, signOut } = useAuth();
+
+  // We cannot use useAuth() unconditionally here because this component is 
+  // also used in the Customer Portal which has a different AuthContext.
+  // When readOnly is true, we don't need user details anyway.
+  let user = null;
+  let signOut = () => { };
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    signOut = auth.signOut;
+  } catch (e) {
+    // Ignore error if not wrapped in AuthProvider
+  }
+
   const [showShareModal, setShowShareModal] = useState(false);
 
   // Save status from board store
@@ -257,7 +270,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
             >
               Clients
             </button>
-            
+
             {breadcrumbData.client && (
               <>
                 <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -272,7 +285,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
                 </button>
               </>
             )}
-            
+
             {breadcrumbData.businessUnit && (
               <>
                 <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -287,7 +300,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
                 </button>
               </>
             )}
-            
+
             <svg className="h-3 w-3 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -317,7 +330,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
         )}
 
         {/* Save Status Indicator */}
-        {statusDisplay && (
+        {!readOnly && statusDisplay && (
           <>
             <div className="w-px h-6 bg-primary-200" />
             <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${statusDisplay.bgColor} ${statusDisplay.color}`}>
@@ -343,7 +356,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
         )}
 
         {/* Last saved timestamp */}
-        {lastSavedAt && saveStatus === 'idle' && (
+        {!readOnly && lastSavedAt && saveStatus === 'idle' && (
           <>
             <div className="w-px h-6 bg-primary-200" />
             <div className="text-xs text-primary-500 px-2">
@@ -365,35 +378,38 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
         }}
       >
         {/* Save Button */}
-        <button
-          onClick={handleSave}
-          disabled={saveStatus === 'saving'}
-          className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
-            saveStatus === 'saving'
-              ? 'bg-primary-100 text-primary-400 cursor-not-allowed'
-              : 'bg-primary-600 text-white hover:bg-primary-700'
-          }`}
-          title="Save Workflow (Ctrl/Cmd + S)"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path d="M3 5a2 2 0 012-2h8.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V15a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" />
-            <path d="M7 3v4h6V3H7z" />
-            <path d="M7 11v6h6v-6H7z" />
-          </svg>
-          {saveStatus === 'saving' ? 'Saving...' : 'Save'}
-        </button>
-        <div className="w-px bg-primary-200" />
+        {!readOnly && (
+          <>
+            <button
+              onClick={handleSave}
+              disabled={saveStatus === 'saving'}
+              className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${saveStatus === 'saving'
+                ? 'bg-primary-100 text-primary-400 cursor-not-allowed'
+                : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+              title="Save Workflow (Ctrl/Cmd + S)"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M3 5a2 2 0 012-2h8.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V15a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" />
+                <path d="M7 3v4h6V3H7z" />
+                <path d="M7 11v6h6v-6H7z" />
+              </svg>
+              {saveStatus === 'saving' ? 'Saving...' : 'Save'}
+            </button>
+            <div className="w-px bg-primary-200" />
+          </>
+        )}
         {/* View Mode Toggle */}
         <button
           onClick={toggleViewMode}
           className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${viewMode === 'business'
-              ? 'bg-primary-100 text-primary-700 border border-primary-200 shadow-sm'
-              : 'bg-primary-600 text-white border border-primary-700 shadow-sm'
+            ? 'bg-primary-100 text-primary-700 border border-primary-200 shadow-sm'
+            : 'bg-primary-600 text-white border border-primary-700 shadow-sm'
             }`}
           title={`Switch to ${viewMode === 'business' ? 'Tech' : 'Business'} View`}
         >

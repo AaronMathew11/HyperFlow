@@ -63,13 +63,14 @@ interface SwimlaneDiagramProps {
     workflowId?: string;
     environmentId?: string;
     readOnly?: boolean;
+    initialData?: { nodes: any[]; edges: any[] } | null;
 }
 
-function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }: SwimlaneDiagramProps) {
+function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, initialData }: SwimlaneDiagramProps) {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [lanes, setLanes] = useState<Lane[]>(DEFAULT_LANES);
-    const [isEditMode] = useState(true);
+    const isEditMode = !readOnly;
     const [showLabelModal, setShowLabelModal] = useState(false);
     const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
     const [edgeLabel, setEdgeLabel] = useState('');
@@ -98,6 +99,13 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
 
     // Load data
     useEffect(() => {
+        // If initialData is provided, use it directly (for customer portal)
+        if (initialData) {
+            setNodes(initialData.nodes || []);
+            setEdges(initialData.edges || []);
+            return;
+        }
+
         if (!workflowId && !environmentId) return;
 
         const loadData = async () => {
@@ -118,7 +126,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
         };
 
         loadData();
-    }, [workflowId, environmentId, setNodes, setEdges]);
+    }, [workflowId, environmentId, initialData, setNodes, setEdges]);
 
     const handleSave = async () => {
         if (!workflowId && !environmentId) return;
@@ -156,8 +164,10 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
         }
     };
 
-    // Initialize Lanes (unchanged logic, ensuring lane headers exist)
+    // Initialize Lanes (skip when initialData is provided since saved data includes lane headers)
     useEffect(() => {
+        if (initialData) return;
+
         const enabledLanes = lanes.filter(l => l.enabled);
         const laneNodes: Node[] = enabledLanes.map((lane, index) => ({
             id: `lane-${lane.id}`,
@@ -194,7 +204,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
 
             return [...laneNodes, ...updatedComponents];
         });
-    }, [lanes, isEditMode, setNodes]); // Removed availableColors from dep array to avoid re-renders if it was dynamic
+    }, [lanes, isEditMode, initialData, setNodes]);
 
     // Update component nodes edit mode
     useEffect(() => {
