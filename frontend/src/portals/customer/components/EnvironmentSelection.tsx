@@ -31,122 +31,143 @@ export default function EnvironmentSelection() {
   }, [buData]);
 
   const handleEnvironmentSelect = (envId: string) => {
-    navigate(`/customer/dashboard/${envId}`);
+    navigate(`/customer/env/${envId}`);
   };
 
-  const getEnvironmentColor = (integrationType?: string) => {
-    switch (integrationType) {
-      case 'sdk': return 'border-purple-300 bg-purple-50 hover:bg-purple-100';
-      case 'api': return 'border-blue-300 bg-blue-50 hover:bg-blue-100';
-      default: return 'border-gray-300 bg-gray-50 hover:bg-gray-100';
-    }
-  };
-
-  const getEnvironmentIcon = (integrationType?: string) => {
+  const getEnvironmentColorClasses = (integrationType?: string) => {
     switch (integrationType) {
       case 'sdk':
-        return (
-          <svg className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-        );
+        return {
+          icon: 'text-purple-500',
+          bg: 'bg-purple-50',
+          hover: 'hover:bg-purple-100',
+          border: 'border-purple-200',
+        };
       case 'api':
-        return (
-          <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-        );
+        return {
+          icon: 'text-blue-500',
+          bg: 'bg-blue-50',
+          hover: 'hover:bg-blue-100',
+          border: 'border-blue-200',
+        };
       default:
-        return (
-          <svg className="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-          </svg>
-        );
+        return {
+          icon: 'text-gray-500',
+          bg: 'bg-gray-50',
+          hover: 'hover:bg-gray-100',
+          border: 'border-gray-200',
+        };
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading environments...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl p-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-            </svg>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      {/* Left Sidebar */}
+      <aside className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+        {/* Top Section */}
+        <div className="p-4 border-b border-gray-100">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Hypervision</h1>
+            <p className="text-xs text-gray-600 mt-1">Customer Portal</p>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Select Usecase</h1>
-          <p className="text-xl text-gray-600 mb-2">{businessUnitName || 'Business Unit'}</p>
-          <p className="text-gray-500">
-            Choose the environment you want to explore workflows and documentation for
-          </p>
         </div>
 
-        {/* Environment Cards */}
-        <div className={`grid grid-cols-1 ${environments.length >= 3 ? 'md:grid-cols-3' : environments.length === 2 ? 'md:grid-cols-2' : ''} gap-6 mb-8`}>
-          {environments.map((env) => (
-            <div
-              key={env.id}
-              onClick={() => handleEnvironmentSelect(env.id)}
-              className={`cursor-pointer rounded-xl border-2 p-6 transition-all duration-200 hover:shadow-lg ${getEnvironmentColor(env.integration_type)}`}
-            >
-              <div className="text-center">
-                <div className="flex justify-center mb-4">
-                  {getEnvironmentIcon(env.integration_type)}
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{env.name}</h3>
-                <p className="text-sm text-gray-600 mb-4">{env.description}</p>
-                {env.integration_type && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white bg-opacity-60 text-gray-700 uppercase">
-                    {env.integration_type} Integration
-                  </span>
-                )}
-              </div>
+        {/* Navigation/Content Area */}
+        <div className="flex-1 p-4">
+        </div>
+
+        {/* Bottom Account Section */}
+        <div className="p-6 border-t border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-blue-600 font-semibold text-sm">
+                {user?.email?.charAt(0).toUpperCase() || 'C'}
+              </span>
             </div>
-          ))}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{businessUnitName || 'Customer'}</p>
+              <button
+                onClick={signOut}
+                className="text-xs text-gray-500 hover:text-red-600 transition-colors mt-1"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-8">
+        {/* Page Title */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Environments</h2>
+            <p className="text-gray-600 mt-2">
+              {environments.length} {environments.length === 1 ? 'environment' : 'environments'}
+            </p>
+          </div>
         </div>
 
-        {environments.length === 0 && (
-          <div className="text-center py-12">
-            <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <p className="mt-4 text-gray-600">Loading environments...</p>
+            </div>
+          </div>
+        ) : environments.length === 0 ? (
+          <div className="text-center py-20">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-24 w-24 mx-auto text-gray-300 mb-4"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M19.5 21a3 3 0 003-3v-4.5a3 3 0 00-3-3h-15a3 3 0 00-3 3V18a3 3 0 003 3h15zM1.5 10.146V6a3 3 0 013-3h5.379a2.25 2.25 0 011.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 013 3v1.146A4.483 4.483 0 0019.5 9h-15a4.483 4.483 0 00-3 1.146z" />
             </svg>
-            <p className="text-gray-500">No environments configured for this business unit yet.</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No environments yet</h3>
+            <p className="text-gray-600 mb-6">No environments configured for this business unit.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {environments.map((env) => {
+              const colors = getEnvironmentColorClasses(env.integration_type);
+              return (
+                <div
+                  key={env.id}
+                  onClick={() => handleEnvironmentSelect(env.id)}
+                  className={`relative group cursor-pointer rounded-xl border-2 ${colors.border} ${colors.bg} ${colors.hover} p-6 transition-all duration-200 hover:shadow-lg hover:scale-[1.02]`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-20 w-20 ${colors.icon} mb-4`}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M19.5 21a3 3 0 003-3v-4.5a3 3 0 00-3-3h-15a3 3 0 00-3 3V18a3 3 0 003 3h15zM1.5 10.146V6a3 3 0 013-3h5.379a2.25 2.25 0 011.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 013 3v1.146A4.483 4.483 0 0019.5 9h-15a4.483 4.483 0 00-3 1.146z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">
+                      {env.name}
+                    </h3>
+                    {env.description && (
+                      <p className="text-sm text-gray-500 line-clamp-2 mb-2">
+                        {env.description}
+                      </p>
+                    )}
+                    {env.integration_type && (
+                      <span className={`inline-flex items-center px-2 py-0.5 mt-2 opacity-75 rounded-full text-[10px] font-medium bg-white/80 text-gray-800 uppercase`}>
+                        {env.integration_type}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-
-        {/* User Info */}
-        <div className="border-t border-gray-200 pt-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">{user?.email || 'Customer Access'}</p>
-              <p className="text-xs text-gray-500">Customer Access</p>
-            </div>
-          </div>
-          <button
-            onClick={signOut}
-            className="text-sm text-gray-500 hover:text-red-600 transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useCustomerAuth } from '../contexts/CustomerAuthContext';
 import { Workflow, Environment } from '../../../shared/types';
 import SwimlaneDiagram from '../../../shared/components/SwimlaneDiagram';
@@ -8,6 +8,7 @@ import Canvas from '../../internal/components/Canvas';
 export default function CustomerDashboard() {
   const { envId } = useParams<{ envId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { signOut, buData, loadBUData, businessUnitName } = useCustomerAuth();
 
   const [activeView, setActiveView] = useState<'workflows' | 'swimlane'>('workflows');
@@ -39,7 +40,19 @@ export default function CustomerDashboard() {
 
       if (buData.workflows) {
         setWorkflows(buData.workflows);
-        if (buData.workflows.length > 0 && !selectedWorkflow) {
+
+        // Parse workflowId from query params
+        const searchParams = new URLSearchParams(location.search);
+        const urlWorkflowId = searchParams.get('workflowId');
+
+        if (urlWorkflowId) {
+          const matchedWorkflow = buData.workflows.find((w: Workflow) => w.id === urlWorkflowId);
+          if (matchedWorkflow) {
+            setSelectedWorkflow(matchedWorkflow);
+          } else if (buData.workflows.length > 0 && !selectedWorkflow) {
+            setSelectedWorkflow(buData.workflows[0]);
+          }
+        } else if (buData.workflows.length > 0 && !selectedWorkflow) {
           setSelectedWorkflow(buData.workflows[0]);
         }
       }
@@ -82,8 +95,8 @@ export default function CustomerDashboard() {
     setActiveView('workflows');
   };
 
-  const handleBackToEnvironments = () => {
-    navigate('/customer/environments');
+  const handleBackToWorkflowsPage = () => {
+    navigate(`/customer/env/${envId}`);
   };
 
   if (loading) {
@@ -109,9 +122,9 @@ export default function CustomerDashboard() {
               <p className="text-sm text-gray-600 mt-1">Customer Portal</p>
             </div>
             <button
-              onClick={handleBackToEnvironments}
+              onClick={handleBackToWorkflowsPage}
               className="text-gray-400 hover:text-gray-600 transition-colors"
-              title="Back to environments"
+              title="Back to workflows"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
