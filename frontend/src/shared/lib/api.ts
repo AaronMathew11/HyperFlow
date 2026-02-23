@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Board, AccessLink, CreateLinkResponse, PublicBoardData, Client, BusinessUnit, Workflow } from '../types';
+import { Board, AccessLink, CreateLinkResponse, PublicBoardData, Client, BusinessUnit, Workflow, Environment, WorkflowEnvironment } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -698,5 +698,286 @@ export async function getPublicBoard(
     } catch (error) {
         console.error('Error fetching public board:', error);
         throw error;
+    }
+}
+
+// ============ ENVIRONMENTS API ============
+
+export async function fetchEnvironments(businessUnitId: string): Promise<Environment[]> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return [];
+
+        const response = await fetch(`${API_URL}/api/business-units/${businessUnitId}/environments`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch environments:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching environments:', error);
+        return [];
+    }
+}
+
+export async function createEnvironment(businessUnitId: string, data: Partial<Environment>): Promise<Environment | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/business-units/${businessUnitId}/environments`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to create environment:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating environment:', error);
+        return null;
+    }
+}
+
+export async function getEnvironment(environmentId: string): Promise<Environment | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/environments/${environmentId}`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to get environment:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error getting environment:', error);
+        return null;
+    }
+}
+
+export async function updateEnvironment(environmentId: string, data: Partial<Environment>): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/environments/${environmentId}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(data),
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error updating environment:', error);
+        return false;
+    }
+}
+
+export async function deleteEnvironment(environmentId: string): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/environments/${environmentId}`, {
+            method: 'DELETE',
+            headers,
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error deleting environment:', error);
+        return false;
+    }
+}
+
+// ============ WORKFLOW-ENVIRONMENT RELATIONSHIPS API ============
+
+export async function linkWorkflowToEnvironment(workflowId: string, environmentId: string): Promise<WorkflowEnvironment | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/workflows/${workflowId}/environments/${environmentId}`, {
+            method: 'POST',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to link workflow to environment:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error linking workflow to environment:', error);
+        return null;
+    }
+}
+
+export async function unlinkWorkflowFromEnvironment(workflowId: string, environmentId: string): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/workflows/${workflowId}/environments/${environmentId}`, {
+            method: 'DELETE',
+            headers,
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error unlinking workflow from environment:', error);
+        return false;
+    }
+}
+
+export async function getWorkflowEnvironments(workflowId: string): Promise<WorkflowEnvironment[]> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return [];
+
+        const response = await fetch(`${API_URL}/api/workflows/${workflowId}/environments`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to get workflow environments:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error getting workflow environments:', error);
+        return [];
+    }
+}
+
+export async function getEnvironmentWorkflows(environmentId: string): Promise<WorkflowEnvironment[]> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return [];
+
+        const response = await fetch(`${API_URL}/api/environments/${environmentId}/workflows`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to get environment workflows:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error getting environment workflows:', error);
+        return [];
+    }
+}
+
+export async function updateWorkflowEnvironmentDiagram(
+    workflowId: string,
+    environmentId: string,
+    flowData: Workflow['flow_data']
+): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/workflows/${workflowId}/environments/${environmentId}/flow-data`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({ flow_data_override: flowData }),
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error updating workflow environment diagram:', error);
+        return false;
+    }
+}
+
+// Helper function to save swimlane diagram (uses workflow's base flow_data)
+export async function saveSwimlaneDiagram(workflowId: string, flowData: Workflow['flow_data']): Promise<boolean> {
+    return updateWorkflow(workflowId, { flow_data: flowData });
+}
+
+// Helper function to load swimlane diagram for a specific workflow-environment combination
+export async function loadSwimlaneDiagram(workflowId: string, environmentId?: string): Promise<Workflow['flow_data'] | null> {
+    try {
+        // If environment is specified, check for environment-specific override
+        if (environmentId) {
+            const headers = await getAuthHeaders();
+            if (!headers) return null;
+
+            const response = await fetch(`${API_URL}/api/workflows/${workflowId}/environments/${environmentId}`, {
+                method: 'GET',
+                headers,
+            });
+
+            if (response.ok) {
+                const workflowEnv: WorkflowEnvironment = await response.json();
+                // Return override if it exists, otherwise fall through to base workflow
+                if (workflowEnv.flow_data_override) {
+                    return workflowEnv.flow_data_override;
+                }
+            }
+        }
+
+        // Load base workflow diagram
+        const workflow = await getWorkflow(workflowId);
+        return workflow?.flow_data || null;
+    } catch (error) {
+        console.error('Error loading swimlane diagram:', error);
+        return null;
+    }
+}
+
+// ============ ENVIRONMENT DIAGRAM SAVE/LOAD ============
+
+export async function saveEnvironmentDiagram(environmentId: string, flowData: any): Promise<boolean> {
+    try {
+        // First get the current environment to preserve existing variables
+        const env = await getEnvironment(environmentId);
+        if (!env) return false;
+
+        const updatedVariables = {
+            ...(env.variables || {}),
+            flow_data: flowData,
+        };
+
+        return await updateEnvironment(environmentId, { variables: updatedVariables } as any);
+    } catch (error) {
+        console.error('Error saving environment diagram:', error);
+        return false;
+    }
+}
+
+export async function loadEnvironmentDiagram(environmentId: string): Promise<any | null> {
+    try {
+        const env = await getEnvironment(environmentId);
+        if (!env || !env.variables) return null;
+        return env.variables.flow_data || null;
+    } catch (error) {
+        console.error('Error loading environment diagram:', error);
+        return null;
     }
 }

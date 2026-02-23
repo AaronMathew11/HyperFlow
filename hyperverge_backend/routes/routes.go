@@ -10,7 +10,9 @@ import (
 	"hypervision_backend/internal/businessunits"
 	"hypervision_backend/internal/clients"
 	"hypervision_backend/internal/collaborators"
+	"hypervision_backend/internal/environments"
 	"hypervision_backend/internal/snapshot"
+	"hypervision_backend/internal/workflow_environments"
 	"hypervision_backend/internal/workflows"
 )
 
@@ -38,6 +40,14 @@ func Register(r *gin.Engine) {
 	api.GET("/business-units/:buId/collaborators", businessunits.ListCollaborators)
 	api.DELETE("/business-units/:buId/share/:userId", businessunits.RemoveCollaborator)
 
+	// Environments (nested under business units for list/create)
+	api.POST("/business-units/:buId/environments", environments.Create)
+	api.GET("/business-units/:buId/environments", environments.List)
+	// Environments (direct access for get/update/delete)
+	api.GET("/environments/:id", environments.Get)
+	api.PUT("/environments/:id", environments.Update)
+	api.DELETE("/environments/:id", environments.Delete)
+
 	// Workflows (nested under business units)
 	api.POST("/business-units/:buId/workflows", workflows.Create)
 	api.GET("/business-units/:buId/workflows", workflows.List)
@@ -48,6 +58,13 @@ func Register(r *gin.Engine) {
 	// Workflow snapshot routes
 	api.GET("/workflows/:id/snapshot", snapshot.GetWorkflow)
 	api.PUT("/workflows/:id/snapshot", snapshot.SaveWorkflow)
+
+	// Workflow-Environment Relationships
+	api.POST("/workflows/:id/environments/:envId", workflow_environments.Link)
+	api.DELETE("/workflows/:id/environments/:envId", workflow_environments.Unlink)
+	api.GET("/workflows/:id/environments", workflow_environments.ListByWorkflow)
+	api.GET("/environments/:id/workflows", workflow_environments.ListByEnvironment)
+	api.PUT("/workflows/:id/environments/:envId/flow-data", workflow_environments.UpdateDiagram)
 
 	// ============ LEGACY BOARD ROUTES (keep for now) ============
 
