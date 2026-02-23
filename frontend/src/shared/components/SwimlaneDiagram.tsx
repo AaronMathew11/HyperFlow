@@ -37,13 +37,17 @@ interface Component {
 }
 
 const PREDEFINED_COMPONENTS: Component[] = [
-    { id: 'client-app', name: 'Client Application', description: 'Client-side application', defaultLane: 'client-frontend', documentationUrl: '#client-app' },
-    { id: 'sdk-init', name: 'SDK Initialises', description: 'Initialize HyperVerge SDK', defaultLane: 'hv-sdk', documentationUrl: '#sdk-init' },
-    { id: 'results-api', name: 'Results API', description: 'Fetch verification results', defaultLane: 'hv-backend', documentationUrl: '#results-api' },
-    { id: 'outputs-api', name: 'Outputs API', description: 'Retrieve extracted data', defaultLane: 'hv-backend', documentationUrl: '#outputs-api' },
-    { id: 'sdk-workflow', name: 'SDK Workflow', description: 'SDK interaction logic', defaultLane: 'hv-sdk', documentationUrl: '#sdk-workflow' },
-    { id: 'webhook', name: 'Webhook', description: 'Receive event notifications', defaultLane: 'hv-backend', documentationUrl: '#webhook' },
-    { id: 'end-screen', name: 'End Screen', description: 'Display final status', defaultLane: 'client-frontend', documentationUrl: '#end-screen' },
+    { id: 'journey-starts', name: 'Journey Starts', description: 'User Lands on the application', defaultLane: 'client-frontend', documentationUrl: '#journey-starts' },
+    { id: 'kyc-journey-begins', name: 'KYC Journey Begins', description: 'HyperVerge SDK journey begins', defaultLane: 'client-frontend', documentationUrl: '#kyc-journey-begins' },
+    { id: 'hyperverge-sdk', name: 'Hyperverge SDK', description: 'KYC Workflow is performed here', defaultLane: 'hv-sdk', documentationUrl: '#hyperverge-sdk' },
+    { id: 'sdk-journey-ends', name: 'SDK Journey Ends', description: 'Journey is completed', defaultLane: 'hv-sdk', documentationUrl: '#sdk-journey-ends' },
+    { id: 'call-backend', name: 'Call Backend', description: 'Client FE calls Client BE to Notify completion of KYC', defaultLane: 'client-frontend', documentationUrl: '#call-backend' },
+    { id: 'call-hv-be', name: 'Call HV BE', description: 'Client BE calls HV BE for PII Data', defaultLane: 'client-backend', documentationUrl: '#call-hv-be' },
+    { id: 'results-api', name: 'Results API', description: 'User Final Status, PII data and workflow data is returned in Response', defaultLane: 'hv-backend', documentationUrl: '#results-api' },
+    { id: 'outputs-api', name: 'Outputs API', description: 'User Final Status and PII data is returned in Response', defaultLane: 'hv-backend', documentationUrl: '#outputs-api' },
+    { id: 'store-to-db', name: 'Store to DB', description: 'Store PII Data to DB and return status to Frontend', defaultLane: 'client-backend', documentationUrl: '#store-to-db' },
+    { id: 'kyc-completed', name: 'KYC Completed', description: 'FE received status and proceeds with next steps', defaultLane: 'client-frontend', documentationUrl: '#kyc-completed' },
+    { id: 'webhook', name: 'Webhook', description: 'Webhook triggered to Client BE to notify data availability', defaultLane: 'hv-backend', documentationUrl: '#webhook' },
 ];
 
 const DEFAULT_LANES: Lane[] = [
