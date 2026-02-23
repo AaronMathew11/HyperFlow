@@ -1,12 +1,18 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { CustomerUser } from '../../../shared/types';
+import { verifyBULink, getPublicBUData } from '../../../shared/lib/api';
+import { CustomerUser, PublicBUData } from '../../../shared/types';
 
 interface CustomerAuthContextType {
   user: CustomerUser | null;
   loading: boolean;
-  signIn: (linkId: string, email: string, password: string) => Promise<boolean>;
+  signIn: (linkId: string, password: string) => Promise<boolean>;
   signOut: () => void;
   businessUnitId: string | null;
+  businessUnitName: string | null;
+  linkId: string | null;
+  token: string | null;
+  buData: PublicBUData | null;
+  loadBUData: () => Promise<void>;
 }
 
 const CustomerAuthContext = createContext<CustomerAuthContextType | undefined>(undefined);
@@ -15,54 +21,46 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CustomerUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [businessUnitId, setBusinessUnitId] = useState<string | null>(null);
+  const [businessUnitName, setBusinessUnitName] = useState<string | null>(null);
+  const [linkId, setLinkId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [buData, setBuData] = useState<PublicBUData | null>(null);
 
   useEffect(() => {
     // Check for existing customer session
-    const customerToken = localStorage.getItem('customer_token');
-    const buId = localStorage.getItem('customer_bu_id');
+    const storedLinkId = localStorage.getItem('customer_link_id');
+    const storedToken = localStorage.getItem('customer_token');
+    const storedBuId = localStorage.getItem('customer_bu_id');
+    const storedBuName = localStorage.getItem('customer_bu_name');
 
-    if (customerToken && buId) {
-      // Validate token with backend
-      validateCustomerToken(customerToken, buId);
+    if (storedLinkId && storedToken && storedBuId) {
+      setLinkId(storedLinkId);
+      setToken(storedToken);
+      setBusinessUnitId(storedBuId);
+      setBusinessUnitName(storedBuName);
+      setUser({ id: 'customer', email: '', name: 'Customer User' });
+      setLoading(false);
     } else {
       setLoading(false);
     }
   }, []);
 
-  const validateCustomerToken = async (_token: string, buId: string) => {
+  const signIn = async (newLinkId: string, password: string): Promise<boolean> => {
     try {
-      // TODO: Call backend to validate customer token
-      // For now, mock the validation
-      setUser({
-        id: 'customer-1',
-        email: 'customer@example.com',
-        name: 'Customer User'
-      });
-      setBusinessUnitId(buId);
-    } catch (error) {
-      localStorage.removeItem('customer_token');
-      localStorage.removeItem('customer_bu_id');
-    } finally {
-      setLoading(false);
-    }
-  };
+      const result = await verifyBULink(newLinkId, password);
+      if (!result) return false;
 
-  const signIn = async (_linkId: string, email: string, _password: string): Promise<boolean> => {
-    try {
-      // TODO: Call backend customer login API
-      // For now, mock the login
-      const token = 'mock-customer-token';
-      const buId = 'mock-bu-id';
+      // Store session
+      localStorage.setItem('customer_link_id', newLinkId);
+      localStorage.setItem('customer_token', password);
+      localStorage.setItem('customer_bu_id', result.businessUnitId);
+      localStorage.setItem('customer_bu_name', result.businessUnitName);
 
-      localStorage.setItem('customer_token', token);
-      localStorage.setItem('customer_bu_id', buId);
-
-      setUser({
-        id: 'customer-1',
-        email,
-        name: 'Customer User'
-      });
-      setBusinessUnitId(buId);
+      setLinkId(newLinkId);
+      setToken(password);
+      setBusinessUnitId(result.businessUnitId);
+      setBusinessUnitName(result.businessUnitName);
+      setUser({ id: 'customer', email: '', name: 'Customer User' });
 
       return true;
     } catch (error) {
@@ -71,11 +69,29 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loadBUData = async () => {
+    if (!linkId || !token) return;
+    try {
+      const data = await getPublicBUData(linkId, token);
+      if (data) {
+        setBuData(data);
+      }
+    } catch (error) {
+      console.error('Error loading BU data:', error);
+    }
+  };
+
   const signOut = () => {
+    localStorage.removeItem('customer_link_id');
     localStorage.removeItem('customer_token');
     localStorage.removeItem('customer_bu_id');
+    localStorage.removeItem('customer_bu_name');
     setUser(null);
     setBusinessUnitId(null);
+    setBusinessUnitName(null);
+    setLinkId(null);
+    setToken(null);
+    setBuData(null);
   };
 
   return (
@@ -84,7 +100,12 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
       loading,
       signIn,
       signOut,
-      businessUnitId
+      businessUnitId,
+      businessUnitName,
+      linkId,
+      token,
+      buData,
+      loadBUData,
     }}>
       {children}
     </CustomerAuthContext.Provider>

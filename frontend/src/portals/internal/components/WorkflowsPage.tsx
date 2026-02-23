@@ -6,8 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import CreateWorkflowModal from './CreateWorkflowModal';
 import CreateEnvironmentModal from './CreateEnvironmentModal';
 import Breadcrumb from '../../../shared/components/Breadcrumb';
-import { getClient, getBusinessUnit } from '../../../shared/lib/api';
-import { Client, BusinessUnit, Workflow, Environment } from '../../../shared/types';
+import { getClient, getBusinessUnit, createBUAccessLink } from '../../../shared/lib/api';
+import { Client, BusinessUnit, Workflow, Environment, CreateBULinkResponse } from '../../../shared/types';
 
 export default function WorkflowsPage() {
     const { clientId, buId } = useParams<{ clientId: string; buId: string }>();
@@ -22,6 +22,43 @@ export default function WorkflowsPage() {
     const [activeTab, setActiveTab] = useState<'workflows' | 'environments'>('workflows');
     const [isEditEnvModalOpen, setIsEditEnvModalOpen] = useState(false);
     const [selectedEnvironment, setSelectedEnvironment] = useState<Environment | null>(null);
+    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+    const [generatedLink, setGeneratedLink] = useState<CreateBULinkResponse | null>(null);
+    const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
+    const [passCopied, setPassCopied] = useState(false);
+
+    const handleGenerateLink = async () => {
+        if (!buId) return;
+        setIsGeneratingLink(true);
+        try {
+            const result = await createBUAccessLink(buId);
+            if (result) {
+                setGeneratedLink(result);
+                setIsLinkModalOpen(true);
+            }
+        } catch (error) {
+            console.error('Error generating link:', error);
+        } finally {
+            setIsGeneratingLink(false);
+        }
+    };
+
+    const handleCopyLink = () => {
+        if (generatedLink) {
+            navigator.clipboard.writeText(generatedLink.shareUrl);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+        }
+    };
+
+    const handleCopyPassword = () => {
+        if (generatedLink) {
+            navigator.clipboard.writeText(generatedLink.password);
+            setPassCopied(true);
+            setTimeout(() => setPassCopied(false), 2000);
+        }
+    };
 
     useEffect(() => {
         if (buId) {
@@ -145,20 +182,25 @@ export default function WorkflowsPage() {
                     </div>
                     <div className="flex gap-3">
                         <button
+                            onClick={handleGenerateLink}
+                            disabled={isGeneratingLink}
+                            className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50"
+                        >
+                            {isGeneratingLink ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                                </svg>
+                            )}
+                            Generate Client Link
+                        </button>
+                        <button
                             onClick={() => setIsCreateEnvModalOpen(true)}
                             className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                            >
-                                <path
-                                    fillRule="evenodd"
-                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                    clipRule="evenodd"
-                                />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                             </svg>
                             Create Environment
                         </button>
@@ -166,17 +208,8 @@ export default function WorkflowsPage() {
                             onClick={() => setIsCreateModalOpen(true)}
                             className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                            >
-                                <path
-                                    fillRule="evenodd"
-                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                    clipRule="evenodd"
-                                />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                             </svg>
                             Create Workflow
                         </button>
@@ -339,6 +372,94 @@ export default function WorkflowsPage() {
                 onCreate={handleUpdateEnvironment}
                 environment={selectedEnvironment}
             />
+
+            {/* Generate Link Modal */}
+            {isLinkModalOpen && generatedLink && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full mx-4">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-purple-100 rounded-lg">
+                                <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">Client Link Generated</h3>
+                                <p className="text-sm text-gray-500">Share this link and password with your client</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Share URL</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={generatedLink.shareUrl}
+                                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono"
+                                    />
+                                    <button
+                                        onClick={handleCopyLink}
+                                        className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${linkCopied
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                            }`}
+                                    >
+                                        {linkCopied ? 'Copied!' : 'Copy'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        value={generatedLink.password}
+                                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-mono"
+                                    />
+                                    <button
+                                        onClick={handleCopyPassword}
+                                        className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${passCopied
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                            }`}
+                                    >
+                                        {passCopied ? 'Copied!' : 'Copy'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <div className="flex gap-2">
+                                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                    </svg>
+                                    <p className="text-sm text-amber-800">
+                                        The password is only shown once. Make sure to copy and share it securely.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={() => {
+                                    setIsLinkModalOpen(false);
+                                    setGeneratedLink(null);
+                                    setLinkCopied(false);
+                                    setPassCopied(false);
+                                }}
+                                className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '../contexts/CustomerAuthContext';
 
 export default function CustomerLogin() {
   const { linkId } = useParams<{ linkId: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { signIn } = useCustomerAuth();
-  
-  const [email, setEmail] = useState('');
+
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,21 +14,19 @@ export default function CustomerLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!linkId) return;
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
-      const success = await signIn(linkId, email, password);
+      const success = await signIn(linkId, password);
       if (success) {
-        // Redirect to environment selection or original destination
-        const redirectPath = searchParams.get('redirect') || '/customer/environments';
-        navigate(redirectPath);
+        navigate('/customer/environments');
       } else {
-        setError('Invalid credentials or access link expired');
+        setError('Invalid password or access link expired');
       }
-    } catch (err) {
-      setError('An error occurred during sign in');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during sign in');
     } finally {
       setLoading(false);
     }
@@ -75,23 +71,8 @@ export default function CustomerLogin() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                Access Password
               </label>
               <input
                 id="password"
@@ -100,7 +81,7 @@ export default function CustomerLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Enter your password"
+                placeholder="Enter the password shared with you"
               />
             </div>
 
@@ -112,7 +93,7 @@ export default function CustomerLogin() {
               {loading ? (
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Signing In...
+                  Verifying...
                 </div>
               ) : (
                 'Access Portal'

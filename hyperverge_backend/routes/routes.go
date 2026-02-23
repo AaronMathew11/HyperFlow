@@ -7,6 +7,7 @@ import (
 	"hypervision_backend/internal/accesslinks"
 	"hypervision_backend/internal/auth"
 	"hypervision_backend/internal/boards"
+	"hypervision_backend/internal/buaccesslinks"
 	"hypervision_backend/internal/businessunits"
 	"hypervision_backend/internal/clients"
 	"hypervision_backend/internal/collaborators"
@@ -85,8 +86,17 @@ func Register(r *gin.Engine) {
 	api.GET("/boards/:id/links", accesslinks.List)
 	api.DELETE("/boards/:id/links/:linkId", accesslinks.Revoke)
 
+	// BU Access Links (authenticated)
+	api.POST("/business-units/:buId/links", buaccesslinks.Create)
+	api.GET("/business-units/:buId/links", buaccesslinks.List)
+	api.DELETE("/business-units/:buId/links/:linkId", buaccesslinks.Revoke)
+
 	// Public routes (no auth required)
 	public := r.Group("/api/public")
 	public.POST("/links/:linkId/verify", accesslinks.Verify)
 	public.GET("/links/:linkId/board", accesslinks.GetPublicBoard)
+
+	// Public BU access routes
+	public.POST("/bu-links/:linkId/verify", buaccesslinks.Verify)
+	public.GET("/bu-links/:linkId/data", buaccesslinks.GetPublicBUData)
 }

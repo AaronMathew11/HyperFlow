@@ -17,33 +17,31 @@ import { Environment } from '../../../shared/types';
 // Custom node component for swimlane items
 const SwimlaneNode = ({ data }: { data: any }) => {
   const { title, subtitle, isInteractive, swimlane, onClick } = data;
-  
-  const swimlaneColors = {
+
+  const swimlaneColors: Record<string, string> = {
     frontend: 'border-yellow-300 bg-yellow-50',
-    sdk: 'border-blue-300 bg-blue-50', 
+    sdk: 'border-blue-300 bg-blue-50',
     backend: 'border-green-300 bg-green-50',
     hyperverge: 'border-purple-300 bg-purple-50'
   };
 
-  const iconColors = {
+  const iconColors: Record<string, string> = {
     frontend: 'text-yellow-600 bg-yellow-100',
     sdk: 'text-blue-600 bg-blue-100',
-    backend: 'text-green-600 bg-green-100', 
+    backend: 'text-green-600 bg-green-100',
     hyperverge: 'text-purple-600 bg-purple-100'
   };
 
   return (
-    <div 
-      className={`w-32 h-20 rounded-lg border-2 p-3 text-center transition-all ${
-        isInteractive 
-          ? `${swimlaneColors[swimlane]} cursor-pointer hover:shadow-md hover:scale-105 opacity-100` 
-          : 'border-gray-200 bg-gray-50 opacity-50'
-      }`}
+    <div
+      className={`w-32 h-20 rounded-lg border-2 p-3 text-center transition-all ${isInteractive
+        ? `${swimlaneColors[swimlane]} cursor-pointer hover:shadow-md hover:scale-105 opacity-100`
+        : 'border-gray-200 bg-gray-50 opacity-50'
+        }`}
       onClick={isInteractive ? onClick : undefined}
     >
-      <div className={`w-6 h-6 rounded-full mx-auto mb-1 flex items-center justify-center ${
-        isInteractive ? iconColors[swimlane] : 'bg-gray-200 text-gray-400'
-      }`}>
+      <div className={`w-6 h-6 rounded-full mx-auto mb-1 flex items-center justify-center ${isInteractive ? iconColors[swimlane] : 'bg-gray-200 text-gray-400'
+        }`}>
         {data.icon}
       </div>
       <p className={`text-xs font-medium ${isInteractive ? 'text-gray-700' : 'text-gray-400'}`}>
@@ -68,7 +66,7 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
   const getInteractiveComponents = () => {
     const interactive = {
       resultsApi: false,
-      outputsApi: false, 
+      outputsApi: false,
       webhooks: false,
       sdk: false,
       apiIntegration: false
@@ -96,12 +94,12 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
   // Define nodes based on your swimlane diagram
   const initialNodes: Node[] = [
     // Swimlane Headers
-    { 
-      id: 'header-1', 
+    {
+      id: 'header-1',
       type: 'swimlaneNode',
-      position: { x: 0, y: 0 }, 
-      data: { 
-        title: 'HDFC AMC Front End', 
+      position: { x: 0, y: 0 },
+      data: {
+        title: 'HDFC AMC Front End',
         subtitle: '(Website/App)',
         isHeader: true,
         swimlane: 'frontend'
@@ -109,12 +107,12 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
       draggable: false,
       selectable: false
     },
-    { 
-      id: 'header-2', 
+    {
+      id: 'header-2',
       type: 'swimlaneNode',
-      position: { x: 200, y: 0 }, 
-      data: { 
-        title: 'HyperVerge SDK', 
+      position: { x: 200, y: 0 },
+      data: {
+        title: 'HyperVerge SDK',
         subtitle: 'on HDFC AMC Front End',
         isHeader: true,
         swimlane: 'sdk'
@@ -122,12 +120,12 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
       draggable: false,
       selectable: false
     },
-    { 
-      id: 'header-3', 
+    {
+      id: 'header-3',
       type: 'swimlaneNode',
-      position: { x: 400, y: 0 }, 
-      data: { 
-        title: 'HDFC AMC', 
+      position: { x: 400, y: 0 },
+      data: {
+        title: 'HDFC AMC',
         subtitle: 'Back End',
         isHeader: true,
         swimlane: 'backend'
@@ -135,12 +133,12 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
       draggable: false,
       selectable: false
     },
-    { 
-      id: 'header-4', 
+    {
+      id: 'header-4',
       type: 'swimlaneNode',
-      position: { x: 600, y: 0 }, 
-      data: { 
-        title: "HyperVerge's", 
+      position: { x: 600, y: 0 },
+      data: {
+        title: "HyperVerge's",
         subtitle: 'Back End',
         isHeader: true,
         swimlane: 'hyperverge'
@@ -150,11 +148,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
     },
 
     // Frontend Components
-    { 
-      id: 'frontend-ui', 
+    {
+      id: 'frontend-ui',
       type: 'swimlaneNode',
-      position: { x: 0, y: 100 }, 
-      data: { 
+      position: { x: 0, y: 100 },
+      data: {
         title: 'User Interface',
         subtitle: 'Web/Mobile',
         isInteractive: true, // Always interactive
@@ -164,11 +162,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
       },
       draggable: false
     },
-    { 
-      id: 'frontend-verification', 
+    {
+      id: 'frontend-verification',
       type: 'swimlaneNode',
-      position: { x: 0, y: 200 }, 
-      data: { 
+      position: { x: 0, y: 200 },
+      data: {
         title: 'User Verification',
         subtitle: 'Document Capture',
         isInteractive: interactive.sdk || interactive.apiIntegration,
@@ -180,11 +178,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
     },
 
     // SDK Components
-    { 
-      id: 'sdk-main', 
+    {
+      id: 'sdk-main',
       type: 'swimlaneNode',
-      position: { x: 200, y: 100 }, 
-      data: { 
+      position: { x: 200, y: 100 },
+      data: {
         title: 'HyperVerge SDK',
         subtitle: 'Client Integration',
         isInteractive: interactive.sdk,
@@ -194,11 +192,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
       },
       draggable: false
     },
-    { 
-      id: 'sdk-processing', 
+    {
+      id: 'sdk-processing',
       type: 'swimlaneNode',
-      position: { x: 200, y: 200 }, 
-      data: { 
+      position: { x: 200, y: 200 },
+      data: {
         title: 'Document Processing',
         subtitle: 'AI Verification',
         isInteractive: interactive.sdk,
@@ -210,11 +208,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
     },
 
     // Backend Components
-    { 
-      id: 'backend-api', 
+    {
+      id: 'backend-api',
       type: 'swimlaneNode',
-      position: { x: 400, y: 100 }, 
-      data: { 
+      position: { x: 400, y: 100 },
+      data: {
         title: 'API Server',
         subtitle: 'Backend Services',
         isInteractive: interactive.apiIntegration || interactive.resultsApi || interactive.webhooks,
@@ -224,11 +222,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
       },
       draggable: false
     },
-    { 
-      id: 'backend-webhook', 
+    {
+      id: 'backend-webhook',
       type: 'swimlaneNode',
-      position: { x: 400, y: 200 }, 
-      data: { 
+      position: { x: 400, y: 200 },
+      data: {
         title: 'Webhook Handler',
         subtitle: 'Result Processing',
         isInteractive: interactive.webhooks,
@@ -240,11 +238,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
     },
 
     // HyperVerge Backend Components  
-    { 
-      id: 'hv-processing', 
+    {
+      id: 'hv-processing',
       type: 'swimlaneNode',
-      position: { x: 600, y: 100 }, 
-      data: { 
+      position: { x: 600, y: 100 },
+      data: {
         title: 'AI Processing',
         subtitle: 'ML Models',
         isInteractive: interactive.sdk || interactive.apiIntegration,
@@ -254,11 +252,11 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
       },
       draggable: false
     },
-    { 
-      id: 'hv-results', 
+    {
+      id: 'hv-results',
       type: 'swimlaneNode',
-      position: { x: 600, y: 200 }, 
-      data: { 
+      position: { x: 600, y: 200 },
+      data: {
         title: 'Results API',
         subtitle: 'Response Data',
         isInteractive: interactive.resultsApi || interactive.outputsApi,
@@ -273,49 +271,49 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
   // Define edges based on flow paths
   const initialEdges: Edge[] = [
     // Frontend to SDK
-    { 
-      id: 'e1-2', 
-      source: 'frontend-verification', 
+    {
+      id: 'e1-2',
+      source: 'frontend-verification',
       target: 'sdk-main',
       animated: interactive.sdk,
       style: { stroke: interactive.sdk ? '#3B82F6' : '#D1D5DB' }
     },
     // SDK to Processing
-    { 
-      id: 'e2-3', 
-      source: 'sdk-main', 
+    {
+      id: 'e2-3',
+      source: 'sdk-main',
       target: 'sdk-processing',
       animated: interactive.sdk,
       style: { stroke: interactive.sdk ? '#3B82F6' : '#D1D5DB' }
     },
     // SDK to Backend
-    { 
-      id: 'e3-4', 
-      source: 'sdk-processing', 
+    {
+      id: 'e3-4',
+      source: 'sdk-processing',
       target: 'backend-api',
       animated: interactive.sdk || interactive.apiIntegration,
       style: { stroke: (interactive.sdk || interactive.apiIntegration) ? '#3B82F6' : '#D1D5DB' }
     },
     // Backend to HyperVerge
-    { 
-      id: 'e4-5', 
-      source: 'backend-api', 
+    {
+      id: 'e4-5',
+      source: 'backend-api',
       target: 'hv-processing',
       animated: interactive.sdk || interactive.apiIntegration,
       style: { stroke: (interactive.sdk || interactive.apiIntegration) ? '#3B82F6' : '#D1D5DB' }
     },
     // HyperVerge Processing to Results
-    { 
-      id: 'e5-6', 
-      source: 'hv-processing', 
+    {
+      id: 'e5-6',
+      source: 'hv-processing',
       target: 'hv-results',
       animated: interactive.resultsApi || interactive.outputsApi,
       style: { stroke: (interactive.resultsApi || interactive.outputsApi) ? '#10B981' : '#D1D5DB' }
     },
     // Results back to webhook (if webhooks enabled)
     ...(interactive.webhooks ? [{
-      id: 'e6-7', 
-      source: 'hv-results', 
+      id: 'e6-7',
+      source: 'hv-results',
       target: 'backend-webhook',
       animated: true,
       style: { stroke: '#10B981' }
@@ -343,6 +341,9 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
         minZoom={0.5}
         maxZoom={1.5}
         defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
       >
         <Controls />
         <Background variant={BackgroundVariant.Dots} />

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Board, AccessLink, CreateLinkResponse, PublicBoardData, Client, BusinessUnit, Workflow, Environment, WorkflowEnvironment } from '../types';
+import { Board, AccessLink, CreateLinkResponse, PublicBoardData, Client, BusinessUnit, Workflow, Environment, WorkflowEnvironment, BUAccessLink, CreateBULinkResponse, PublicBUData } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -979,5 +979,121 @@ export async function loadEnvironmentDiagram(environmentId: string): Promise<any
     } catch (error) {
         console.error('Error loading environment diagram:', error);
         return null;
+    }
+}
+
+// ============ BU ACCESS LINK API ============
+
+export async function createBUAccessLink(
+    buId: string,
+    expiresIn?: number
+): Promise<CreateBULinkResponse | null> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return null;
+
+        const response = await fetch(`${API_URL}/api/business-units/${buId}/links`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ expiresIn }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to create BU access link:', response.status);
+            return null;
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating BU access link:', error);
+        return null;
+    }
+}
+
+export async function listBUAccessLinks(buId: string): Promise<BUAccessLink[]> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return [];
+
+        const response = await fetch(`${API_URL}/api/business-units/${buId}/links`, {
+            method: 'GET',
+            headers,
+        });
+
+        if (!response.ok) {
+            console.error('Failed to list BU access links:', response.status);
+            return [];
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error listing BU access links:', error);
+        return [];
+    }
+}
+
+export async function revokeBUAccessLink(buId: string, linkId: string): Promise<boolean> {
+    try {
+        const headers = await getAuthHeaders();
+        if (!headers) return false;
+
+        const response = await fetch(`${API_URL}/api/business-units/${buId}/links/${linkId}`, {
+            method: 'DELETE',
+            headers,
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error revoking BU access link:', error);
+        return false;
+    }
+}
+
+export async function verifyBULink(
+    linkId: string,
+    password: string
+): Promise<{ businessUnitId: string; businessUnitName: string } | null> {
+    try {
+        const response = await fetch(`${API_URL}/api/public/bu-links/${linkId}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password }),
+        });
+
+        if (!response.ok) {
+            if (response.status === 410) throw new Error('Link has expired');
+            if (response.status === 401) throw new Error('Invalid password');
+            throw new Error('Failed to verify link');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error verifying BU link:', error);
+        throw error;
+    }
+}
+
+export async function getPublicBUData(
+    linkId: string,
+    token: string
+): Promise<PublicBUData | null> {
+    try {
+        const response = await fetch(
+            `${API_URL}/api/public/bu-links/${linkId}/data?token=${encodeURIComponent(token)}`,
+            {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+
+        if (!response.ok) {
+            if (response.status === 410) throw new Error('Link has expired');
+            throw new Error('Failed to fetch BU data');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching public BU data:', error);
+        throw error;
     }
 }

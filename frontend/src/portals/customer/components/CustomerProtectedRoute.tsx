@@ -24,7 +24,7 @@ export default function CustomerProtectedRoute({ children }: CustomerProtectedRo
   if (!user) {
     // Redirect to customer login with current path
     const currentPath = window.location.pathname;
-    const linkId = params.linkId || 'default';
+    const linkId = params.linkId || localStorage.getItem('customer_link_id') || 'default';
     return <Navigate to={`/customer/login/${linkId}?redirect=${encodeURIComponent(currentPath)}`} replace />;
   }
 
