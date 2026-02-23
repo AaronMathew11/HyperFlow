@@ -21,6 +21,7 @@ const CustomEdge = ({
         targetX,
         targetY,
         targetPosition,
+        curvature: 0.5, // Increased curvature for looser, smoother arrows
     });
 
     const isEditMode = data?.isEditMode;

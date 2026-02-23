@@ -11,6 +11,8 @@ interface CreateEnvironmentModalProps {
 export interface EnvironmentFormData {
     name: string;
     description?: string;
+    type: 'development' | 'staging' | 'production' | 'testing';
+    base_url: string;
     // Client integration questions
     usesResultsApi: boolean;
     usesOutputsApi: boolean;
@@ -23,6 +25,8 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
     const [formData, setFormData] = useState<EnvironmentFormData>({
         name: '',
         description: '',
+        type: 'development',
+        base_url: '',
         usesResultsApi: false,
         usesOutputsApi: false,
         reliesOnWebhooks: false,
@@ -35,10 +39,12 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
             setFormData({
                 name: environment.name,
                 description: environment.description || '',
-                usesResultsApi: false, // These aren't stored in Environment yet
+                type: environment.type || 'development',
+                base_url: environment.base_url || '',
+                usesResultsApi: false,
                 usesOutputsApi: false,
                 reliesOnWebhooks: false,
-                integrationType: 'api',
+                integrationType: environment.integration_type as any || 'api',
                 sdkPlatform: undefined
             });
         }
@@ -56,6 +62,8 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
         setFormData({
             name: '',
             description: '',
+            type: 'development',
+            base_url: '',
             usesResultsApi: false,
             usesOutputsApi: false,
             reliesOnWebhooks: false,
@@ -112,6 +120,41 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Optional description of this environment"
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+                                        Environment Type *
+                                    </label>
+                                    <select
+                                        id="type"
+                                        required
+                                        value={formData.type}
+                                        onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    >
+                                        <option value="development">Development</option>
+                                        <option value="staging">Staging</option>
+                                        <option value="production">Production</option>
+                                        <option value="testing">Testing</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="base_url" className="block text-sm font-medium text-gray-700 mb-2">
+                                        Base URL *
+                                    </label>
+                                    <input
+                                        type="url"
+                                        id="base_url"
+                                        required
+                                        value={formData.base_url}
+                                        onChange={(e) => setFormData({ ...formData, base_url: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="e.g., https://api.dev.com"
+                                    />
+                                </div>
                             </div>
 
 

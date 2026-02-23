@@ -78,19 +78,71 @@ const TableNode = ({ id, data, selected }: NodeProps<TableNodeData>) => {
                 )}
             </div>
 
-            {/* Connection Handles */}
+            {/* Connection Handles - All Four Sides (Bidirectional) */}
+            {/* Top Handles */}
+            <Handle
+                type="target"
+                position={Position.Top}
+                id="top-target"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
+                isConnectable={data.isEditMode}
+            />
+            <Handle
+                type="source"
+                position={Position.Top}
+                id="top-source"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
+                isConnectable={data.isEditMode}
+            />
+
+            {/* Bottom Handles */}
+            <Handle
+                type="target"
+                position={Position.Bottom}
+                id="bottom-target"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
+                isConnectable={data.isEditMode}
+            />
+            <Handle
+                type="source"
+                position={Position.Bottom}
+                id="bottom-source"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
+                isConnectable={data.isEditMode}
+            />
+
+            {/* Left Handles */}
             <Handle
                 type="target"
                 position={Position.Left}
-                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors top-8"
+                id="left-target"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
+                isConnectable={data.isEditMode}
+            />
+            <Handle
+                type="source"
+                position={Position.Left}
+                id="left-source"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
+                isConnectable={data.isEditMode}
+            />
+
+            {/* Right Handles */}
+            <Handle
+                type="target"
+                position={Position.Right}
+                id="right-target"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
                 isConnectable={data.isEditMode}
             />
             <Handle
                 type="source"
                 position={Position.Right}
-                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors top-8"
+                id="right-source"
+                className="w-3 h-3 !bg-gray-400 !border-2 !border-white hover:!bg-blue-500 transition-colors"
                 isConnectable={data.isEditMode}
             />
+
 
             {/* Fields List */}
             <div className="bg-white">

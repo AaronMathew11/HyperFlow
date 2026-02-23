@@ -1,39 +1,78 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
-CREATE TABLE public.board (
+CREATE TABLE public.test_clients (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
+  description text,
   owner_id uuid NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  description text,
-  CONSTRAINT board_pkey PRIMARY KEY (id),
-  CONSTRAINT files_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
+  CONSTRAINT test_clients_pkey PRIMARY KEY (id),
+  CONSTRAINT test_clients_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id)
 );
-CREATE TABLE public.board_access_links (
+
+CREATE TABLE public.test_business_units (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  board_id uuid,
-  role text NOT NULL CHECK (role = ANY (ARRAY['viewer'::text, 'editor'::text])),
-  password_hash text,
-  expires_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT board_access_links_pkey PRIMARY KEY (id),
-  CONSTRAINT file_access_links_file_id_fkey FOREIGN KEY (board_id) REFERENCES public.board(id)
+  name character varying NOT NULL,
+  description text,
+  client_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT test_business_units_pkey PRIMARY KEY (id),
+  CONSTRAINT test_business_units_client_id_fkey FOREIGN KEY (client_id) REFERENCES public.test_clients(id) ON DELETE CASCADE
 );
-CREATE TABLE public.board_permissions (
-  board_id uuid NOT NULL,
-  user_id uuid NOT NULL,
-  role text NOT NULL CHECK (role = ANY (ARRAY['viewer'::text, 'editor'::text])),
-  CONSTRAINT board_permissions_pkey PRIMARY KEY (board_id, user_id),
-  CONSTRAINT file_permissions_file_id_fkey FOREIGN KEY (board_id) REFERENCES public.board(id),
-  CONSTRAINT file_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+
+CREATE TABLE public.test_workflows (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name character varying NOT NULL,
+  description text,
+  business_unit_id uuid NOT NULL,
+  flow_data jsonb DEFAULT '{"edges": [], "nodes": [], "flowInputs": "", "flowOutputs": ""}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT test_workflows_pkey PRIMARY KEY (id),
+  CONSTRAINT test_workflows_business_unit_id_fkey FOREIGN KEY (business_unit_id) REFERENCES public.test_business_units(id) ON DELETE CASCADE
 );
-CREATE TABLE public.board_snapshots (
-  board_id uuid NOT NULL,
-  version integer NOT NULL,
-  data jsonb NOT NULL,
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT board_snapshots_pkey PRIMARY KEY (board_id),
-  CONSTRAINT file_snapshots_file_id_fkey FOREIGN KEY (board_id) REFERENCES public.board(id)
+
+CREATE TABLE public.test_environments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name character varying NOT NULL,
+  description text,
+  type character varying NOT NULL CHECK (type IN ('development', 'staging', 'production', 'testing')),
+  integration_type character varying CHECK (integration_type IN ('api', 'sdk')),
+  base_url text NOT NULL,
+  api_key text,
+  auth_method character varying CHECK (auth_method IN ('api-key', 'oauth', 'basic-auth', 'none')),
+  headers jsonb DEFAULT '{}'::jsonb,
+  variables jsonb DEFAULT '{}'::jsonb,
+  documentation_links jsonb DEFAULT '[]'::jsonb,
+  business_unit_id uuid NOT NULL,
+  owner_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT test_environments_pkey PRIMARY KEY (id),
+  CONSTRAINT test_environments_business_unit_id_fkey FOREIGN KEY (business_unit_id) REFERENCES public.test_business_units(id) ON DELETE CASCADE,
+  CONSTRAINT test_environments_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE public.test_workflow_environments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  workflow_id uuid NOT NULL,
+  environment_id uuid NOT NULL,
+  flow_data_override jsonb,
+  is_active boolean DEFAULT true,
+  deployed_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT test_workflow_environments_pkey PRIMARY KEY (id),
+  CONSTRAINT test_workflow_environments_unique UNIQUE (workflow_id, environment_id),
+  CONSTRAINT test_workflow_environments_workflow_id_fkey FOREIGN KEY (workflow_id) REFERENCES public.test_workflows(id) ON DELETE CASCADE,
+  CONSTRAINT test_workflow_environments_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.test_environments(id) ON DELETE CASCADE
+);
+
+-- Indexes for performance
+CREATE INDEX idx_workflow_environments_workflow ON public.test_workflow_environments(workflow_id);
+CREATE INDEX idx_workflow_environments_environment ON public.test_workflow_environments(environment_id);
+CREATE INDEX idx_environments_business_unit ON public.test_environments(business_unit_id);
+CREATE INDEX idx_workflows_business_unit ON public.test_workflows(business_unit_id);

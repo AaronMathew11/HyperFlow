@@ -83,13 +83,13 @@ export interface Environment {
   name: string;
   description?: string;
   type: 'development' | 'staging' | 'production' | 'testing';
-  integrationType?: 'api' | 'sdk';
-  baseUrl: string;
-  apiKey?: string;
-  authMethod?: 'api-key' | 'oauth' | 'basic-auth' | 'none';
+  integration_type?: 'api' | 'sdk';
+  base_url: string;
+  api_key?: string;
+  auth_method?: 'api-key' | 'oauth' | 'basic-auth' | 'none';
   headers?: Record<string, string>;
-  variables?: Record<string, string>;
-  documentationLinks?: Array<{
+  variables?: Record<string, any>;
+  documentation_links?: Array<{
     title: string;
     url: string;
     category?: string;
@@ -101,13 +101,34 @@ export interface Environment {
   updated_at: string;
 }
 
+export interface WorkflowEnvironment {
+  id: string;
+  workflow_id: string;
+  environment_id: string;
+  flow_data_override?: {
+    nodes: any[];
+    edges: any[];
+    flowInputs?: string;
+    flowOutputs?: string;
+  };
+  is_active: boolean;
+  deployed_at?: string;
+  created_at: string;
+  updated_at: string;
+  // Populated fields
+  environment?: Environment;
+  workflow?: Workflow;
+  workflow_name?: string;
+  environment_name?: string;
+  environment_type?: string;
+}
+
 export interface Workflow {
   id: string;
   name: string;
   description?: string;
   business_unit_id: string;
   owner_id: string;
-  environment_ids?: string[];
   flow_data: {
     nodes: any[];
     edges: any[];
@@ -116,6 +137,8 @@ export interface Workflow {
   };
   created_at: string;
   updated_at: string;
+  // Many-to-many relationship
+  environments?: WorkflowEnvironment[];
 }
 
 export interface BUPermission {
