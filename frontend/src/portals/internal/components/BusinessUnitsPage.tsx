@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBusinessUnitStore } from '../store/businessUnitStore';
-import { useAuth } from '../contexts/AuthContext';
+
 import FolderCard from './FolderCard';
 import CreateBusinessUnitModal from './CreateBusinessUnitModal';
 import Breadcrumb from '../../../shared/components/Breadcrumb';
 import { getClient } from '../../../shared/lib/api';
 import { Client } from '../../../shared/types';
+import TopNav from './TopNav';
 
 export default function BusinessUnitsPage() {
     const { clientId } = useParams<{ clientId: string }>();
     const { businessUnits, loading, loadBusinessUnits, createBusinessUnit, deleteBusinessUnit } = useBusinessUnitStore();
-    const { user, signOut } = useAuth();
+
     const navigate = useNavigate();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [client, setClient] = useState<Client | null>(null);
@@ -45,53 +46,8 @@ export default function BusinessUnitsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
-            {/* Left Sidebar */}
-            <aside className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
-                {/* Top Section */}
-                <div className="p-4 border-b border-gray-100">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Hypervision</h1>
-                        <p className="text-xs text-gray-600 mt-1">Workflow Management</p>
-                    </div>
-                </div>
-
-                {/* Navigation/Content Area */}
-                <div className="flex-1 p-4">
-                    {/* Sidebar content can go here if needed */}
-                </div>
-
-                {/* Bottom Account Section */}
-                <div className="p-6 border-t border-gray-100">
-                    {user && (
-                        <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5 text-blue-600"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
-                                <button
-                                    onClick={signOut}
-                                    className="text-xs text-gray-500 hover:text-red-600 transition-colors mt-1"
-                                >
-                                    Sign Out
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </aside>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+            <TopNav />
 
             {/* Main Content */}
             <main className="flex-1 p-8">

@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '../contexts/CustomerAuthContext';
 import { Environment } from '../../../shared/types';
+import CustomerTopNav from './CustomerTopNav';
 
 export default function EnvironmentSelection() {
   const navigate = useNavigate();
-  const { user, signOut, businessUnitName, buData, loadBUData } = useCustomerAuth();
+  const { buData, loadBUData } = useCustomerAuth();
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -61,41 +62,8 @@ export default function EnvironmentSelection() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
-      {/* Left Sidebar */}
-      <aside className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
-        {/* Top Section */}
-        <div className="p-4 border-b border-gray-100">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Hypervision</h1>
-            <p className="text-xs text-gray-600 mt-1">Customer Portal</p>
-          </div>
-        </div>
-
-        {/* Navigation/Content Area */}
-        <div className="flex-1 p-4">
-        </div>
-
-        {/* Bottom Account Section */}
-        <div className="p-6 border-t border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 font-semibold text-sm">
-                {user?.email?.charAt(0).toUpperCase() || 'C'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{businessUnitName || 'Customer'}</p>
-              <button
-                onClick={signOut}
-                className="text-xs text-gray-500 hover:text-red-600 transition-colors mt-1"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </aside>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+      <CustomerTopNav />
 
       {/* Main Content */}
       <main className="flex-1 p-8">
