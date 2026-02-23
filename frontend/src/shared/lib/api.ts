@@ -950,3 +950,34 @@ export async function loadSwimlaneDiagram(workflowId: string, environmentId?: st
         return null;
     }
 }
+
+// ============ ENVIRONMENT DIAGRAM SAVE/LOAD ============
+
+export async function saveEnvironmentDiagram(environmentId: string, flowData: any): Promise<boolean> {
+    try {
+        // First get the current environment to preserve existing variables
+        const env = await getEnvironment(environmentId);
+        if (!env) return false;
+
+        const updatedVariables = {
+            ...(env.variables || {}),
+            flow_data: flowData,
+        };
+
+        return await updateEnvironment(environmentId, { variables: updatedVariables } as any);
+    } catch (error) {
+        console.error('Error saving environment diagram:', error);
+        return false;
+    }
+}
+
+export async function loadEnvironmentDiagram(environmentId: string): Promise<any | null> {
+    try {
+        const env = await getEnvironment(environmentId);
+        if (!env || !env.variables) return null;
+        return env.variables.flow_data || null;
+    } catch (error) {
+        console.error('Error loading environment diagram:', error);
+        return null;
+    }
+}

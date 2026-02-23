@@ -366,12 +366,11 @@ function EnvironmentCard({
         }
     };
 
-    const getEnvironmentColor = (type: string) => {
-        switch (type) {
-            case 'production': return 'bg-red-100 text-red-600';
-            case 'staging': return 'bg-yellow-100 text-yellow-600';
-            case 'testing': return 'bg-purple-100 text-purple-600';
-            default: return 'bg-blue-100 text-blue-600';
+    const getEnvironmentColor = (integrationType?: string) => {
+        switch (integrationType) {
+            case 'sdk': return 'bg-purple-100 text-purple-600';
+            case 'api': return 'bg-blue-100 text-blue-600';
+            default: return 'bg-gray-100 text-gray-600';
         }
     };
 
@@ -395,7 +394,7 @@ function EnvironmentCard({
 
             {/* Environment Info */}
             <div className="flex items-start gap-4">
-                <div className={`p-3 rounded-lg ${getEnvironmentColor(environment.type)}`}>
+                <div className={`p-3 rounded-lg ${getEnvironmentColor(environment.integration_type)}`}>
                     <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                     </svg>
@@ -404,17 +403,16 @@ function EnvironmentCard({
                     <h3 className="text-lg font-semibold text-gray-900 truncate">
                         {environment.name}
                     </h3>
-                    <p className="text-sm text-gray-500 capitalize mb-2">
-                        {environment.type}
-                    </p>
+                    {environment.integration_type && (
+                        <p className="text-sm text-gray-500 capitalize mb-2">
+                            {environment.integration_type.toUpperCase()} Integration
+                        </p>
+                    )}
                     {environment.description && (
                         <p className="text-sm text-gray-500 line-clamp-2 mb-2">
                             {environment.description}
                         </p>
                     )}
-                    <p className="text-xs text-gray-400 truncate">
-                        {environment.baseUrl}
-                    </p>
                 </div>
             </div>
         </div>
@@ -501,24 +499,23 @@ function WorkflowCard({
                             {workflow.description}
                         </p>
                     )}
-                    {workflow.environment_ids && workflow.environment_ids.length > 0 && (
+                    {workflow.environments && workflow.environments.length > 0 && (
                         <div className="mt-2">
                             <div className="flex flex-wrap gap-1">
-                                {workflow.environment_ids.slice(0, 3).map(envId => {
-                                    const env = environments.find(e => e.id === envId);
+                                {workflow.environments.slice(0, 3).map(we => {
+                                    const env = environments.find(e => e.id === we.environment_id);
                                     if (!env) return null;
 
-                                    const getEnvColorClass = (type: string) => {
-                                        switch (type) {
-                                            case 'production': return 'bg-red-100 text-red-700';
-                                            case 'staging': return 'bg-yellow-100 text-yellow-700';
-                                            case 'testing': return 'bg-purple-100 text-purple-700';
-                                            default: return 'bg-blue-100 text-blue-700';
+                                    const getEnvColorClass = (integrationType?: string) => {
+                                        switch (integrationType) {
+                                            case 'sdk': return 'bg-purple-100 text-purple-700';
+                                            case 'api': return 'bg-blue-100 text-blue-700';
+                                            default: return 'bg-gray-100 text-gray-700';
                                         }
                                     };
 
                                     return (
-                                        <span key={envId} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getEnvColorClass(env.type)}`}>
+                                        <span key={we.id} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getEnvColorClass(env.integration_type)}`}>
                                             <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                                             </svg>
@@ -526,9 +523,9 @@ function WorkflowCard({
                                         </span>
                                     );
                                 })}
-                                {workflow.environment_ids.length > 3 && (
+                                {workflow.environments.length > 3 && (
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-                                        +{workflow.environment_ids.length - 3} more
+                                        +{workflow.environments.length - 3} more
                                     </span>
                                 )}
                             </div>

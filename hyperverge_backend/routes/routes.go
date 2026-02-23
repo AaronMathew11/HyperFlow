@@ -60,11 +60,11 @@ func Register(r *gin.Engine) {
 	api.PUT("/workflows/:id/snapshot", snapshot.SaveWorkflow)
 
 	// Workflow-Environment Relationships
-	api.POST("/workflows/:workflowId/environments/:envId", workflow_environments.Link)
-	api.DELETE("/workflows/:workflowId/environments/:envId", workflow_environments.Unlink)
-	api.GET("/workflows/:workflowId/environments", workflow_environments.ListByWorkflow)
-	api.GET("/environments/:envId/workflows", workflow_environments.ListByEnvironment)
-	api.PUT("/workflows/:workflowId/environments/:envId/flow-data", workflow_environments.UpdateDiagram)
+	api.POST("/workflows/:id/environments/:envId", workflow_environments.Link)
+	api.DELETE("/workflows/:id/environments/:envId", workflow_environments.Unlink)
+	api.GET("/workflows/:id/environments", workflow_environments.ListByWorkflow)
+	api.GET("/environments/:id/workflows", workflow_environments.ListByEnvironment)
+	api.PUT("/workflows/:id/environments/:envId/flow-data", workflow_environments.UpdateDiagram)
 
 	// ============ LEGACY BOARD ROUTES (keep for now) ============
 

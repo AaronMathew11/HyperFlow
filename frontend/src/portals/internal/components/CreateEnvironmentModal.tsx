@@ -11,27 +11,22 @@ interface CreateEnvironmentModalProps {
 export interface EnvironmentFormData {
     name: string;
     description?: string;
-    type: 'development' | 'staging' | 'production' | 'testing';
-    base_url: string;
-    // Client integration questions
+    integrationType: 'api' | 'sdk';
+    sdkPlatform?: 'android' | 'ios' | 'web' | 'linkkyc';
     usesResultsApi: boolean;
     usesOutputsApi: boolean;
     reliesOnWebhooks: boolean;
-    integrationType: 'api' | 'sdk';
-    sdkPlatform?: 'ios' | 'android' | 'web' | 'react-native' | 'flutter' | 'other';
 }
 
 export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, environment }: CreateEnvironmentModalProps) {
     const [formData, setFormData] = useState<EnvironmentFormData>({
         name: '',
         description: '',
-        type: 'development',
-        base_url: '',
+        integrationType: 'api',
+        sdkPlatform: undefined,
         usesResultsApi: false,
         usesOutputsApi: false,
         reliesOnWebhooks: false,
-        integrationType: 'api',
-        sdkPlatform: undefined
     });
 
     useEffect(() => {
@@ -39,13 +34,11 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
             setFormData({
                 name: environment.name,
                 description: environment.description || '',
-                type: environment.type || 'development',
-                base_url: environment.base_url || '',
-                usesResultsApi: false,
-                usesOutputsApi: false,
-                reliesOnWebhooks: false,
                 integrationType: environment.integration_type as any || 'api',
-                sdkPlatform: undefined
+                sdkPlatform: environment.variables?.sdk_platform || undefined,
+                usesResultsApi: environment.variables?.uses_results_api || false,
+                usesOutputsApi: environment.variables?.uses_outputs_api || false,
+                reliesOnWebhooks: environment.variables?.relies_on_webhooks || false,
             });
         }
     }, [environment]);
@@ -62,13 +55,10 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
         setFormData({
             name: '',
             description: '',
-            type: 'development',
-            base_url: '',
+            integrationType: 'api',
             usesResultsApi: false,
             usesOutputsApi: false,
             reliesOnWebhooks: false,
-            integrationType: 'api',
-            sdkPlatform: undefined
         });
         onClose();
     };
@@ -121,43 +111,6 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                     placeholder="Optional description of this environment"
                                 />
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Environment Type *
-                                    </label>
-                                    <select
-                                        id="type"
-                                        required
-                                        value={formData.type}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                        <option value="development">Development</option>
-                                        <option value="staging">Staging</option>
-                                        <option value="production">Production</option>
-                                        <option value="testing">Testing</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label htmlFor="base_url" className="block text-sm font-medium text-gray-700 mb-2">
-                                        Base URL *
-                                    </label>
-                                    <input
-                                        type="url"
-                                        id="base_url"
-                                        required
-                                        value={formData.base_url}
-                                        onChange={(e) => setFormData({ ...formData, base_url: e.target.value })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="e.g., https://api.dev.com"
-                                    />
-                                </div>
-                            </div>
-
-
                         </div>
 
                         {/* Integration Configuration */}
@@ -199,7 +152,7 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                             {formData.integrationType === 'sdk' && (
                                 <div>
                                     <label htmlFor="sdkPlatform" className="block text-sm font-medium text-gray-700 mb-2">
-                                        What platform are they integrating on? *
+                                        Mode of Integration *
                                     </label>
                                     <select
                                         id="sdkPlatform"
@@ -209,12 +162,10 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     >
                                         <option value="">Select platform</option>
-                                        <option value="ios">iOS</option>
                                         <option value="android">Android</option>
+                                        <option value="ios">iOS</option>
                                         <option value="web">Web</option>
-                                        <option value="react-native">React Native</option>
-                                        <option value="flutter">Flutter</option>
-                                        <option value="other">Other</option>
+                                        <option value="linkkyc">LinkKYC</option>
                                     </select>
                                 </div>
                             )}
@@ -223,25 +174,31 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                             <div className="space-y-3">
                                 <h4 className="text-sm font-medium text-gray-900">API Usage</h4>
 
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.usesResultsApi}
-                                        onChange={(e) => setFormData({ ...formData, usesResultsApi: e.target.checked })}
-                                        className="mr-2"
-                                    />
-                                    <span className="text-sm text-gray-700">Is the client using Results API?</span>
-                                </label>
-
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.usesOutputsApi}
-                                        onChange={(e) => setFormData({ ...formData, usesOutputsApi: e.target.checked })}
-                                        className="mr-2"
-                                    />
-                                    <span className="text-sm text-gray-700">Is the client using Outputs API?</span>
-                                </label>
+                                <div>
+                                    <p className="text-sm text-gray-600 mb-2">Which API is the client using?</p>
+                                    <div className="space-y-2">
+                                        <label className="flex items-center">
+                                            <input
+                                                type="radio"
+                                                name="apiType"
+                                                checked={formData.usesResultsApi}
+                                                onChange={() => setFormData({ ...formData, usesResultsApi: true, usesOutputsApi: false })}
+                                                className="mr-2"
+                                            />
+                                            <span className="text-sm text-gray-700">Results API</span>
+                                        </label>
+                                        <label className="flex items-center">
+                                            <input
+                                                type="radio"
+                                                name="apiType"
+                                                checked={formData.usesOutputsApi}
+                                                onChange={() => setFormData({ ...formData, usesResultsApi: false, usesOutputsApi: true })}
+                                                className="mr-2"
+                                            />
+                                            <span className="text-sm text-gray-700">Outputs API</span>
+                                        </label>
+                                    </div>
+                                </div>
 
                                 <label className="flex items-center">
                                     <input

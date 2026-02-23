@@ -14,12 +14,7 @@ import (
 type EnvironmentReq struct {
 	Name            string                 `json:"name"`
 	Description     string                 `json:"description"`
-	Type            string                 `json:"type"`             // development, staging, production, testing
 	IntegrationType string                 `json:"integration_type"` // api, sdk
-	BaseURL         string                 `json:"base_url"`
-	APIKey          string                 `json:"api_key"`
-	AuthMethod      string                 `json:"auth_method"` // api-key, oauth, basic-auth, none
-	Headers         map[string]interface{} `json:"headers"`
 	Variables       map[string]interface{} `json:"variables"`
 }
 
@@ -27,12 +22,7 @@ type EnvironmentResponse struct {
 	ID              string                 `json:"id"`
 	Name            string                 `json:"name"`
 	Description     string                 `json:"description"`
-	Type            string                 `json:"type"`
 	IntegrationType string                 `json:"integration_type"`
-	BaseURL         string                 `json:"base_url"`
-	APIKey          string                 `json:"api_key"`
-	AuthMethod      string                 `json:"auth_method"`
-	Headers         map[string]interface{} `json:"headers"`
 	Variables       map[string]interface{} `json:"variables"`
 	BusinessUnitID  string                 `json:"business_unit_id"`
 	OwnerID         string                 `json:"owner_id"`
@@ -64,6 +54,20 @@ func getMap(m map[string]interface{}, key string) map[string]interface{} {
 		}
 	}
 	return make(map[string]interface{})
+}
+
+func toResponse(env map[string]interface{}) EnvironmentResponse {
+	return EnvironmentResponse{
+		ID:              getString(env, "id"),
+		Name:            getString(env, "name"),
+		Description:     getString(env, "description"),
+		IntegrationType: getString(env, "integration_type"),
+		Variables:       getMap(env, "variables"),
+		BusinessUnitID:  getString(env, "business_unit_id"),
+		OwnerID:         getString(env, "owner_id"),
+		CreatedAt:       getString(env, "created_at"),
+		UpdatedAt:       getString(env, "updated_at"),
+	}
 }
 
 func Create(c *gin.Context) {
@@ -120,11 +124,6 @@ func Create(c *gin.Context) {
 	}
 
 	// Prepare JSON fields
-	headersJSON, _ := json.Marshal(req.Headers)
-	if req.Headers == nil {
-		headersJSON = []byte("{}")
-	}
-
 	variablesJSON, _ := json.Marshal(req.Variables)
 	if req.Variables == nil {
 		variablesJSON = []byte("{}")
@@ -135,12 +134,7 @@ func Create(c *gin.Context) {
 		Insert(map[string]interface{}{
 			"name":             req.Name,
 			"description":      req.Description,
-			"type":             req.Type,
 			"integration_type": req.IntegrationType,
-			"base_url":         req.BaseURL,
-			"api_key":          req.APIKey,
-			"auth_method":      req.AuthMethod,
-			"headers":          string(headersJSON),
 			"variables":        string(variablesJSON),
 			"business_unit_id": buId,
 			"owner_id":         userId,
@@ -163,25 +157,7 @@ func Create(c *gin.Context) {
 		return
 	}
 
-	env := dbResult[0]
-	response := EnvironmentResponse{
-		ID:              getString(env, "id"),
-		Name:            getString(env, "name"),
-		Description:     getString(env, "description"),
-		Type:            getString(env, "type"),
-		IntegrationType: getString(env, "integration_type"),
-		BaseURL:         getString(env, "base_url"),
-		APIKey:          getString(env, "api_key"),
-		AuthMethod:      getString(env, "auth_method"),
-		Headers:         getMap(env, "headers"),
-		Variables:       getMap(env, "variables"),
-		BusinessUnitID:  getString(env, "business_unit_id"),
-		OwnerID:         getString(env, "owner_id"),
-		CreatedAt:       getString(env, "created_at"),
-		UpdatedAt:       getString(env, "updated_at"),
-	}
-
-	c.JSON(http.StatusCreated, response)
+	c.JSON(http.StatusCreated, toResponse(dbResult[0]))
 }
 
 func List(c *gin.Context) {
@@ -250,22 +226,7 @@ func List(c *gin.Context) {
 	// Transform for response
 	var response []EnvironmentResponse
 	for _, env := range environments {
-		response = append(response, EnvironmentResponse{
-			ID:              getString(env, "id"),
-			Name:            getString(env, "name"),
-			Description:     getString(env, "description"),
-			Type:            getString(env, "type"),
-			IntegrationType: getString(env, "integration_type"),
-			BaseURL:         getString(env, "base_url"),
-			APIKey:          getString(env, "api_key"),
-			AuthMethod:      getString(env, "auth_method"),
-			Headers:         getMap(env, "headers"),
-			Variables:       getMap(env, "variables"),
-			BusinessUnitID:  getString(env, "business_unit_id"),
-			OwnerID:         getString(env, "owner_id"),
-			CreatedAt:       getString(env, "created_at"),
-			UpdatedAt:       getString(env, "updated_at"),
-		})
+		response = append(response, toResponse(env))
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -292,24 +253,7 @@ func Get(c *gin.Context) {
 		return
 	}
 
-	response := EnvironmentResponse{
-		ID:              getString(env, "id"),
-		Name:            getString(env, "name"),
-		Description:     getString(env, "description"),
-		Type:            getString(env, "type"),
-		IntegrationType: getString(env, "integration_type"),
-		BaseURL:         getString(env, "base_url"),
-		APIKey:          getString(env, "api_key"),
-		AuthMethod:      getString(env, "auth_method"),
-		Headers:         getMap(env, "headers"),
-		Variables:       getMap(env, "variables"),
-		BusinessUnitID:  getString(env, "business_unit_id"),
-		OwnerID:         getString(env, "owner_id"),
-		CreatedAt:       getString(env, "created_at"),
-		UpdatedAt:       getString(env, "updated_at"),
-	}
-
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, toResponse(env))
 }
 
 func Update(c *gin.Context) {
@@ -378,10 +322,6 @@ func Update(c *gin.Context) {
 	}
 
 	// Handle special fields
-	if headers, ok := req["headers"]; ok {
-		headersJSON, _ := json.Marshal(headers)
-		req["headers"] = string(headersJSON)
-	}
 	if variables, ok := req["variables"]; ok {
 		variablesJSON, _ := json.Marshal(variables)
 		req["variables"] = string(variablesJSON)

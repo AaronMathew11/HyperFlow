@@ -39,14 +39,12 @@ export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
       const newEnvironment = await api.createEnvironment(businessUnitId, {
         name: data.name,
         description: data.description,
-        type: data.type,
-        base_url: data.base_url,
         integration_type: data.integrationType,
         variables: {
           uses_results_api: data.usesResultsApi,
           uses_outputs_api: data.usesOutputsApi,
           relies_on_webhooks: data.reliesOnWebhooks,
-          sdk_platform: data.sdkPlatform
+          sdk_platform: data.sdkPlatform,
         }
       });
 

@@ -55,7 +55,7 @@ func getMap(m map[string]interface{}, key string) map[string]interface{} {
 }
 
 func Link(c *gin.Context) {
-	workflowId := c.Param("workflowId")
+	workflowId := c.Param("id")
 	envId := c.Param("envId")
 	userId := c.GetString("userId")
 
@@ -169,7 +169,7 @@ func Link(c *gin.Context) {
 }
 
 func Unlink(c *gin.Context) {
-	workflowId := c.Param("workflowId")
+	workflowId := c.Param("id")
 	envId := c.Param("envId")
 	userId := c.GetString("userId")
 
@@ -248,7 +248,7 @@ func Unlink(c *gin.Context) {
 }
 
 func ListByWorkflow(c *gin.Context) {
-	workflowId := c.Param("workflowId")
+	workflowId := c.Param("id")
 	// Join with environments to get names
 	data, _, err := db.Client.
 		From("test_workflow_environments").
@@ -289,7 +289,7 @@ func ListByWorkflow(c *gin.Context) {
 }
 
 func ListByEnvironment(c *gin.Context) {
-	envId := c.Param("envId")
+	envId := c.Param("id")
 	// Join with workflows to get names
 	data, _, err := db.Client.
 		From("test_workflow_environments").
@@ -329,7 +329,7 @@ func ListByEnvironment(c *gin.Context) {
 }
 
 func UpdateDiagram(c *gin.Context) {
-	workflowId := c.Param("workflowId")
+	workflowId := c.Param("id")
 	envId := c.Param("envId")
 
 	var req map[string]interface{}

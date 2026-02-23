@@ -19,7 +19,7 @@ import ComponentNode, { ComponentNodeData } from './flow/ComponentNode';
 import TableNode, { TableNodeData } from './flow/TableNode';
 import LaneHeader, { LaneHeaderData } from './flow/LaneHeader';
 import CustomEdge from './flow/CustomEdge';
-import { loadSwimlaneDiagram, saveSwimlaneDiagram, updateWorkflowEnvironmentDiagram } from '../lib/api';
+import { loadSwimlaneDiagram, saveSwimlaneDiagram, updateWorkflowEnvironmentDiagram, saveEnvironmentDiagram, loadEnvironmentDiagram } from '../lib/api';
 
 interface Lane {
     id: string;
@@ -65,7 +65,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [lanes, setLanes] = useState<Lane[]>(DEFAULT_LANES);
-    const [isEditMode, setIsEditMode] = useState(false);
+    const [isEditMode] = useState(true);
     const [showLabelModal, setShowLabelModal] = useState(false);
     const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
     const [edgeLabel, setEdgeLabel] = useState('');
@@ -94,15 +94,17 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
 
     // Load data
     useEffect(() => {
-        if (!workflowId) return;
+        if (!workflowId && !environmentId) return;
 
         const loadData = async () => {
             try {
-                const flowData = await loadSwimlaneDiagram(workflowId, environmentId);
+                let flowData = null;
+                if (workflowId) {
+                    flowData = await loadSwimlaneDiagram(workflowId, environmentId);
+                } else if (environmentId) {
+                    flowData = await loadEnvironmentDiagram(environmentId);
+                }
                 if (flowData) {
-                    // Restore nodes and edges
-                    // We might need to handle lane configuration if we stored it in metadata
-                    // For now, simpler implementation:
                     setNodes(flowData.nodes || []);
                     setEdges(flowData.edges || []);
                 }
@@ -115,35 +117,30 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
     }, [workflowId, environmentId, setNodes, setEdges]);
 
     const handleSave = async () => {
-        if (!workflowId) return;
+        if (!workflowId && !environmentId) return;
 
         setIsSaving(true);
         try {
             const flowData = toObject();
-            // Just save nodes and edges for now. 
-            // Ideally we'd strip lane headers from nodes before saving to keep it clean, 
-            // but standard React flow saving includes everything.
-            // We can filter our lane headers if we reconstruct them on load, but simpler to persist them.
-
-            let success = false;
-
-            // Clean up flow data for saving - we need to match the Workflow['flow_data'] structure
             const dataToSave = {
                 nodes: flowData.nodes,
                 edges: flowData.edges,
-                flowInputs: '', // reserved for future
-                flowOutputs: '' // reserved for future
+                flowInputs: '',
+                flowOutputs: ''
             };
 
-            if (environmentId) {
+            let success = false;
+
+            if (workflowId && environmentId) {
                 success = await updateWorkflowEnvironmentDiagram(workflowId, environmentId, dataToSave);
-            } else {
+            } else if (workflowId) {
                 success = await saveSwimlaneDiagram(workflowId, dataToSave);
+            } else if (environmentId) {
+                success = await saveEnvironmentDiagram(environmentId, dataToSave);
             }
 
             if (success) {
                 setLastSaved(new Date().toLocaleTimeString());
-                // Optionally show toast
             } else {
                 alert('Failed to save diagram');
             }
@@ -438,7 +435,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
                 </div>
                 <div className="flex gap-3 items-center">
                     {lastSaved && <span className="text-xs text-gray-400 mr-2">Saved {lastSaved}</span>}
-                    {workflowId && !readOnly && (
+                    {(workflowId || environmentId) && !readOnly && (
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
@@ -448,15 +445,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false }:
                         </button>
                     )}
 
-                    {!readOnly && (
-                        <button
-                            onClick={() => setIsEditMode(!isEditMode)}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${isEditMode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            {isEditMode ? 'Done Editing' : '✏️ Edit Diagram'}
-                        </button>
-                    )}
+
                 </div>
             </div>
 
