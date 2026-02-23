@@ -57,7 +57,7 @@ function DocumentationSection({ links = [] }: DocumentationSectionProps) {
     const displayLinks = links.length > 0 ? links : defaultLinks;
 
     // Get unique categories
-    const categories = ['all', ...Array.from(new Set(displayLinks.map(link => link.category).filter(Boolean)))];
+    const categories = ['all', ...Array.from(new Set(displayLinks.map(link => link.category).filter((c): c is string => Boolean(c))))];
 
     // Filter links by category only
     const filteredLinks = displayLinks.filter(link => {
