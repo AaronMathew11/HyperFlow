@@ -203,7 +203,6 @@ func Verify(c *gin.Context) {
 		From("board_access_links").
 		Select("*", "", false).
 		Eq("id", linkId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -211,11 +210,18 @@ func Verify(c *gin.Context) {
 		return
 	}
 
-	var link map[string]interface{}
-	if err := json.Unmarshal(data, &link); err != nil {
+	var linkResults []map[string]interface{}
+	if err := json.Unmarshal(data, &linkResults); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse link"})
 		return
 	}
+
+	if len(linkResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "link not found"})
+		return
+	}
+
+	link := linkResults[0]
 
 	// Check expiration
 	if expiresAt, ok := link["expires_at"].(string); ok && expiresAt != "" {
@@ -258,7 +264,6 @@ func GetPublicBoard(c *gin.Context) {
 		From("board_access_links").
 		Select("*", "", false).
 		Eq("id", linkId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -266,11 +271,18 @@ func GetPublicBoard(c *gin.Context) {
 		return
 	}
 
-	var link map[string]interface{}
-	if err := json.Unmarshal(linkData, &link); err != nil {
+	var linkResults []map[string]interface{}
+	if err := json.Unmarshal(linkData, &linkResults); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse link"})
 		return
 	}
+
+	if len(linkResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "link not found"})
+		return
+	}
+
+	link := linkResults[0]
 
 	// Check expiration
 	if expiresAt, ok := link["expires_at"].(string); ok && expiresAt != "" {
@@ -296,7 +308,6 @@ func GetPublicBoard(c *gin.Context) {
 		From("board").
 		Select("*", "", false).
 		Eq("id", boardId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -304,23 +315,30 @@ func GetPublicBoard(c *gin.Context) {
 		return
 	}
 
-	var board map[string]interface{}
-	if err := json.Unmarshal(boardData, &board); err != nil {
+	var boardResults []map[string]interface{}
+	if err := json.Unmarshal(boardData, &boardResults); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse board"})
 		return
 	}
+
+	if len(boardResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "board not found"})
+		return
+	}
+
+	board := boardResults[0]
 
 	// Fetch the latest snapshot
 	snapshotData, _, err := db.Client.
 		From("board_snapshots").
 		Select("*", "", false).
 		Eq("board_id", boardId).
-		Single().
 		Execute()
 
 	if err == nil {
-		var snapshot map[string]interface{}
-		if err := json.Unmarshal(snapshotData, &snapshot); err == nil {
+		var snapshotResults []map[string]interface{}
+		if err := json.Unmarshal(snapshotData, &snapshotResults); err == nil && len(snapshotResults) > 0 {
+			snapshot := snapshotResults[0]
 			if data, ok := snapshot["data"]; ok {
 				board["flow_data"] = data
 			}

@@ -125,26 +125,38 @@ func List(c *gin.Context) {
 func Get(c *gin.Context) {
 	clientId := c.Param("id")
 	userId := c.GetString("userId")
+	fmt.Printf("DEBUG: Getting client %s for userId %s\n", clientId, userId)
 
 	data, _, err := db.Client.
 		From("test_clients").
 		Select("*", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
+	fmt.Printf("DEBUG: Get response data: %s\n", string(data))
+	
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+		fmt.Printf("DEBUG: Get error: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var result map[string]interface{}
-	if err := json.Unmarshal(data, &result); err != nil {
+	var results []map[string]interface{}
+	if err := json.Unmarshal(data, &results); err != nil {
+		fmt.Printf("DEBUG: JSON unmarshal error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
 		return
 	}
 
+	if len(results) == 0 {
+		fmt.Printf("DEBUG: No client found with id %s for user %s\n", clientId, userId)
+		c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+		return
+	}
+
+	result := results[0]
+	fmt.Printf("DEBUG: Found client: %+v\n", result)
 	c.JSON(http.StatusOK, result)
 }
 

@@ -2,6 +2,7 @@ package buaccesslinks
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -68,8 +69,14 @@ func Create(c *gin.Context) {
 	buId := c.Param("buId")
 	userId := c.GetString("userId")
 
+	// Debug logging
+	fmt.Printf("DEBUG: Creating BU access link for buId=%s, userId=%s\n", buId, userId)
+
 	// Verify user has access to this BU (owner of parent client or has editor permission)
-	if !canManageBU(buId, userId) {
+	canManage := canManageBU(buId, userId)
+	fmt.Printf("DEBUG: canManageBU result: %v\n", canManage)
+	
+	if !canManage {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to create link for this BU"})
 		return
 	}
@@ -215,7 +222,6 @@ func Verify(c *gin.Context) {
 		From("test_bu_access_links").
 		Select("*, test_business_units(name)", "", false).
 		Eq("id", linkId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -223,11 +229,18 @@ func Verify(c *gin.Context) {
 		return
 	}
 
-	var link map[string]interface{}
-	if err := json.Unmarshal(data, &link); err != nil {
+	var linkResults []map[string]interface{}
+	if err := json.Unmarshal(data, &linkResults); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse link"})
 		return
 	}
+
+	if len(linkResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "link not found"})
+		return
+	}
+
+	link := linkResults[0]
 
 	// Check expiration
 	if expiresAt, ok := link["expires_at"].(string); ok && expiresAt != "" {
@@ -273,7 +286,6 @@ func GetPublicBUData(c *gin.Context) {
 		From("test_bu_access_links").
 		Select("*, test_business_units(id, name, description)", "", false).
 		Eq("id", linkId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -281,11 +293,18 @@ func GetPublicBUData(c *gin.Context) {
 		return
 	}
 
-	var link map[string]interface{}
-	if err := json.Unmarshal(linkData, &link); err != nil {
+	var linkResults []map[string]interface{}
+	if err := json.Unmarshal(linkData, &linkResults); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse link"})
 		return
 	}
+
+	if len(linkResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "link not found"})
+		return
+	}
+
+	link := linkResults[0]
 
 	// Check expiration
 	if expiresAt, ok := link["expires_at"].(string); ok && expiresAt != "" {
@@ -398,44 +417,69 @@ func GetPublicBUData(c *gin.Context) {
 
 // canManageBU checks if user owns the parent client or has editor access to the BU
 func canManageBU(buId, userId string) bool {
+	fmt.Printf("DEBUG: canManageBU called with buId=%s, userId=%s\n", buId, userId)
+	
 	// Get BU's client
 	buData, _, err := db.Client.
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
+		fmt.Printf("DEBUG: Error getting BU data: %v\n", err)
 		return false
 	}
 
-	var bu map[string]interface{}
-	json.Unmarshal(buData, &bu)
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		fmt.Printf("DEBUG: Error parsing BU data or no results: err=%v, len=%d\n", err, len(buResults))
+		return false
+	}
+
+	bu := buResults[0]
 	clientId := getString(bu, "client_id")
+	fmt.Printf("DEBUG: Found BU client_id: %s\n", clientId)
 
 	// Check if user owns the client
-	_, _, clientErr := db.Client.
+	clientData, _, clientErr := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if clientErr == nil {
-		return true
+		var clientResults []map[string]interface{}
+		if json.Unmarshal(clientData, &clientResults) == nil && len(clientResults) > 0 {
+			fmt.Printf("DEBUG: User owns the client - access granted\n")
+			return true
+		}
+		fmt.Printf("DEBUG: User does not own client, checking BU permissions\n")
+	} else {
+		fmt.Printf("DEBUG: Error checking client ownership: %v\n", clientErr)
 	}
 
 	// Check if user has editor permission on BU
-	_, _, permErr := db.Client.
+	permData, _, permErr := db.Client.
 		From("test_bu_permissions").
 		Select("id", "", false).
 		Eq("business_unit_id", buId).
 		Eq("user_id", userId).
 		Eq("role", "editor").
-		Single().
 		Execute()
 
-	return permErr == nil
+	if permErr == nil {
+		var permResults []map[string]interface{}
+		if json.Unmarshal(permData, &permResults) == nil && len(permResults) > 0 {
+			fmt.Printf("DEBUG: User has editor permission on BU - access granted\n")
+			return true
+		}
+		fmt.Printf("DEBUG: No editor permission found for user\n")
+	} else {
+		fmt.Printf("DEBUG: Error checking BU permissions: %v\n", permErr)
+	}
+
+	fmt.Printf("DEBUG: Access denied - no ownership or permissions\n")
+	return false
 }

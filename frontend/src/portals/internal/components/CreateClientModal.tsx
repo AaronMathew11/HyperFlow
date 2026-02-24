@@ -1,25 +1,60 @@
 import { useState } from 'react';
+import { Client } from '../../../shared/types';
 
 interface CreateClientModalProps {
     isOpen: boolean;
     onClose: () => void;
     onCreate: (name: string, description?: string) => void;
+    existingClients: Client[];
 }
 
-export default function CreateClientModal({ isOpen, onClose, onCreate }: CreateClientModalProps) {
+export default function CreateClientModal({ isOpen, onClose, onCreate, existingClients }: CreateClientModalProps) {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [nameError, setNameError] = useState('');
 
     if (!isOpen) return null;
 
+    const checkDuplicateName = (inputName: string) => {
+        const trimmedName = inputName.trim();
+        if (!trimmedName) {
+            setNameError('');
+            return false;
+        }
+        
+        const isDuplicate = existingClients.some(
+            client => client.name.toLowerCase() === trimmedName.toLowerCase()
+        );
+        
+        if (isDuplicate) {
+            setNameError('A client with this name already exists');
+            return true;
+        } else {
+            setNameError('');
+            return false;
+        }
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newName = e.target.value;
+        setName(newName);
+        checkDuplicateName(newName);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (name.trim()) {
-            onCreate(name.trim(), description.trim() || undefined);
-            setName('');
-            setDescription('');
-            onClose();
-        }
+        const trimmedName = name.trim();
+        
+        if (!trimmedName) return;
+        
+        const isDuplicate = checkDuplicateName(trimmedName);
+        if (isDuplicate) return;
+        
+        onCreate(trimmedName, description.trim() || undefined);
+        setName('');
+        setDescription('');
+        setNameError('');
+        onClose();
     };
 
     return (
@@ -35,11 +70,14 @@ export default function CreateClientModal({ isOpen, onClose, onCreate }: CreateC
                         <input
                             type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            onChange={handleNameChange}
+                            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all ${nameError ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
                             placeholder="Enter client name"
                             autoFocus
                         />
+                        {nameError && (
+                            <p className="mt-1 text-sm text-red-600">{nameError}</p>
+                        )}
                     </div>
                     <div className="mb-6">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -63,7 +101,7 @@ export default function CreateClientModal({ isOpen, onClose, onCreate }: CreateC
                         </button>
                         <button
                             type="submit"
-                            disabled={!name.trim()}
+                            disabled={!name.trim() || !!nameError}
                             className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Create Client

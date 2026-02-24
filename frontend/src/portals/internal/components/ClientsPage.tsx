@@ -5,6 +5,7 @@ import { useClientStore } from '../store/clientStore';
 import FolderCard from './FolderCard';
 import CreateClientModal from './CreateClientModal';
 import TopNav from './TopNav';
+import Breadcrumb from '../../../shared/components/Breadcrumb';
 
 export default function ClientsPage() {
     const { clients, loading, loadClients, createClient, deleteClient } = useClientStore();
@@ -31,12 +32,17 @@ export default function ClientsPage() {
         await deleteClient(clientId);
     };
 
+    const breadcrumbItems = [
+        { label: 'Home' },
+    ];
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
             <TopNav />
 
             {/* Main Content */}
             <main className="flex-1 p-8">
+                <Breadcrumb items={breadcrumbItems} />
                 {/* Page Title and Create Button */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -123,6 +129,7 @@ export default function ClientsPage() {
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onCreate={handleCreateClient}
+                existingClients={clients}
             />
         </div>
     );

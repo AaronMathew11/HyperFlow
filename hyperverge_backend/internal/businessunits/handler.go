@@ -50,20 +50,30 @@ func Create(c *gin.Context) {
 	userId := c.GetString("userId")
 
 	// Verify user owns the client
-	_, _, err := db.Client.
+	data, _, err := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(data, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to create BU in this client"})
 		return
 	}
 
-	data, _, err := db.Client.
+	buData, _, err := db.Client.
 		From("test_business_units").
 		Insert(map[string]interface{}{
 			"name":        req.Name,
@@ -78,7 +88,7 @@ func Create(c *gin.Context) {
 	}
 
 	var dbResult []map[string]interface{}
-	if err := json.Unmarshal(data, &dbResult); err != nil {
+	if err := json.Unmarshal(buData, &dbResult); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
 		return
 	}
@@ -107,15 +117,25 @@ func List(c *gin.Context) {
 	userId := c.GetString("userId")
 
 	// Verify user owns the client
-	_, _, err := db.Client.
+	clientData, _, err := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
 		return
 	}
@@ -148,20 +168,25 @@ func Get(c *gin.Context) {
 		From("test_business_units").
 		Select("*", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var result map[string]interface{}
-	if err := json.Unmarshal(data, &result); err != nil {
+	var results []map[string]interface{}
+	if err := json.Unmarshal(data, &results); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
 		return
 	}
 
+	if len(results) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	result := results[0]
 	c.JSON(http.StatusOK, result)
 }
 
@@ -174,7 +199,6 @@ func Delete(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -182,20 +206,30 @@ func Delete(c *gin.Context) {
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	buResult := buResults[0]
 	clientId := getString(buResult, "client_id")
 
 	// Verify user owns the client
-	_, _, err = db.Client.
+	clientData, _, err := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this business unit"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this business unit"})
 		return
 	}
@@ -230,7 +264,6 @@ func Share(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -238,20 +271,30 @@ func Share(c *gin.Context) {
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	buResult := buResults[0]
 	clientId := getString(buResult, "client_id")
 
 	// Verify user owns the client
-	_, _, err = db.Client.
+	clientData, _, err := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to share this BU"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to share this BU"})
 		return
 	}
@@ -292,7 +335,6 @@ func ListCollaborators(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -300,20 +342,30 @@ func ListCollaborators(c *gin.Context) {
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	buResult := buResults[0]
 	clientId := getString(buResult, "client_id")
 
 	// Verify user owns the client
-	_, _, err = db.Client.
+	clientData, _, err := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
 		return
 	}
@@ -349,7 +401,6 @@ func RemoveCollaborator(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -357,20 +408,30 @@ func RemoveCollaborator(c *gin.Context) {
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	buResult := buResults[0]
 	clientId := getString(buResult, "client_id")
 
 	// Verify user owns the client
-	_, _, err = db.Client.
+	clientData, _, err := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
 		c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
 		return
 	}

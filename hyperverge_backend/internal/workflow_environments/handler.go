@@ -64,7 +64,6 @@ func Link(c *gin.Context) {
 		From("test_workflows").
 		Select("business_unit_id", "", false).
 		Eq("id", workflowId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -72,8 +71,13 @@ func Link(c *gin.Context) {
 		return
 	}
 
-	var wf map[string]interface{}
-	json.Unmarshal(wfData, &wf)
+	var wfResults []map[string]interface{}
+	if err := json.Unmarshal(wfData, &wfResults); err != nil || len(wfResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	wf := wfResults[0]
 	buId := getString(wf, "business_unit_id")
 
 	// 2. Verify access to environment
@@ -81,7 +85,6 @@ func Link(c *gin.Context) {
 		From("test_environments").
 		Select("business_unit_id", "", false).
 		Eq("id", envId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -89,8 +92,13 @@ func Link(c *gin.Context) {
 		return
 	}
 
-	var env map[string]interface{}
-	json.Unmarshal(envData, &env)
+	var envResults []map[string]interface{}
+	if err := json.Unmarshal(envData, &envResults); err != nil || len(envResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "environment not found"})
+		return
+	}
+
+	env := envResults[0]
 	envBuId := getString(env, "business_unit_id")
 
 	// 3. Check if workflow and environment belong to same BU
@@ -104,7 +112,6 @@ func Link(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -112,30 +119,45 @@ func Link(c *gin.Context) {
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	buResult := buResults[0]
 	clientId := getString(buResult, "client_id")
 
 	// Check user access
-	_, _, clientErr := db.Client.
+	clientData, _, clientErr := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if clientErr != nil {
-		_, _, permErr := db.Client.
+		permData, _, permErr := db.Client.
 			From("test_bu_permissions").
 			Select("id", "", false).
 			Eq("business_unit_id", buId).
 			Eq("user_id", userId).
 			Eq("role", "editor").
-			Single().
 			Execute()
 
 		if permErr != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to link workflow"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to link workflow"})
+			return
+		}
+	} else {
+		var clientResults []map[string]interface{}
+		if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to link workflow"})
 			return
 		}
@@ -182,7 +204,6 @@ func Unlink(c *gin.Context) {
 		From("test_workflows").
 		Select("business_unit_id", "", false).
 		Eq("id", workflowId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -190,8 +211,13 @@ func Unlink(c *gin.Context) {
 		return
 	}
 
-	var wf map[string]interface{}
-	json.Unmarshal(wfData, &wf)
+	var wfResults []map[string]interface{}
+	if err := json.Unmarshal(wfData, &wfResults); err != nil || len(wfResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	wf := wfResults[0]
 	buId := getString(wf, "business_unit_id")
 
 	// Verify user permissions on BU
@@ -199,35 +225,46 @@ func Unlink(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err == nil {
-		var buResult map[string]interface{}
-		json.Unmarshal(buData, &buResult)
-		clientId := getString(buResult, "client_id")
+		var buResults []map[string]interface{}
+		if err := json.Unmarshal(buData, &buResults); err == nil && len(buResults) > 0 {
+			buResult := buResults[0]
+			clientId := getString(buResult, "client_id")
 
-		_, _, clientErr := db.Client.
-			From("test_clients").
-			Select("id", "", false).
-			Eq("id", clientId).
-			Eq("owner_id", userId).
-			Single().
-			Execute()
-
-		if clientErr != nil {
-			_, _, permErr := db.Client.
-				From("test_bu_permissions").
+			clientData, _, clientErr := db.Client.
+				From("test_clients").
 				Select("id", "", false).
-				Eq("business_unit_id", buId).
-				Eq("user_id", userId).
-				Eq("role", "editor").
-				Single().
+				Eq("id", clientId).
+				Eq("owner_id", userId).
 				Execute()
 
-			if permErr != nil {
-				c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to unlink"})
-				return
+			if clientErr != nil {
+				permData, _, permErr := db.Client.
+					From("test_bu_permissions").
+					Select("id", "", false).
+					Eq("business_unit_id", buId).
+					Eq("user_id", userId).
+					Eq("role", "editor").
+					Execute()
+
+				if permErr != nil {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to unlink"})
+					return
+				}
+
+				var permResults []map[string]interface{}
+				if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to unlink"})
+					return
+				}
+			} else {
+				var clientResults []map[string]interface{}
+				if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to unlink"})
+					return
+				}
 			}
 		}
 	}

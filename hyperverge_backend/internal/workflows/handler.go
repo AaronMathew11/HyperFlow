@@ -3,6 +3,7 @@ package workflows
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"hypervision_backend/internal/db"
@@ -63,39 +64,67 @@ func Create(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse BU data"})
+		return
+	}
+
+	if len(buResults) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
-	clientId := getString(buResult, "client_id")
+	clientId := getString(buResults[0], "client_id")
 
 	// Check if user owns the client
-	_, _, clientErr := db.Client.
+	clientData, _, clientErr := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if clientErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
 		// Check if user has editor permission
-		_, _, permErr := db.Client.
+		permData, _, permErr := db.Client.
 			From("test_bu_permissions").
 			Select("id", "", false).
 			Eq("business_unit_id", buId).
 			Eq("user_id", userId).
 			Eq("role", "editor").
-			Single().
 			Execute()
 
 		if permErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse permission data"})
+			return
+		}
+
+		if len(permResults) == 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to create workflow in this BU"})
 			return
 		}
@@ -165,38 +194,66 @@ func List(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse BU data"})
+		return
+	}
+
+	if len(buResults) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
-	clientId := getString(buResult, "client_id")
+	clientId := getString(buResults[0], "client_id")
 
 	// Check if user owns the client
-	_, _, clientErr := db.Client.
+	clientData, _, clientErr := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if clientErr != nil {
-		// Check if user has permission
-		_, _, permErr := db.Client.
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
+		// Check if user has permission (for collaborative access)
+		permData, _, permErr := db.Client.
 			From("test_bu_permissions").
 			Select("id", "", false).
 			Eq("business_unit_id", buId).
 			Eq("user_id", userId).
-			Single().
 			Execute()
 
 		if permErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse permission data"})
+			return
+		}
+
+		if len(permResults) == 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
 			return
 		}
@@ -229,19 +286,25 @@ func Get(c *gin.Context) {
 		From("test_workflows").
 		Select("*", "", false).
 		Eq("id", workflowId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var results []map[string]interface{}
+	if err := json.Unmarshal(data, &results); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
+		return
+	}
+
+	if len(results) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
 		return
 	}
 
-	var result map[string]interface{}
-	if err := json.Unmarshal(data, &result); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
-		return
-	}
+	result := results[0]
 
 	// Parse flow_data from JSON string to FlowData struct
 	var flowData FlowData
@@ -314,7 +377,6 @@ func Update(c *gin.Context) {
 		From("test_workflows").
 		Select("owner_id, business_unit_id", "", false).
 		Eq("id", workflowId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -322,8 +384,13 @@ func Update(c *gin.Context) {
 		return
 	}
 
-	var workflow map[string]interface{}
-	json.Unmarshal(workflowData, &workflow)
+	var workflowResults []map[string]interface{}
+	if err := json.Unmarshal(workflowData, &workflowResults); err != nil || len(workflowResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	workflow := workflowResults[0]
 
 	ownerId := getString(workflow, "owner_id")
 	buId := getString(workflow, "business_unit_id")
@@ -331,16 +398,21 @@ func Update(c *gin.Context) {
 	// Check if user owns the workflow
 	if ownerId != userId {
 		// Check if user has editor access to the BU
-		_, _, permErr := db.Client.
+		permData, _, permErr := db.Client.
 			From("test_bu_permissions").
 			Select("id", "", false).
 			Eq("business_unit_id", buId).
 			Eq("user_id", userId).
 			Eq("role", "editor").
-			Single().
 			Execute()
 
 		if permErr != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update this workflow"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update this workflow"})
 			return
 		}
@@ -369,7 +441,6 @@ func Delete(c *gin.Context) {
 		From("test_workflows").
 		Select("business_unit_id", "", false).
 		Eq("id", workflowId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -377,8 +448,13 @@ func Delete(c *gin.Context) {
 		return
 	}
 
-	var workflow map[string]interface{}
-	json.Unmarshal(workflowData, &workflow)
+	var workflowResults []map[string]interface{}
+	if err := json.Unmarshal(workflowData, &workflowResults); err != nil || len(workflowResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	workflow := workflowResults[0]
 	buId := getString(workflow, "business_unit_id")
 
 	// Check if user has access via client ownership or BU permissions
@@ -386,7 +462,6 @@ func Delete(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -394,31 +469,49 @@ func Delete(c *gin.Context) {
 		return
 	}
 
-	var businessUnit map[string]interface{}
-	json.Unmarshal(buData, &businessUnit)
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	businessUnit := buResults[0]
 	clientId := getString(businessUnit, "client_id")
 
 	// Check if user owns the client
-	_, _, clientErr := db.Client.
+	clientData, _, clientErr := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
+
+	if clientErr == nil {
+		var clientResults []map[string]interface{}
+		if err := json.Unmarshal(clientData, &clientResults); err == nil && len(clientResults) > 0 {
+			clientErr = nil
+		} else {
+			clientErr = fmt.Errorf("client not found")
+		}
+	}
 
 	if clientErr != nil {
 		// Check if user has editor permission
-		_, _, permErr := db.Client.
+		permData, _, permErr := db.Client.
 			From("test_bu_permissions").
 			Select("id", "", false).
 			Eq("business_unit_id", buId).
 			Eq("user_id", userId).
 			Eq("role", "editor").
-			Single().
 			Execute()
 
 		if permErr != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this workflow"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this workflow"})
 			return
 		}

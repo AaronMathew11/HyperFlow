@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBusinessUnitStore } from '../store/businessUnitStore';
 
@@ -40,10 +40,10 @@ export default function BusinessUnitsPage() {
         await deleteBusinessUnit(buId);
     };
 
-    const breadcrumbItems = [
+    const breadcrumbItems = useMemo(() => [
         { label: 'Home', path: '/' },
-        { label: client?.name || 'Client' },
-    ];
+        { label: client?.name || 'Loading...', path: clientId ? `/client/${clientId}` : undefined },
+    ], [client, clientId]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">

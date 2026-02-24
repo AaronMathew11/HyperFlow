@@ -172,7 +172,6 @@ func Get(c *gin.Context) {
 		From("board").
 		Select("*", "", false).
 		Eq("id", boardId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -180,11 +179,18 @@ func Get(c *gin.Context) {
 		return
 	}
 
-	var result map[string]interface{}
-	if err := json.Unmarshal(data, &result); err != nil {
+	var results []map[string]interface{}
+	if err := json.Unmarshal(data, &results); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
 		return
 	}
+
+	if len(results) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "board not found"})
+		return
+	}
+
+	result := results[0]
 
 	c.JSON(http.StatusOK, result)
 }

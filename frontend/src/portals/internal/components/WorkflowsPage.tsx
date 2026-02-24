@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useEnvironmentStore } from '../store/environmentStore';
@@ -114,11 +114,11 @@ export default function WorkflowsPage() {
         }
     };
 
-    const breadcrumbItems = [
+    const breadcrumbItems = useMemo(() => [
         { label: 'Home', path: '/' },
-        { label: client?.name || 'Client', path: `/client/${clientId}` },
-        { label: businessUnit?.name || 'Business Unit' },
-    ];
+        { label: client?.name || 'Loading...', path: clientId ? `/client/${clientId}` : undefined },
+        { label: businessUnit?.name || 'Loading...', path: (clientId && buId) ? `/client/${clientId}/bu/${buId}` : undefined },
+    ], [client, businessUnit, clientId, buId]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">

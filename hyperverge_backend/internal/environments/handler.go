@@ -85,39 +85,67 @@ func Create(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse BU data"})
+		return
+	}
+
+	if len(buResults) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
-	clientId := getString(buResult, "client_id")
+	clientId := getString(buResults[0], "client_id")
 
 	// Check if user owns the client
-	_, _, clientErr := db.Client.
+	clientData, _, clientErr := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if clientErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
 		// Check if user has editor permission
-		_, _, permErr := db.Client.
+		permData, _, permErr := db.Client.
 			From("test_bu_permissions").
 			Select("id", "", false).
 			Eq("business_unit_id", buId).
 			Eq("user_id", userId).
 			Eq("role", "editor").
-			Single().
 			Execute()
 
 		if permErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse permission data"})
+			return
+		}
+
+		if len(permResults) == 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to create environment in this BU"})
 			return
 		}
@@ -169,37 +197,65 @@ func List(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse BU data"})
+		return
+	}
+
+	if len(buResults) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
 		return
 	}
 
-	var buResult map[string]interface{}
-	json.Unmarshal(buData, &buResult)
-	clientId := getString(buResult, "client_id")
+	clientId := getString(buResults[0], "client_id")
 
 	// Check ownership or permissions
-	_, _, clientErr := db.Client.
+	clientData, _, clientErr := db.Client.
 		From("test_clients").
 		Select("id", "", false).
 		Eq("id", clientId).
 		Eq("owner_id", userId).
-		Single().
 		Execute()
 
 	if clientErr != nil {
-		_, _, permErr := db.Client.
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
+		permData, _, permErr := db.Client.
 			From("test_bu_permissions").
 			Select("id", "", false).
 			Eq("business_unit_id", buId).
 			Eq("user_id", userId).
-			Single().
 			Execute()
 
 		if permErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse permission data"})
+			return
+		}
+
+		if len(permResults) == 0 {
 			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
 			return
 		}
@@ -239,7 +295,6 @@ func Get(c *gin.Context) {
 		From("test_environments").
 		Select("*", "", false).
 		Eq("id", envId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -247,12 +302,18 @@ func Get(c *gin.Context) {
 		return
 	}
 
-	var env map[string]interface{}
-	if err := json.Unmarshal(data, &env); err != nil {
+	var envResults []map[string]interface{}
+	if err := json.Unmarshal(data, &envResults); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
 		return
 	}
 
+	if len(envResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "environment not found"})
+		return
+	}
+
+	env := envResults[0]
 	c.JSON(http.StatusOK, toResponse(env))
 }
 
@@ -271,7 +332,6 @@ func Update(c *gin.Context) {
 		From("test_environments").
 		Select("business_unit_id", "", false).
 		Eq("id", envId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -279,8 +339,13 @@ func Update(c *gin.Context) {
 		return
 	}
 
-	var env map[string]interface{}
-	json.Unmarshal(envData, &env)
+	var envResults []map[string]interface{}
+	if err := json.Unmarshal(envData, &envResults); err != nil || len(envResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "environment not found"})
+		return
+	}
+
+	env := envResults[0]
 	buId := getString(env, "business_unit_id")
 
 	// Check permissions (reusing logic: checks owner or editor)
@@ -288,35 +353,46 @@ func Update(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err == nil {
-		var buResult map[string]interface{}
-		json.Unmarshal(buData, &buResult)
-		clientId := getString(buResult, "client_id")
+		var buResults []map[string]interface{}
+		if err := json.Unmarshal(buData, &buResults); err == nil && len(buResults) > 0 {
+			buResult := buResults[0]
+			clientId := getString(buResult, "client_id")
 
-		_, _, clientErr := db.Client.
-			From("test_clients").
-			Select("id", "", false).
-			Eq("id", clientId).
-			Eq("owner_id", userId).
-			Single().
-			Execute()
-
-		if clientErr != nil {
-			_, _, permErr := db.Client.
-				From("test_bu_permissions").
+			clientData, _, clientErr := db.Client.
+				From("test_clients").
 				Select("id", "", false).
-				Eq("business_unit_id", buId).
-				Eq("user_id", userId).
-				Eq("role", "editor").
-				Single().
+				Eq("id", clientId).
+				Eq("owner_id", userId).
 				Execute()
 
-			if permErr != nil {
-				c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update environment"})
-				return
+			if clientErr != nil {
+				permData, _, permErr := db.Client.
+					From("test_bu_permissions").
+					Select("id", "", false).
+					Eq("business_unit_id", buId).
+					Eq("user_id", userId).
+					Eq("role", "editor").
+					Execute()
+
+				if permErr != nil {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update environment"})
+					return
+				}
+
+				var permResults []map[string]interface{}
+				if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update environment"})
+					return
+				}
+			} else {
+				var clientResults []map[string]interface{}
+				if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update environment"})
+					return
+				}
 			}
 		}
 	}
@@ -350,7 +426,6 @@ func Delete(c *gin.Context) {
 		From("test_environments").
 		Select("business_unit_id", "", false).
 		Eq("id", envId).
-		Single().
 		Execute()
 
 	if err != nil {
@@ -358,8 +433,13 @@ func Delete(c *gin.Context) {
 		return
 	}
 
-	var env map[string]interface{}
-	json.Unmarshal(envData, &env)
+	var envResults []map[string]interface{}
+	if err := json.Unmarshal(envData, &envResults); err != nil || len(envResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "environment not found"})
+		return
+	}
+
+	env := envResults[0]
 	buId := getString(env, "business_unit_id")
 
 	// Check permissions
@@ -367,35 +447,46 @@ func Delete(c *gin.Context) {
 		From("test_business_units").
 		Select("client_id", "", false).
 		Eq("id", buId).
-		Single().
 		Execute()
 
 	if err == nil {
-		var buResult map[string]interface{}
-		json.Unmarshal(buData, &buResult)
-		clientId := getString(buResult, "client_id")
+		var buResults []map[string]interface{}
+		if err := json.Unmarshal(buData, &buResults); err == nil && len(buResults) > 0 {
+			buResult := buResults[0]
+			clientId := getString(buResult, "client_id")
 
-		_, _, clientErr := db.Client.
-			From("test_clients").
-			Select("id", "", false).
-			Eq("id", clientId).
-			Eq("owner_id", userId).
-			Single().
-			Execute()
-
-		if clientErr != nil {
-			_, _, permErr := db.Client.
-				From("test_bu_permissions").
+			clientData, _, clientErr := db.Client.
+				From("test_clients").
 				Select("id", "", false).
-				Eq("business_unit_id", buId).
-				Eq("user_id", userId).
-				Eq("role", "editor").
-				Single().
+				Eq("id", clientId).
+				Eq("owner_id", userId).
 				Execute()
 
-			if permErr != nil {
-				c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete environment"})
-				return
+			if clientErr != nil {
+				permData, _, permErr := db.Client.
+					From("test_bu_permissions").
+					Select("id", "", false).
+					Eq("business_unit_id", buId).
+					Eq("user_id", userId).
+					Eq("role", "editor").
+					Execute()
+
+				if permErr != nil {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete environment"})
+					return
+				}
+
+				var permResults []map[string]interface{}
+				if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete environment"})
+					return
+				}
+			} else {
+				var clientResults []map[string]interface{}
+				if err := json.Unmarshal(clientData, &clientResults); err != nil || len(clientResults) == 0 {
+					c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete environment"})
+					return
+				}
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEnvironmentStore } from '../store/environmentStore';
 import Breadcrumb from '../../../shared/components/Breadcrumb';
@@ -32,12 +32,12 @@ export default function EnvironmentDetailPage() {
         navigate(`/client/${clientId}/bu/${buId}`);
     };
 
-    const breadcrumbItems = [
+    const breadcrumbItems = useMemo(() => [
         { label: 'Home', path: '/' },
-        { label: client?.name || 'Client', path: `/client/${clientId}` },
-        { label: businessUnit?.name || 'Business Unit', path: `/client/${clientId}/bu/${buId}` },
-        { label: environment?.name || 'Environment' },
-    ];
+        { label: client?.name || 'Loading...', path: clientId ? `/client/${clientId}` : undefined },
+        { label: businessUnit?.name || 'Loading...', path: (clientId && buId) ? `/client/${clientId}/bu/${buId}` : undefined },
+        { label: environment?.name || 'Loading...', path: undefined },
+    ], [client, businessUnit, environment, clientId, buId]);
 
     if (!environment) {
         return (
