@@ -8,20 +8,33 @@ import (
 )
 
 var Client *supabase.Client
+var ServiceClient *supabase.Client
 
 func Init() {
 	url := os.Getenv("SUPABASE_URL")
-	key := os.Getenv("SUPABASE_ANON_KEY")
+	anonKey := os.Getenv("SUPABASE_ANON_KEY")
+	serviceKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-	if url == "" || key == "" {
+	if url == "" || anonKey == "" {
 		log.Fatal("SUPABASE_URL or SUPABASE_ANON_KEY not set")
 	}
 
-	client, err := supabase.NewClient(url, key, nil)
+	// Create anonymous client for authenticated requests (with RLS)
+	client, err := supabase.NewClient(url, anonKey, nil)
 	if err != nil {
 		log.Fatalf("failed to create supabase client: %v", err)
 	}
 
 	Client = client
 	log.Println("Supabase client initialized")
+
+	// Create service role client for direct database access (bypasses RLS)
+	if serviceKey != "" {
+		serviceClient, err := supabase.NewClient(url, serviceKey, nil)
+		if err != nil {
+			log.Fatalf("failed to create supabase service client: %v", err)
+		}
+		ServiceClient = serviceClient
+		log.Println("Supabase service client initialized")
+	}
 }

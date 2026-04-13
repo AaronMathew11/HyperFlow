@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { modules } from '../../../shared/data/modules';
 import ModuleIcon from '../../../shared/components/ModuleIcon';
 import { useFlowStore } from '../store/flowStore';
+import { useApiDocumentation } from '../../../hooks/useApiDocumentation';
+import { ApiDocumentation } from '../../../lib/apiDocumentation';
 
 export default function Sidebar() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,14 +17,36 @@ export default function Sidebar() {
   const setFlowInputs = useFlowStore((state) => state.setFlowInputs);
   const setFlowOutputs = useFlowStore((state) => state.setFlowOutputs);
 
+  // API Documentation hook - only used when flowType is 'api'
+  const { apis, loading: apisLoading, error: apisError, searchApis } = useApiDocumentation();
+
   const onDragStart = (event: React.DragEvent, moduleType: string) => {
     event.dataTransfer.setData('application/reactflow', moduleType);
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  // Filter modules for SDK flow
   const filteredModules = modules.filter(module =>
     module.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Transform APIs to module-like structure for consistent rendering
+  const apiModules = apis.map((api: ApiDocumentation) => ({
+    id: api.id,
+    label: api.name,
+    description: api.description || 'API endpoint',
+    color: api.category === 'india_api' ? '#10B981' : '#6366F1', // Green for India, Blue for Global
+    icon: '🌐', // API icon
+    category: api.category,
+    url: api.url,
+  }));
+
+  // Handle search for both SDK modules and APIs
+  useEffect(() => {
+    if (flowType === 'api' && searchTerm.trim()) {
+      searchApis(searchTerm);
+    }
+  }, [flowType, searchTerm, searchApis]);
 
 
   const conditionBox = {
@@ -275,33 +299,90 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Modules */}
+      {/* Modules/APIs */}
       <div className="mb-6 relative z-10">
-        <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Modules</h3>
-        <div className="space-y-2">
-          {filteredModules.map((module) => (
-            <div
-              key={module.id}
-              className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100 cursor-move"
-              draggable
-              onDragStart={(e) => onDragStart(e, module.id)}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors">
-                  <ModuleIcon type={module.id} className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-primary-900 truncate">
-                    {module.label}
+        <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">
+          {flowType === 'api' ? 'APIs' : 'Modules'}
+        </h3>
+        
+        {/* Loading state for APIs */}
+        {flowType === 'api' && apisLoading && (
+          <div className="text-center text-primary-400 text-sm py-4">
+            <div className="animate-spin w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full mx-auto mb-2"></div>
+            Loading APIs...
+          </div>
+        )}
+        
+        {/* Error state for APIs */}
+        {flowType === 'api' && apisError && (
+          <div className="text-center text-red-500 text-sm py-4 bg-red-50 rounded-lg border border-red-200">
+            <p className="font-medium mb-1">Failed to load APIs</p>
+            <p className="text-xs">{apisError}</p>
+          </div>
+        )}
+        
+        {/* SDK Modules */}
+        {flowType === 'sdk' && (
+          <div className="space-y-2">
+            {filteredModules.map((module) => (
+              <div
+                key={module.id}
+                className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100 cursor-move"
+                draggable
+                onDragStart={(e) => onDragStart(e, module.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors">
+                    <ModuleIcon type={module.id} className="w-5 h-5" />
                   </div>
-                  <div className="text-xs text-primary-600 truncate mt-0.5">
-                    {flowType === 'api' ? 'Drag to canvas, then click node for API details' : module.description}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-primary-900 truncate">
+                      {module.label}
+                    </div>
+                    <div className="text-xs text-primary-600 truncate mt-0.5">
+                      {module.description}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+        
+        {/* API Documentation */}
+        {flowType === 'api' && !apisLoading && !apisError && (
+          <div className="space-y-2">
+            {apiModules.map((api) => (
+              <div
+                key={api.id}
+                className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100 cursor-move"
+                draggable
+                onDragStart={(e) => onDragStart(e, `api-${api.id}`)} // Prefix with 'api-' to differentiate
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors">
+                    <div className="text-lg">{api.icon}</div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-primary-900 truncate">
+                      {api.label}
+                    </div>
+                    <div className="text-xs text-primary-600 truncate mt-0.5">
+                      {api.description}
+                    </div>
+                    <div className="text-xs text-primary-400 truncate mt-1 flex items-center gap-1">
+                      <span 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: api.color }}
+                      ></span>
+                      {api.category === 'india_api' ? 'India API' : 'Global API'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* End Statuses */}
@@ -336,9 +417,13 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {filteredModules.length === 0 && searchTerm && (
+      {/* No results message */}
+      {searchTerm && (
+        (flowType === 'sdk' && filteredModules.length === 0) ||
+        (flowType === 'api' && !apisLoading && apiModules.length === 0)
+      ) && (
         <div className="text-center text-primary-400 text-sm py-8">
-          No modules found matching "{searchTerm}"
+          No {flowType === 'api' ? 'APIs' : 'modules'} found matching "{searchTerm}"
         </div>
       )}
     </aside>
