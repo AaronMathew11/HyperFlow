@@ -40,8 +40,8 @@ function ApiGroupNode({ data, selected }: NodeProps<ApiGroupNodeData>) {
       <NodeResizer
         color={color}
         isVisible={selected}
-        minWidth={220}
-        minHeight={160}
+        minWidth={350}
+        minHeight={300}
         lineStyle={{ strokeWidth: 1.5 }}
         handleStyle={{ width: 8, height: 8, borderRadius: 2, backgroundColor: color }}
       />

@@ -1,6 +1,8 @@
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo, useState, useCallback, useRef, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
+import { extractCspUrlsForModule } from '../utils/cspUtils';
+import { ModuleType } from '../types';
 
 interface ApiInput {
   name: string;
@@ -36,39 +38,6 @@ interface ApiModuleNodeData {
 }
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-function ApiModuleNode({ data, selected }: NodeProps<ApiModuleNodeData>) {
-  const viewMode = useFlowStore((state) => state.viewMode);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingEndpoint, setIsEditingEndpoint] = useState(false);
-  const [showTechDetails, setShowTechDetails] = useState(false);
-  const [title, setTitle] = useState(data.title || 'API Module');
-  const [endpoint, setEndpoint] = useState(data.endpoint || 'https://api.example.com/endpoint');
-  
-  // Create a temporary module object for CSP URL extraction
-  const tempModule: ModuleType = useMemo(() => ({
-    id: 'temp-api-module',
-    label: title,
-    description: 'Generic API Module',
-    color: data.color,
-    icon: data.icon,
-    cspUrls: data.cspUrls,
-    ipAddresses: data.ipAddresses,
-    apiInfo: {
-      endpoint: endpoint,
-      method: 'POST' as const,
-      inputVariables: [],
-      outputVariables: [],
-      successCriteria: '',
-      documentationUrl: '',
-      curlExample: '',
-      nextApiRecommendations: []
-    }
-  }), [title, endpoint, data.color, data.icon, data.cspUrls, data.ipAddresses]);
-  
-  // Dynamically extract CSP URLs using the CSP script logic
-  const dynamicCspUrls = useMemo(() => {
-    return extractCspUrlsForModule(tempModule);
-  }, [tempModule]);
 
 const METHOD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   GET:    { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' },
@@ -182,6 +151,32 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   const [outputs, setOutputs] = useState<ApiOutput[]>(data.outputs || []);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
+  // Create a temporary module object for CSP URL extraction
+  const tempModule: ModuleType = useMemo(() => ({
+    id: 'temp-api-module',
+    label: title,
+    description: 'Generic API Module',
+    color: data.color,
+    icon: data.icon,
+    cspUrls: data.cspUrls,
+    ipAddresses: data.ipAddresses,
+    apiInfo: {
+      endpoint: endpoint,
+      method: 'POST' as const,
+      inputVariables: [],
+      outputVariables: [],
+      successCriteria: '',
+      documentationUrl: '',
+      curlExample: '',
+      nextApiRecommendations: []
+    }
+  }), [title, endpoint, data.color, data.icon, data.cspUrls, data.ipAddresses]);
+  
+  // Dynamically extract CSP URLs using the CSP script logic
+  const dynamicCspUrls = useMemo(() => {
+    return extractCspUrlsForModule(tempModule);
+  }, [tempModule]);
+
   const isGeneric = data.isGeneric ?? false;
   // editable = not readOnly (internal portal). Generic nodes are always editable when not readOnly.
   // Doc-linked nodes are also editable internally (title, description, doc URL, inputs, outputs).
@@ -209,12 +204,13 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 failureNote,
                 inputs,
                 outputs,
+                cspUrls: dynamicCspUrls,
               },
             }
           : n
       )
     );
-  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs]);
+  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, dynamicCspUrls]);
 
   // Auto-persist on blur of the whole node area
   const nodeRef = useRef<HTMLDivElement>(null);

@@ -277,43 +277,80 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
     setContextMenu(null);
   }, []);
 
-  // When a node is dragged and released, check if it landed inside a group
+  // When a node is dragged and released, check if it landed inside a group or outside
   const onNodeDragStop = useCallback((_event: React.MouseEvent, draggedNode: Node) => {
-    // Don't assign groups themselves as children, or nodes already in a group
-    if (draggedNode.type === 'apiGroupNode' || draggedNode.parentNode) return;
+    // Don't assign groups themselves as children
+    if (draggedNode.type === 'apiGroupNode') return;
 
     const currentNodes = useFlowStore.getState().nodes;
     const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
+    
+    // draggedNode.positionAbsolute contains the absolute canvas coordinates
+    const nx = draggedNode.positionAbsolute?.x ?? draggedNode.position.x;
+    const ny = draggedNode.positionAbsolute?.y ?? draggedNode.position.y;
+
+    let targetGroup: Node | null = null;
 
     for (const group of groups) {
+      const groupX = group.positionAbsolute?.x ?? group.position.x;
+      const groupY = group.positionAbsolute?.y ?? group.position.y;
       const groupW = (group.style?.width as number) || 300;
       const groupH = (group.style?.height as number) || 200;
-      const nx = draggedNode.position.x;
-      const ny = draggedNode.position.y;
 
+      // Check intersection
       if (
-        nx > group.position.x &&
-        ny > group.position.y &&
-        nx < group.position.x + groupW &&
-        ny < group.position.y + groupH
+        nx > groupX &&
+        ny > groupY &&
+        nx < groupX + groupW &&
+        ny < groupY + groupH
       ) {
+        targetGroup = group;
+        break;
+      }
+    }
+
+    if (targetGroup) {
+      if (draggedNode.parentNode !== targetGroup.id) {
+        // Parent changed or node was newly parented
+        const groupX = targetGroup.positionAbsolute?.x ?? targetGroup.position.x;
+        const groupY = targetGroup.positionAbsolute?.y ?? targetGroup.position.y;
+        
         useFlowStore.setState({
           nodes: currentNodes.map(n => {
             if (n.id === draggedNode.id) {
+              const { extent, ...rest } = n;
               return {
-                ...n,
-                parentNode: group.id,
-                extent: 'parent' as const,
+                ...rest,
+                parentNode: targetGroup.id,
                 position: {
-                  x: nx - group.position.x,
-                  y: ny - group.position.y,
+                  x: nx - groupX,
+                  y: ny - groupY,
                 },
               };
             }
             return n;
           }),
         });
-        break;
+      }
+    } else {
+      // Dropped outside of any group
+      if (draggedNode.parentNode) {
+        // It was inside a group, now un-parent it
+        useFlowStore.setState({
+          nodes: currentNodes.map(n => {
+            if (n.id === draggedNode.id) {
+              const { parentNode, extent, ...rest } = n;
+              return {
+                ...rest,
+                position: {
+                  x: nx,
+                  y: ny,
+                },
+              };
+            }
+            return n;
+          }),
+        });
       }
     }
   }, []);
@@ -404,7 +441,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           id: `api-group-${Date.now()}`,
           type: 'apiGroupNode',
           position,
-          style: { width: 380, height: 240 },
+          style: { width: 500, height: 450 },
           data: {
             label: 'Product Group',
             color: '#6366F1',
