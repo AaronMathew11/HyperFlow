@@ -1,6 +1,8 @@
-import { memo, useState, useCallback, useRef } from 'react';
+import { memo, useState, useCallback, useRef, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
+import { extractCspUrlsForModule } from '../utils/cspUtils';
+import { ModuleType } from '../types';
 
 interface ApiInput {
   name: string;
@@ -32,42 +34,10 @@ interface ApiModuleNodeData {
   inputs?: ApiInput[];
   outputs?: ApiOutput[];
   isGeneric?: boolean;
+  readOnly?: boolean; // true in customer portal, false/undefined in internal
 }
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-function ApiModuleNode({ data, selected }: NodeProps<ApiModuleNodeData>) {
-  const viewMode = useFlowStore((state) => state.viewMode);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingEndpoint, setIsEditingEndpoint] = useState(false);
-  const [showTechDetails, setShowTechDetails] = useState(false);
-  const [title, setTitle] = useState(data.title || 'API Module');
-  const [endpoint, setEndpoint] = useState(data.endpoint || 'https://api.example.com/endpoint');
-  
-  // Create a temporary module object for CSP URL extraction
-  const tempModule: ModuleType = useMemo(() => ({
-    id: 'temp-api-module',
-    label: title,
-    description: 'Generic API Module',
-    color: data.color,
-    icon: data.icon,
-    cspUrls: data.cspUrls,
-    ipAddresses: data.ipAddresses,
-    apiInfo: {
-      endpoint: endpoint,
-      method: 'POST' as const,
-      inputVariables: [],
-      outputVariables: [],
-      successCriteria: '',
-      documentationUrl: '',
-      curlExample: '',
-      nextApiRecommendations: []
-    }
-  }), [title, endpoint, data.color, data.icon, data.cspUrls, data.ipAddresses]);
-  
-  // Dynamically extract CSP URLs using the CSP script logic
-  const dynamicCspUrls = useMemo(() => {
-    return extractCspUrlsForModule(tempModule);
-  }, [tempModule]);
 
 const METHOD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   GET:    { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' },
@@ -181,28 +151,41 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   const [outputs, setOutputs] = useState<ApiOutput[]>(data.outputs || []);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
+  // Create a temporary module object for CSP URL extraction
+  const tempModule: ModuleType = useMemo(() => ({
+    id: 'temp-api-module',
+    label: title,
+    description: 'Generic API Module',
+    color: data.color,
+    icon: data.icon,
+    cspUrls: data.cspUrls,
+    ipAddresses: data.ipAddresses,
+    apiInfo: {
+      endpoint: endpoint,
+      method: 'POST' as const,
+      inputVariables: [],
+      outputVariables: [],
+      successCriteria: '',
+      documentationUrl: '',
+      curlExample: '',
+      nextApiRecommendations: []
+    }
+  }), [title, endpoint, data.color, data.icon, data.cspUrls, data.ipAddresses]);
+  
+  // Dynamically extract CSP URLs using the CSP script logic
+  const dynamicCspUrls = useMemo(() => {
+    return extractCspUrlsForModule(tempModule);
+  }, [tempModule]);
+
   const isGeneric = data.isGeneric ?? false;
+  // editable = not readOnly (internal portal). Generic nodes are always editable when not readOnly.
+  // Doc-linked nodes are also editable internally (title, description, doc URL, inputs, outputs).
+  const isEditable = !(data.readOnly ?? false);
   const accentColor = data.color || '#6366F1';
   const methodStyle = METHOD_COLORS[method] || METHOD_COLORS.POST;
 
   // Output keys for non-generic nodes (read-only doc nodes)
   const outputKeys = data.outputs?.map(o => o.name) ?? extractKeys(data.successResponse);
-  const failureSummary = (() => {
-    if (data.errorDetails) {
-      try {
-        const arr = Array.isArray(data.errorDetails) ? data.errorDetails : [data.errorDetails];
-        return arr.slice(0, 2).map((e: any) => e?.code || e?.message || String(e)).join(', ');
-      } catch { /* */ }
-    }
-    if (data.failureResponses) {
-      try {
-        const arr = Array.isArray(data.failureResponses) ? data.failureResponses : [data.failureResponses];
-        return arr.slice(0, 2).map((e: any) => e?.code || e?.status || e?.message || String(e)).join(', ');
-      } catch { /* */ }
-    }
-    return null;
-  })();
-
   // Persist all local state back into the node data store
   const persistData = useCallback(() => {
     setNodes((nodes) =>
@@ -221,12 +204,13 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 failureNote,
                 inputs,
                 outputs,
+                cspUrls: dynamicCspUrls,
               },
             }
           : n
       )
     );
-  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs]);
+  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, dynamicCspUrls]);
 
   // Auto-persist on blur of the whole node area
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -241,12 +225,12 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
     setOutputs(outputs.map((out, idx) => idx === i ? { ...out, [field]: val } : out));
 
   return (
-    <div className="relative group" ref={nodeRef} onBlur={isGeneric ? persistData : undefined}>
+    <div className="relative group" ref={nodeRef} onBlur={isEditable ? persistData : undefined}>
       <NodeResizer
         color={accentColor}
         isVisible={selected}
         minWidth={280}
-        minHeight={isGeneric ? (viewMode === 'tech' ? 380 : 220) : (viewMode === 'tech' ? 260 : 180)}
+        minHeight={isEditable ? (viewMode === 'tech' ? 380 : 220) : (viewMode === 'tech' ? 260 : 180)}
       />
       <Handle
         type="target"
@@ -298,7 +282,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
             <div className="flex-1 min-w-0">
               {/* Method selector (generic) or badge (doc) */}
               <div className="flex items-center gap-1.5 mb-1">
-                {isGeneric ? (
+                {isEditable ? (
                   <select
                     value={method}
                     onChange={(e) => setMethod(e.target.value)}
@@ -324,42 +308,38 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
                   {isGeneric ? 'Generic API' : 'REST API'}
                 </span>
-                {isGeneric && (
-                  <span
-                    className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                    style={{ background: `${accentColor}15`, color: accentColor }}
-                  >
-                    ✏️ editable
-                  </span>
-                )}
               </div>
 
               {/* Title */}
-              {isEditingTitle ? (
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  onBlur={() => setIsEditingTitle(false)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingTitle(false); }}
-                  className="w-full text-sm font-bold text-gray-900 bg-transparent border-0 border-b-2 focus:outline-none pb-0.5"
-                  style={{ borderColor: accentColor }}
-                  autoFocus
-                />
+              {isEditable ? (
+                isEditingTitle ? (
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={() => setIsEditingTitle(false)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingTitle(false); }}
+                    className="w-full text-sm font-bold text-gray-900 bg-transparent border-0 border-b-2 focus:outline-none pb-0.5"
+                    style={{ borderColor: accentColor }}
+                    autoFocus
+                  />
+                ) : (
+                  <div
+                    className="text-sm font-bold text-gray-900 leading-snug break-words cursor-text"
+                    onDoubleClick={() => setIsEditingTitle(true)}
+                    title="Double-click to edit"
+                  >
+                    {title}
+                  </div>
+                )
               ) : (
-                <div
-                  className="text-sm font-bold text-gray-900 leading-snug break-words cursor-text"
-                  onDoubleClick={() => setIsEditingTitle(true)}
-                  title="Double-click to edit"
-                >
-                  {title}
-                </div>
+                <div className="text-sm font-bold text-gray-900 leading-snug break-words">{title}</div>
               )}
             </div>
           </div>
 
           {/* Description */}
-          {isGeneric ? (
+          {isEditable ? (
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -371,8 +351,8 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
             <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{data.description}</p>
           ) : null}
 
-          {/* Endpoint URL — editable for generic */}
-          {isGeneric ? (
+          {/* Endpoint URL */}
+          {isEditable ? (
             <div className="mt-2 flex items-center gap-1.5 rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50/60">
               <span className="pl-2.5 text-[10px] font-bold text-indigo-400 flex-shrink-0">URL</span>
               <input
@@ -412,7 +392,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Success</span>
                 <span className="ml-auto text-[9px] bg-emerald-200 text-emerald-700 px-1.5 py-0.5 rounded-full font-semibold">200 OK</span>
               </div>
-              {isGeneric ? (
+              {isEditable ? (
                 <InlineInput
                   value={successNote}
                   onChange={setSuccessNote}
@@ -421,10 +401,10 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 />
               ) : (
                 <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  {data.successNote || (data.successResponse ? 'Returns expected JSON payload.' : 'Standard 200 OK response.')}
+                  {successNote || (data.successResponse ? 'Returns expected JSON payload.' : 'Standard 200 OK response.')}
                 </p>
               )}
-              {!isGeneric && outputKeys.length > 0 && (
+              {!isEditable && outputKeys.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {outputKeys.slice(0, 4).map((k) => (
                     <span key={k} className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-mono">{k}</span>
@@ -446,7 +426,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                   <span className="ml-auto text-[9px] bg-red-200 text-red-700 px-1.5 py-0.5 rounded-full font-semibold">4xx / 5xx</span>
                 )}
               </div>
-              {isGeneric ? (
+              {isEditable ? (
                 <InlineInput
                   value={failureNote}
                   onChange={setFailureNote}
@@ -455,8 +435,8 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 />
               ) : (
                 <p className="text-[11px] text-red-800 leading-relaxed">
-                  {data.failureNote || failureSummary
-                    ? `Error: ${data.failureNote || failureSummary}`
+                  {failureNote
+                    ? `Error: ${failureNote}`
                     : 'Returns error code and details on failure.'}
                 </p>
               )}
@@ -471,7 +451,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
             {/* Documentation link */}
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 block">Documentation</label>
-              {isGeneric ? (
+              {isEditable ? (
                 <div className="flex items-center gap-1.5 rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50/60">
                   <svg className="w-3 h-3 ml-2.5 flex-shrink-0 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -520,14 +500,14 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                     </svg>
                     <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: accentColor }}>Inputs</span>
                   </div>
-                  {isGeneric && (
+                  {isEditable && (
                     <button onClick={addInput} className="text-[9px] font-bold hover:opacity-80 transition-opacity" style={{ color: accentColor }}>
                       + Add
                     </button>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  {isGeneric ? (
+                  {isEditable ? (
                     inputs.length > 0 ? inputs.map((inp, i) => (
                       <VarRow
                         key={i}
@@ -565,14 +545,14 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                     </svg>
                     <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Outputs</span>
                   </div>
-                  {isGeneric && (
+                  {isEditable && (
                     <button onClick={addOutput} className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
                       + Add
                     </button>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  {isGeneric ? (
+                  {isEditable ? (
                     outputs.length > 0 ? outputs.map((out, i) => (
                       <VarRow
                         key={i}
