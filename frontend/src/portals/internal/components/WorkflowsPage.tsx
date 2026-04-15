@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useEnvironmentStore } from '../store/environmentStore';
+import { useFlowStore } from '../store/flowStore';
 
 import CreateWorkflowModal from './CreateWorkflowModal';
 import CreateEnvironmentModal from './CreateEnvironmentModal';
@@ -74,8 +75,12 @@ export default function WorkflowsPage() {
         }
     }, [buId, clientId, loadWorkflows, loadEnvironments]);
 
-    const handleCreateWorkflow = async (name: string, description?: string, environmentIds?: string[]) => {
+    const { setFlowType } = useFlowStore.getState();
+
+    const handleCreateWorkflow = async (name: string, description?: string, environmentIds?: string[], flowType?: 'sdk' | 'api') => {
         if (!buId) return;
+        // Set the flow type in the canvas store BEFORE navigating
+        if (flowType) setFlowType(flowType);
         const newWorkflow = await createWorkflow(buId, name, description, environmentIds);
         if (newWorkflow) {
             navigate(`/workflow/${newWorkflow.id}`);

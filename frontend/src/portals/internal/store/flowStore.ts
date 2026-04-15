@@ -148,7 +148,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     });
   },
   setFlowType: (type: 'sdk' | 'api') => {
-    set({ flowType: type });
+    // Reset the canvas when switching between SDK and API — nodes are different across types
+    if (get().flowType !== type) {
+      set({ flowType: type, nodes: [], edges: [] });
+    }
   },
   setSdkMode: (mode: 'general' | 'advanced') => {
     set({ sdkMode: mode });
