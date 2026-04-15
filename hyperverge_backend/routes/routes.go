@@ -2,8 +2,10 @@
 package routes
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -97,78 +99,89 @@ func Register(r *gin.Engine) {
 	api.DELETE("/business-units/:buId/links/:linkId", buaccesslinks.Revoke)
 
 	// API Documentation routes (authenticated) - querying real database
+	// API Documentation routes (authenticated) - querying real database
 	api.GET("/documentation", func(c *gin.Context) {
 		category := c.Query("category")
-		
-		// Add detailed logging
-		fmt.Printf("DEBUG: Attempting to query api_documentation table, category: %s\n", category)
-		
-		// Use ServiceClient for direct database access (bypasses RLS)
-		if db.ServiceClient == nil {
-			fmt.Printf("ERROR: ServiceClient not initialized\n")
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Service client not available",
-			})
-			return
-		}
-		
-		fmt.Printf("DEBUG: Using ServiceClient for query\n")
-		
-		query := db.ServiceClient.From("api_documentation").Select("id, name, description, url, category, created_at, updated_at", "", false)
-		
+
+		url := os.Getenv("SUPABASE_URL") + "/rest/v1/api_documentation?select=id,name,description,url,category,curl_example,success_response,failure_responses,error_details,created_at,updated_at"
 		if category != "" {
-			query = query.Eq("category", category)
+			url += "&category=eq." + category
 		}
-		
-		data, _, err := query.Execute()
+
+		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			fmt.Printf("ERROR: Database query failed: %v\n", err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to fetch APIs: " + err.Error(),
-				"table": "api_documentation",
-				"category": category,
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request: " + err.Error()})
 			return
 		}
-		
-		fmt.Printf("DEBUG: Query successful, data length: %d bytes\n", len(data))
-		c.Header("Content-Type", "application/json")
-		c.Data(http.StatusOK, "application/json", data)
+
+		req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+		req.Header.Set("Authorization", c.GetHeader("Authorization"))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch APIs: " + err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			c.JSON(resp.StatusCode, gin.H{"error": "Failed to fetch APIs from DB"})
+			return
+		}
+
+		var data []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode APIs"})
+			return
+		}
+
+		c.JSON(http.StatusOK, data)
 	})
 	api.GET("/documentation/search", func(c *gin.Context) {
 		searchQuery := c.Query("q")
 		category := c.Query("category")
-		
+
 		if searchQuery == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Search query is required"})
 			return
 		}
-		
-		// Use ServiceClient for direct database access (bypasses RLS)
-		if db.ServiceClient == nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Service client not available",
-			})
+
+		url := os.Getenv("SUPABASE_URL") + "/rest/v1/api_documentation?select=id,name,description,url,category,curl_example,success_response,failure_responses,error_details,created_at,updated_at"
+		url += "&name=ilike.*" + searchQuery + "*"
+		if category != "" {
+			url += "&category=eq." + category
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request: " + err.Error()})
 			return
 		}
-		
-		query := db.ServiceClient.From("api_documentation").Select("id, name, description, url, category, created_at, updated_at", "", false)
-		
-		// Search in name field using ilike for case-insensitive search
-		query = query.Ilike("name", "%"+searchQuery+"%")
-		
-		if category != "" {
-			query = query.Eq("category", category)
-		}
-		
-		data, _, err := query.Execute()
+
+		req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+		req.Header.Set("Authorization", c.GetHeader("Authorization"))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search APIs: " + err.Error()})
 			return
 		}
-		
-		c.Header("Content-Type", "application/json")
-		c.Data(http.StatusOK, "application/json", data)
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			c.JSON(resp.StatusCode, gin.H{"error": "Failed to search APIs from DB"})
+			return
+		}
+
+		var data []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode APIs"})
+			return
+		}
+
+		c.JSON(http.StatusOK, data)
 	})
 
 	// Public routes (no auth required)

@@ -10,9 +10,7 @@ export default function Sidebar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSdkCollapsed, setIsSdkCollapsed] = useState(false);
   const flowType = useFlowStore((state) => state.flowType);
-  const setFlowType = useFlowStore((state) => state.setFlowType);
-  const sdkMode = useFlowStore((state) => state.sdkMode);
-  const setSdkMode = useFlowStore((state) => state.setSdkMode);
+  // flowType is now set at workflow creation — not toggled in the sidebar
   const flowInputs = useFlowStore((state) => state.flowInputs);
   const flowOutputs = useFlowStore((state) => state.flowOutputs);
   const addFlowInput = useFlowStore((state) => state.addFlowInput);
@@ -30,6 +28,25 @@ export default function Sidebar() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  const onDragStartApiDoc = (event: React.DragEvent, api: typeof apiModules[0]) => {
+    event.dataTransfer.setData('application/reactflow', 'api-documentation');
+    event.dataTransfer.setData('application/apidoc', JSON.stringify({
+      id: api.id,
+      name: api.label,
+      description: api.description,
+      url: api.url,
+      category: api.category,
+      color: api.color,
+      curlExample: api.curlExample,
+      successResponse: api.successResponse,
+      failureResponses: api.failureResponses,
+      errorDetails: api.errorDetails,
+      inputs: api.inputs,
+      outputs: api.outputs,
+    }));
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
   // Filter modules for SDK flow
   const filteredModules = modules.filter(module =>
     module.id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -40,10 +57,16 @@ export default function Sidebar() {
     id: api.id,
     label: api.name,
     description: api.description || 'API endpoint',
-    color: api.category === 'india_api' ? '#10B981' : '#6366F1', // Green for India, Blue for Global
-    icon: '🌐', // API icon
+    color: api.category === 'india_api' ? '#10B981' : '#6366F1',
+    icon: '🌐',
     category: api.category,
     url: api.url,
+    curlExample: api.curl_example,
+    successResponse: api.success_response,
+    failureResponses: api.failure_responses,
+    errorDetails: api.error_details,
+    inputs: (api as any).inputs,
+    outputs: (api as any).outputs,
   }));
 
   // Handle search for both SDK modules and APIs
@@ -121,56 +144,43 @@ export default function Sidebar() {
         </p>
       </div>
 
-      {/* Flow Type Toggle */}
-      <div className="mb-6 relative z-10">
-        <div className="flex bg-white/90 rounded-xl p-1 border border-primary-200 mb-4">
-          <button
-            onClick={() => setFlowType('sdk')}
-            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              flowType === 'sdk'
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'text-primary-600 hover:text-primary-700'
-            }`}
+      {/* Flow Type Badge — read-only display, set at workflow creation */}
+      <div className="mb-5 relative z-10">
+        <div
+          className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
+          style={{
+            background: flowType === 'api'
+              ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)'
+              : 'linear-gradient(135deg, #EEF2FF, #E0E7FF)',
+            border: flowType === 'api' ? '1px solid #A7F3D0' : '1px solid #C7D2FE',
+          }}
+        >
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: flowType === 'api' ? '#10B981' : '#6366F1' }}
           >
-            SDK Flow
-          </button>
-          <button
-            onClick={() => setFlowType('api')}
-            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              flowType === 'api'
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'text-primary-600 hover:text-primary-700'
-            }`}
-          >
-            API Flow
-          </button>
-        </div>
-
-        {/* SDK Mode Toggle - only visible when SDK flow is selected */}
-        {flowType === 'sdk' && (
-          <div className="flex bg-white/90 rounded-xl p-1 border border-primary-200 shadow-sm">
-            <button
-              onClick={() => setSdkMode('general')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                sdkMode === 'general'
-                  ? 'bg-primary-500 text-white shadow-sm transform scale-[0.98]'
-                  : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50'
-              }`}
-            >
-              General
-            </button>
-            <button
-              onClick={() => setSdkMode('advanced')}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                sdkMode === 'advanced'
-                  ? 'bg-primary-500 text-white shadow-sm transform scale-[0.98]'
-                  : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50'
-              }`}
-            >
-              Advanced
-            </button>
+            {flowType === 'api' ? (
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            )}
           </div>
-        )}
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-xs font-bold tracking-wide"
+              style={{ color: flowType === 'api' ? '#065F46' : '#3730A3' }}
+            >
+              {flowType === 'api' ? 'API Flow' : 'SDK Flow'}
+            </p>
+            <p className="text-[10px]" style={{ color: flowType === 'api' ? '#6EE7B7' : '#A5B4FC' }}>
+              {flowType === 'api' ? 'REST endpoints & groups' : 'SDK module integrations'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -272,6 +282,37 @@ export default function Sidebar() {
         </div>
       </div>
 
+      {/* Groups - only in API flow */}
+      {flowType === 'api' && (
+        <div className="mb-6 relative z-10">
+          <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Groups</h3>
+          <div
+            className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-indigo-200"
+            draggable
+            onDragStart={(e) => onDragStart(e, 'api-group')}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 group-hover:bg-indigo-100 transition-colors">
+                {/* Group icon — dashed rectangle */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="4" />
+                  <rect x="7" y="7" width="4" height="4" rx="1" strokeDasharray="0" />
+                  <rect x="13" y="7" width="4" height="4" rx="1" strokeDasharray="0" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm text-primary-900 truncate">
+                  Product Group
+                </div>
+                <div className="text-xs text-primary-600 truncate mt-0.5">
+                  Group multiple APIs together
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* API Module */}
       <div className="mb-6 relative z-10">
         <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">API</h3>
@@ -346,19 +387,28 @@ export default function Sidebar() {
           </div>
         )}
         
-        {/* API Documentation */}
+        {/* API Documentation from DB */}
         {flowType === 'api' && !apisLoading && !apisError && (
           <div className="space-y-2">
+            {apiModules.length === 0 && (
+              <div className="text-center text-primary-400 text-xs py-4 bg-white/60 rounded-lg border border-dashed border-primary-200">
+                No APIs in database yet.
+              </div>
+            )}
             {apiModules.map((api) => (
               <div
                 key={api.id}
-                className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100 cursor-move"
+                className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border cursor-move"
+                style={{ borderColor: api.color + '40' }}
                 draggable
-                onDragStart={(e) => onDragStart(e, `api-${api.id}`)} // Prefix with 'api-' to differentiate
+                onDragStart={(e) => onDragStartApiDoc(e, api)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors">
-                    <div className="text-lg">{api.icon}</div>
+                  <div
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-white text-base flex-shrink-0"
+                    style={{ backgroundColor: api.color }}
+                  >
+                    🌐
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-primary-900 truncate">
@@ -367,12 +417,14 @@ export default function Sidebar() {
                     <div className="text-xs text-primary-600 truncate mt-0.5">
                       {api.description}
                     </div>
-                    <div className="text-xs text-primary-400 truncate mt-1 flex items-center gap-1">
-                      <span 
-                        className="w-2 h-2 rounded-full" 
+                    <div className="text-xs truncate mt-1 flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: api.color }}
-                      ></span>
-                      {api.category === 'india_api' ? 'India API' : 'Global API'}
+                      />
+                      <span style={{ color: api.color }} className="font-medium">
+                        {api.category === 'india_api' ? 'India API' : 'Global API'}
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -18,6 +18,7 @@ import ModuleNode from '../../../shared/components/ModuleNode';
 import ConditionNode from '../../../shared/components/ConditionNode';
 import EndStatusNode from '../../../shared/components/EndStatusNode';
 import ApiModuleNode from '../../../shared/components/ApiModuleNode';
+import ApiGroupNode from '../../../shared/components/ApiGroupNode';
 import StartNode from '../../../shared/components/StartNode';
 import Toolbar from './Toolbar';
 import SdkNotes from '../../../shared/components/SdkNotes';
@@ -30,6 +31,7 @@ const nodeTypes = {
   conditionNode: ConditionNode,
   endStatusNode: EndStatusNode,
   apiModuleNode: ApiModuleNode,
+  apiGroupNode: ApiGroupNode,
   startNode: StartNode,
   noteNode: NoteNode,
   sdkInputsNode: SdkInputsNode,
@@ -275,6 +277,47 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
     setContextMenu(null);
   }, []);
 
+  // When a node is dragged and released, check if it landed inside a group
+  const onNodeDragStop = useCallback((_event: React.MouseEvent, draggedNode: Node) => {
+    // Don't assign groups themselves as children, or nodes already in a group
+    if (draggedNode.type === 'apiGroupNode' || draggedNode.parentNode) return;
+
+    const currentNodes = useFlowStore.getState().nodes;
+    const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
+
+    for (const group of groups) {
+      const groupW = (group.style?.width as number) || 300;
+      const groupH = (group.style?.height as number) || 200;
+      const nx = draggedNode.position.x;
+      const ny = draggedNode.position.y;
+
+      if (
+        nx > group.position.x &&
+        ny > group.position.y &&
+        nx < group.position.x + groupW &&
+        ny < group.position.y + groupH
+      ) {
+        useFlowStore.setState({
+          nodes: currentNodes.map(n => {
+            if (n.id === draggedNode.id) {
+              return {
+                ...n,
+                parentNode: group.id,
+                extent: 'parent' as const,
+                position: {
+                  x: nx - group.position.x,
+                  y: ny - group.position.y,
+                },
+              };
+            }
+            return n;
+          }),
+        });
+        break;
+      }
+    }
+  }, []);
+
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
@@ -355,6 +398,69 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           },
         };
         addNode(newNode);
+      } else if (type === 'api-group') {
+        // Add a new group container node
+        const newGroup = {
+          id: `api-group-${Date.now()}`,
+          type: 'apiGroupNode',
+          position,
+          style: { width: 380, height: 240 },
+          data: {
+            label: 'Product Group',
+            color: '#6366F1',
+          },
+          zIndex: -1,
+        };
+        addNode(newGroup);
+      } else if (type === 'api-documentation') {
+        // Read the API metadata passed from the sidebar
+        const apiDocRaw = event.dataTransfer.getData('application/apidoc');
+        if (!apiDocRaw) return;
+        const apiDoc = JSON.parse(apiDocRaw);
+
+        // Check if drop position is inside a group — auto-assign as child
+        const currentNodes = useFlowStore.getState().nodes;
+        const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
+        let parentNodeId: string | undefined;
+        let childPosition = position;
+        for (const group of groups) {
+          const gw = (group.style?.width as number) || 380;
+          const gh = (group.style?.height as number) || 240;
+          if (
+            position.x > group.position.x &&
+            position.y > group.position.y &&
+            position.x < group.position.x + gw &&
+            position.y < group.position.y + gh
+          ) {
+            parentNodeId = group.id;
+            childPosition = {
+              x: position.x - group.position.x,
+              y: position.y - group.position.y,
+            };
+            break;
+          }
+        }
+
+        const newNode: Node = {
+          id: `api-doc-${apiDoc.id}-${Date.now()}`,
+          type: 'apiModuleNode',
+          position: childPosition,
+          data: {
+            title: apiDoc.name,
+            endpoint: apiDoc.url,
+            color: apiDoc.color,
+            icon: '🌐',
+            description: apiDoc.description,
+            curlExample: apiDoc.curlExample,
+            successResponse: apiDoc.successResponse,
+            failureResponses: apiDoc.failureResponses,
+            errorDetails: apiDoc.errorDetails,
+            inputs: apiDoc.inputs,
+            outputs: apiDoc.outputs,
+          },
+          ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const } : {}),
+        };
+        addNode(newNode);
       } else if (type === 'api-module') {
         // Create start node if this is the first module and no start node exists
         if (isFirstNode && !existingStartNode) {
@@ -375,17 +481,49 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           addNode(startNode);
         }
 
+        // Check if drop position is inside a group — auto-assign as child
+        const currentNodes = useFlowStore.getState().nodes;
+        const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
+        let parentNodeId: string | undefined;
+        let childPosition = position;
+        for (const group of groups) {
+          const gw = (group.style?.width as number) || 380;
+          const gh = (group.style?.height as number) || 240;
+          if (
+            position.x > group.position.x &&
+            position.y > group.position.y &&
+            position.x < group.position.x + gw &&
+            position.y < group.position.y + gh
+          ) {
+            parentNodeId = group.id;
+            childPosition = {
+              x: position.x - group.position.x,
+              y: position.y - group.position.y,
+            };
+            break;
+          }
+        }
+
         // Handle API module
-        const newNode = {
+        const newNode: Node = {
           id: `api-module-${Date.now()}`,
           type: 'apiModuleNode',
-          position,
+          position: childPosition,
           data: {
-            title: 'API Module',
+            title: 'Generic API',
             endpoint: 'https://api.example.com/endpoint',
             color: '#6366F1',
             icon: '🔗',
+            isGeneric: true,
+            description: '',
+            method: 'POST',
+            successNote: '',
+            failureNote: '',
+            curlExample: '',
+            inputs: [],
+            outputs: [],
           },
+          ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const } : {}),
         };
         addNode(newNode);
 
@@ -471,6 +609,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         onConnect={readOnly ? undefined : onConnect}
         onDrop={readOnly ? undefined : onDrop}
         onDragOver={readOnly ? undefined : onDragOver}
+        onNodeDragStop={readOnly ? undefined : onNodeDragStop}
         onContextMenu={readOnly ? undefined : handleContextMenu}
         onNodeContextMenu={readOnly ? undefined : handleNodeContextMenu}
         onPaneClick={handlePaneClick}
