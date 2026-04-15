@@ -4,6 +4,7 @@ import ModuleIcon from '../../../shared/components/ModuleIcon';
 import { useFlowStore } from '../store/flowStore';
 import { useApiDocumentation } from '../../../hooks/useApiDocumentation';
 import { ApiDocumentation } from '../../../lib/apiDocumentation';
+import VariableInput from '../../../shared/components/VariableInput';
 
 export default function Sidebar() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,8 +15,12 @@ export default function Sidebar() {
   const setSdkMode = useFlowStore((state) => state.setSdkMode);
   const flowInputs = useFlowStore((state) => state.flowInputs);
   const flowOutputs = useFlowStore((state) => state.flowOutputs);
-  const setFlowInputs = useFlowStore((state) => state.setFlowInputs);
-  const setFlowOutputs = useFlowStore((state) => state.setFlowOutputs);
+  const addFlowInput = useFlowStore((state) => state.addFlowInput);
+  const removeFlowInput = useFlowStore((state) => state.removeFlowInput);
+  const updateFlowInput = useFlowStore((state) => state.updateFlowInput);
+  const addFlowOutput = useFlowStore((state) => state.addFlowOutput);
+  const removeFlowOutput = useFlowStore((state) => state.removeFlowOutput);
+  const updateFlowOutput = useFlowStore((state) => state.updateFlowOutput);
 
   // API Documentation hook - only used when flowType is 'api'
   const { apis, loading: apisLoading, error: apisError, searchApis } = useApiDocumentation();
@@ -143,23 +148,23 @@ export default function Sidebar() {
 
         {/* SDK Mode Toggle - only visible when SDK flow is selected */}
         {flowType === 'sdk' && (
-          <div className="flex bg-white/60 rounded-full p-0.5 border border-primary-200/50 shadow-sm">
+          <div className="flex bg-white/90 rounded-xl p-1 border border-primary-200 shadow-sm">
             <button
               onClick={() => setSdkMode('general')}
-              className={`px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 sdkMode === 'general'
-                  ? 'bg-primary-500 text-white shadow-sm'
-                  : 'text-primary-600 hover:text-primary-700 hover:bg-white/40'
+                  ? 'bg-primary-500 text-white shadow-sm transform scale-[0.98]'
+                  : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50'
               }`}
             >
               General
             </button>
             <button
               onClick={() => setSdkMode('advanced')}
-              className={`px-2 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 sdkMode === 'advanced'
-                  ? 'bg-primary-500 text-white shadow-sm'
-                  : 'text-primary-600 hover:text-primary-700 hover:bg-white/40'
+                  ? 'bg-primary-500 text-white shadow-sm transform scale-[0.98]'
+                  : 'text-primary-600 hover:text-primary-700 hover:bg-primary-50'
               }`}
             >
               Advanced
@@ -201,48 +206,40 @@ export default function Sidebar() {
         {!isSdkCollapsed && (
           <div className="space-y-4">
             {/* SDK Inputs */}
-            <div>
-              <label className="text-xs font-medium text-primary-700 block mb-2">
-                SDK Inputs
-              </label>
-              <textarea
-                value={flowInputs}
-                onChange={(e) => setFlowInputs(e.target.value)}
-                className="w-full text-xs border border-primary-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary-400/30 focus:border-primary-400 transition-all text-primary-900 placeholder-primary-400 bg-white/80"
-                rows={3}
-                placeholder="user_id, document_type, session_token..."
-              />
-            </div>
+            <VariableInput
+              label="SDK Inputs"
+              variables={flowInputs}
+              placeholder="user_id"
+              onAdd={addFlowInput}
+              onRemove={removeFlowInput}
+              onUpdate={updateFlowInput}
+            />
 
             {/* SDK Outputs */}
-            <div>
-              <label className="text-xs font-medium text-primary-700 block mb-2">
-                SDK Outputs
-              </label>
-              <textarea
-                value={flowOutputs}
-                onChange={(e) => setFlowOutputs(e.target.value)}
-                className="w-full text-xs border border-primary-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary-400/30 focus:border-primary-400 transition-all text-primary-900 placeholder-primary-400 bg-white/80"
-                rows={3}
-                placeholder="verification_status, confidence_score..."
-              />
-            </div>
+            <VariableInput
+              label="SDK Outputs"
+              variables={flowOutputs}
+              placeholder="verification_status"
+              onAdd={addFlowOutput}
+              onRemove={removeFlowOutput}
+              onUpdate={updateFlowOutput}
+            />
           </div>
         )}
 
         {/* Summary when collapsed */}
-        {isSdkCollapsed && (flowInputs || flowOutputs) && (
+        {isSdkCollapsed && (flowInputs.length > 0 || flowOutputs.length > 0) && (
           <div className="text-xs text-primary-700 bg-white/80 p-3 rounded-lg shadow-sm border border-primary-100">
-            {flowInputs && (
+            {flowInputs.length > 0 && (
               <div className="mb-2">
                 <span className="font-medium">Inputs:</span>{' '}
-                {flowInputs.substring(0, 40)}{flowInputs.length > 40 ? '...' : ''}
+                {flowInputs.slice(0, 3).join(', ')}{flowInputs.length > 3 ? '...' : ''}
               </div>
             )}
-            {flowOutputs && (
+            {flowOutputs.length > 0 && (
               <div>
                 <span className="font-medium">Outputs:</span>{' '}
-                {flowOutputs.substring(0, 40)}{flowOutputs.length > 40 ? '...' : ''}
+                {flowOutputs.slice(0, 3).join(', ')}{flowOutputs.length > 3 ? '...' : ''}
               </div>
             )}
           </div>
