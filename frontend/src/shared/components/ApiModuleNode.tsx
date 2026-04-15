@@ -1,7 +1,9 @@
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeResizer } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
 import ModuleIcon from './ModuleIcon';
+import { extractCspUrlsForModule } from '../utils/cspUtils';
+import { ModuleType } from '../types';
 
 interface ApiModuleNodeData {
   title: string;
@@ -19,6 +21,32 @@ function ApiModuleNode({ data, selected }: NodeProps<ApiModuleNodeData>) {
   const [showTechDetails, setShowTechDetails] = useState(false);
   const [title, setTitle] = useState(data.title || 'API Module');
   const [endpoint, setEndpoint] = useState(data.endpoint || 'https://api.example.com/endpoint');
+  
+  // Create a temporary module object for CSP URL extraction
+  const tempModule: ModuleType = useMemo(() => ({
+    id: 'temp-api-module',
+    label: title,
+    description: 'Generic API Module',
+    color: data.color,
+    icon: data.icon,
+    cspUrls: data.cspUrls,
+    ipAddresses: data.ipAddresses,
+    apiInfo: {
+      endpoint: endpoint,
+      method: 'POST' as const,
+      inputVariables: [],
+      outputVariables: [],
+      successCriteria: '',
+      documentationUrl: '',
+      curlExample: '',
+      nextApiRecommendations: []
+    }
+  }), [title, endpoint, data.color, data.icon, data.cspUrls, data.ipAddresses]);
+  
+  // Dynamically extract CSP URLs using the CSP script logic
+  const dynamicCspUrls = useMemo(() => {
+    return extractCspUrlsForModule(tempModule);
+  }, [tempModule]);
 
   const handleTitleDoubleClick = () => {
     setIsEditingTitle(true);
@@ -134,7 +162,7 @@ function ApiModuleNode({ data, selected }: NodeProps<ApiModuleNodeData>) {
       </div>
 
       {/* Tech View Information - contained within node */}
-      {viewMode === 'tech' && (
+      {viewMode === 'tech' && dynamicCspUrls.length > 0 && (
         <div className="border-t border-primary-100 pt-2 mt-auto w-full">
           <button
             onClick={() => setShowTechDetails(!showTechDetails)}
@@ -148,10 +176,10 @@ function ApiModuleNode({ data, selected }: NodeProps<ApiModuleNodeData>) {
             <div className="space-y-2 w-full">
               <div className="w-full">
                 <label className="text-xs text-primary-700 font-medium block mb-1" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>
-                  IP Addresses:
+                  CSP URLs:
                 </label>
                 <div className="text-xs text-primary-800 bg-primary-50 p-2 rounded-lg border border-primary-100 break-words w-full" style={{ fontSize: 'clamp(9px, 1.8vw, 11px)' }}>
-                  {data.ipAddresses?.join(', ') || 'Varies by endpoint'}
+                  {dynamicCspUrls.join(', ')}
                 </div>
               </div>
             </div>

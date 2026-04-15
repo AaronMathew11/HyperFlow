@@ -72,8 +72,8 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         useFlowStore.setState({
           nodes: initialData.nodes || [],
           edges: initialData.edges || [],
-          flowInputs: initialData.flowInputs || '',
-          flowOutputs: initialData.flowOutputs || '',
+          flowInputs: Array.isArray(initialData.flowInputs) ? initialData.flowInputs : (initialData.flowInputs ? [initialData.flowInputs] : []),
+          flowOutputs: Array.isArray(initialData.flowOutputs) ? initialData.flowOutputs : (initialData.flowOutputs ? [initialData.flowOutputs] : []),
         });
         setIsLoaded(true);
         return;
@@ -89,8 +89,8 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           useFlowStore.setState({
             nodes: snapshot.nodes || [],
             edges: snapshot.edges || [],
-            flowInputs: snapshot.flowInputs || '',
-            flowOutputs: snapshot.flowOutputs || '',
+            flowInputs: Array.isArray(snapshot.flowInputs) ? snapshot.flowInputs : (snapshot.flowInputs ? [snapshot.flowInputs] : []),
+            flowOutputs: Array.isArray(snapshot.flowOutputs) ? snapshot.flowOutputs : (snapshot.flowOutputs ? [snapshot.flowOutputs] : []),
           });
 
           // Store initial state for change detection
@@ -116,8 +116,8 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         const success = await saveCurrentBoardData({
           nodes,
           edges,
-          flowInputs,
-          flowOutputs,
+          flowInputs: flowInputs.join(', '),
+          flowOutputs: flowOutputs.join(', '),
         });
 
         if (success) {
@@ -146,8 +146,8 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         const success = await saveCurrentBoardData({
           nodes,
           edges,
-          flowInputs,
-          flowOutputs,
+          flowInputs: flowInputs.join(', '),
+          flowOutputs: flowOutputs.join(', '),
         });
 
         if (success) {

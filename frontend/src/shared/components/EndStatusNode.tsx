@@ -1,6 +1,7 @@
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
+import { modules } from '../data/modules';
 
 interface EndStatusNodeData {
   label: string;
@@ -21,6 +22,35 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
   const viewMode = useFlowStore((state) => state.viewMode);
   const flowType = useFlowStore((state) => state.flowType);
   const sdkMode = useFlowStore((state) => state.sdkMode);
+  const nodes = useFlowStore((state) => state.nodes);
+
+  // Get available modules from current flow
+  const availableModules = useMemo(() => {
+    const moduleNodes = nodes.filter(node => 
+      node.type === 'moduleNode' || node.type === 'apiModuleNode'
+    );
+    
+    const moduleOptions = moduleNodes.map(node => {
+      // For API modules, use the node's data label
+      if (node.type === 'apiModuleNode') {
+        return {
+          id: node.id,
+          label: node.data?.label || 'API Module',
+          type: 'api'
+        };
+      }
+      
+      // For regular modules, find the module data
+      const moduleData = modules.find(m => m.id === node.data?.moduleType);
+      return {
+        id: node.id,
+        label: moduleData?.label || node.data?.label || 'Module',
+        type: 'sdk'
+      };
+    });
+
+    return moduleOptions;
+  }, [nodes]);
 
   const getStatusColor = () => {
     switch (data.status) {
@@ -98,17 +128,34 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                 </label>
                 {editingField === 'resumeFrom' ? (
                   <div className="space-y-1">
-                    <input
-                      type="text"
-                      value={editValues.resumeFrom}
-                      onChange={(e) => setEditValues({ ...editValues, resumeFrom: e.target.value })}
-                      className="w-full text-xs p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500"
-                      autoFocus
-                    />
+                    {availableModules.length > 0 ? (
+                      <select
+                        value={editValues.resumeFrom}
+                        onChange={(e) => setEditValues({ ...editValues, resumeFrom: e.target.value })}
+                        className="w-full text-xs p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-red-500 bg-white"
+                        autoFocus
+                      >
+                        <option value="">Select module to resume from...</option>
+                        {availableModules.map((module) => (
+                          <option key={module.id} value={module.label}>
+                            {module.label} {module.type === 'api' ? '(API)' : '(SDK)'}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-200">
+                        No modules available in the current flow. Add modules to the canvas first.
+                      </div>
+                    )}
                     <div className="flex gap-1">
                       <button
                         onClick={() => handleEditSave('resumeFrom')}
-                        className="px-2 py-0.5 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                        className={`px-2 py-0.5 text-white text-xs rounded ${
+                          availableModules.length === 0 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}
+                        disabled={availableModules.length === 0}
                       >
                         Save
                       </button>
@@ -123,9 +170,9 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
                 ) : (
                   <div
                     className="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200 cursor-pointer hover:bg-red-100 relative"
-                    onClick={() => handleEditClick('resumeFrom', data.resumeFrom || 'ID Card Validation')}
+                    onClick={() => handleEditClick('resumeFrom', data.resumeFrom || (availableModules.length > 0 ? '' : 'No modules in flow'))}
                   >
-                    {data.resumeFrom || 'ID Card Validation'}
+                    {data.resumeFrom || (availableModules.length > 0 ? 'Click to select module' : 'No modules in flow')}
                     <svg className="w-3 h-3 text-red-400 absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>

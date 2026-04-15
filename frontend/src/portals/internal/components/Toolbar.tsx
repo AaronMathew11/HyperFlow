@@ -53,8 +53,8 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
     await saveCurrentBoardData({
       nodes,
       edges,
-      flowInputs,
-      flowOutputs,
+      flowInputs: flowInputs.join(', '),
+      flowOutputs: flowOutputs.join(', '),
     });
   };
 
