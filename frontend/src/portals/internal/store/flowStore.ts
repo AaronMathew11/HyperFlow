@@ -7,8 +7,8 @@ interface FlowState {
   viewMode: 'business' | 'tech';
   flowType: 'sdk' | 'api';
   sdkMode: 'general' | 'advanced';
-  flowInputs: string;
-  flowOutputs: string;
+  flowInputs: string[];
+  flowOutputs: string[];
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
@@ -20,8 +20,14 @@ interface FlowState {
   toggleViewMode: () => void;
   setFlowType: (type: 'sdk' | 'api') => void;
   setSdkMode: (mode: 'general' | 'advanced') => void;
-  setFlowInputs: (inputs: string) => void;
-  setFlowOutputs: (outputs: string) => void;
+  setFlowInputs: (inputs: string[]) => void;
+  setFlowOutputs: (outputs: string[]) => void;
+  addFlowInput: (input: string) => void;
+  removeFlowInput: (index: number) => void;
+  updateFlowInput: (index: number, input: string) => void;
+  addFlowOutput: (output: string) => void;
+  removeFlowOutput: (index: number) => void;
+  updateFlowOutput: (index: number, output: string) => void;
 }
 
 export const useFlowStore = create<FlowState>((set, get) => ({
@@ -30,8 +36,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   viewMode: 'business',
   flowType: 'sdk',
   sdkMode: 'general',
-  flowInputs: '',
-  flowOutputs: '',
+  flowInputs: [],
+  flowOutputs: [],
   onNodesChange: (changes) => {
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
@@ -156,10 +162,36 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   setSdkMode: (mode: 'general' | 'advanced') => {
     set({ sdkMode: mode });
   },
-  setFlowInputs: (inputs: string) => {
+  setFlowInputs: (inputs: string[]) => {
     set({ flowInputs: inputs });
   },
-  setFlowOutputs: (outputs: string) => {
+  setFlowOutputs: (outputs: string[]) => {
     set({ flowOutputs: outputs });
+  },
+  addFlowInput: (input: string) => {
+    set((state) => ({ flowInputs: [...state.flowInputs, input] }));
+  },
+  removeFlowInput: (index: number) => {
+    set((state) => ({ 
+      flowInputs: state.flowInputs.filter((_, i) => i !== index) 
+    }));
+  },
+  updateFlowInput: (index: number, input: string) => {
+    set((state) => ({ 
+      flowInputs: state.flowInputs.map((item, i) => i === index ? input : item) 
+    }));
+  },
+  addFlowOutput: (output: string) => {
+    set((state) => ({ flowOutputs: [...state.flowOutputs, output] }));
+  },
+  removeFlowOutput: (index: number) => {
+    set((state) => ({ 
+      flowOutputs: state.flowOutputs.filter((_, i) => i !== index) 
+    }));
+  },
+  updateFlowOutput: (index: number, output: string) => {
+    set((state) => ({ 
+      flowOutputs: state.flowOutputs.map((item, i) => i === index ? output : item) 
+    }));
   },
 }));

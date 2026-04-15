@@ -1,9 +1,10 @@
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeResizer } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
 import { modules } from '../data/modules';
 import ModuleIcon from './ModuleIcon';
 import ApiModal from './ApiModal';
+import { extractCspUrlsForModule } from '../utils/cspUtils';
 
 interface ModuleNodeData {
   label: string;
@@ -28,6 +29,12 @@ function ModuleNode({ data, selected }: NodeProps<ModuleNodeData>) {
   });
 
   const selectedModule = modules.find(m => m.id === data.moduleType) || null;
+  
+  // Dynamically extract CSP URLs using the CSP script logic
+  const dynamicCspUrls = useMemo(() => {
+    if (!selectedModule) return [];
+    return extractCspUrlsForModule(selectedModule);
+  }, [selectedModule]);
 
 
   const handleInfoClick = (e: React.MouseEvent) => {
@@ -249,7 +256,7 @@ function ModuleNode({ data, selected }: NodeProps<ModuleNodeData>) {
         )}
 
         {/* Tech View Information - contained within node */}
-        {viewMode === 'tech' && (
+        {viewMode === 'tech' && dynamicCspUrls.length > 0 && (
           <div className="border-t border-primary-100 pt-2 mt-auto w-full">
             <button
               onClick={() => setShowTechDetails(!showTechDetails)}
@@ -261,36 +268,26 @@ function ModuleNode({ data, selected }: NodeProps<ModuleNodeData>) {
 
             {showTechDetails && (
               <div className="space-y-2 w-full">
-                {/* SDK Flow - Show only CSP URLs and IP addresses */}
+                {/* SDK Flow - Show only CSP URLs when available */}
                 {flowType === 'sdk' && (
-                  <>
-                    <div className="w-full">
-                      <label className="text-xs text-primary-700 font-medium block mb-1" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>
-                        CSP URLs:
-                      </label>
-                      <div className="text-xs text-primary-800 bg-primary-50 p-2 rounded-lg border border-primary-100 break-words w-full" style={{ fontSize: 'clamp(9px, 1.8vw, 11px)' }}>
-                        {data.cspUrls?.join(', ') || 'api.hypervision.ai, cdn.hypervision.ai'}
-                      </div>
+                  <div className="w-full">
+                    <label className="text-xs text-primary-700 font-medium block mb-1" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>
+                      CSP URLs:
+                    </label>
+                    <div className="text-xs text-primary-800 bg-primary-50 p-2 rounded-lg border border-primary-100 break-words w-full" style={{ fontSize: 'clamp(9px, 1.8vw, 11px)' }}>
+                      {dynamicCspUrls.join(', ')}
                     </div>
-                    <div className="w-full">
-                      <label className="text-xs text-primary-700 font-medium block mb-1" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>
-                        IP Addresses:
-                      </label>
-                      <div className="text-xs text-primary-800 bg-primary-50 p-2 rounded-lg border border-primary-100 break-words w-full" style={{ fontSize: 'clamp(9px, 1.8vw, 11px)' }}>
-                        {data.ipAddresses?.join(', ') || '52.195.10.45, 13.230.115.23'}
-                      </div>
-                    </div>
-                  </>
+                  </div>
                 )}
 
-                {/* API Flow - Show only IP addresses */}
+                {/* API Flow - Show CSP URLs when available */}
                 {flowType === 'api' && (
                   <div className="w-full">
                     <label className="text-xs text-primary-700 font-medium block mb-1" style={{ fontSize: 'clamp(10px, 2vw, 12px)' }}>
-                      IP Addresses:
+                      CSP URLs:
                     </label>
                     <div className="text-xs text-primary-800 bg-primary-50 p-2 rounded-lg border border-primary-100 break-words w-full" style={{ fontSize: 'clamp(9px, 1.8vw, 11px)' }}>
-                      {data.ipAddresses?.join(', ') || '52.195.10.45, 13.230.115.23'}
+                      {dynamicCspUrls.join(', ')}
                     </div>
                   </div>
                 )}
