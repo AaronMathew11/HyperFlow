@@ -621,7 +621,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         zoomOnScroll
         zoomOnPinch
         zoomOnDoubleClick={false}
-        deleteKeyCode={readOnly ? null : "Delete"}
+        deleteKeyCode={readOnly ? null : ['Delete', 'Backspace']}
         nodesDraggable={!readOnly}
         nodesConnectable={!readOnly}
         elementsSelectable={!readOnly}
