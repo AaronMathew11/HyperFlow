@@ -1,8 +1,7 @@
 import { memo, useState, useCallback, useRef, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
-import { extractCspUrlsForModule } from '../utils/cspUtils';
-import { ModuleType } from '../types';
+import type { ModuleType } from '../types/index';
 
 interface ApiInput {
   name: string;
@@ -137,10 +136,12 @@ function VarRow({
 
 function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   const viewMode = useFlowStore((state) => state.viewMode);
-  const { setNodes } = useReactFlow();
+  const flowType = useFlowStore((state) => state.flowType);
+  const sdkMode = useFlowStore((state) => state.sdkMode);
+  const { setNodes, getNodes } = useReactFlow();
 
   // ── local editable state ────────────────────────────────────────────────
-  const [title, setTitle] = useState(data.title || 'Generic API');
+  const [title, setTitle] = useState(data.title || 'Generic Module');
   const [endpoint, setEndpoint] = useState(data.endpoint || 'https://');
   const [description, setDescription] = useState(data.description || '');
   const [method, setMethod] = useState(deriveMethod(data.curlExample, data.method));
@@ -150,39 +151,24 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   const [inputs, setInputs] = useState<ApiInput[]>(data.inputs || []);
   const [outputs, setOutputs] = useState<ApiOutput[]>(data.outputs || []);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [moduleDescription, setModuleDescription] = useState(data.moduleDescription || 'Custom Module');
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
 
-  // Create a temporary module object for CSP URL extraction
-  const tempModule: ModuleType = useMemo(() => ({
-    id: 'temp-api-module',
-    label: title,
-    description: 'Generic API Module',
-    color: data.color,
-    icon: data.icon,
-    cspUrls: data.cspUrls,
-    ipAddresses: data.ipAddresses,
-    apiInfo: {
-      endpoint: endpoint,
-      method: 'POST' as const,
-      inputVariables: [],
-      outputVariables: [],
-      successCriteria: '',
-      documentationUrl: '',
-      curlExample: '',
-      nextApiRecommendations: []
-    }
-  }), [title, endpoint, data.color, data.icon, data.cspUrls, data.ipAddresses]);
+  // Get group information for this node
+  const nodes = getNodes();
+  const currentNode = nodes.find(node => node.id === id);
+  const parentGroupNode = currentNode?.parentNode ? nodes.find(node => node.id === currentNode.parentNode) : null;
+  const groupColor = parentGroupNode?.data?.color || null;
   
-  // Dynamically extract CSP URLs using the CSP script logic
-  const dynamicCspUrls = useMemo(() => {
-    return extractCspUrlsForModule(tempModule);
-  }, [tempModule]);
-
   const isGeneric = data.isGeneric ?? false;
   // editable = not readOnly (internal portal). Generic nodes are always editable when not readOnly.
   // Doc-linked nodes are also editable internally (title, description, doc URL, inputs, outputs).
   const isEditable = !(data.readOnly ?? false);
   const accentColor = data.color || '#6366F1';
   const methodStyle = METHOD_COLORS[method] || METHOD_COLORS.POST;
+
+  // Debug logging
+  console.log('ApiModuleNode Debug:', { flowType, isGeneric, accentColor, title });
 
   // Output keys for non-generic nodes (read-only doc nodes)
   const outputKeys = data.outputs?.map(o => o.name) ?? extractKeys(data.successResponse);
@@ -204,13 +190,13 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 failureNote,
                 inputs,
                 outputs,
-                cspUrls: dynamicCspUrls,
+                moduleDescription,
               },
             }
           : n
       )
     );
-  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, dynamicCspUrls]);
+  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, moduleDescription]);
 
   // Auto-persist on blur of the whole node area
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -227,225 +213,201 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   return (
     <div className="relative group" ref={nodeRef} onBlur={isEditable ? persistData : undefined}>
       <NodeResizer
-        color={accentColor}
+        color={flowType === 'sdk' ? accentColor : "#9393D0"}
         isVisible={selected}
-        minWidth={280}
-        minHeight={isEditable ? (viewMode === 'tech' ? 380 : 220) : (viewMode === 'tech' ? 260 : 180)}
+        minWidth={flowType === 'sdk' ? 280 : 200}
+        minHeight={isGeneric ? (viewMode === 'tech' ? 380 : 220) : (viewMode === 'tech' ? 260 : 180)}
       />
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !border-2 !border-white"
-        style={{ background: accentColor }}
+        className={flowType === 'sdk' ? "!w-3 !h-3 !border-2 !border-white" : "w-3 h-3"}
+        style={flowType === 'sdk' ? { background: accentColor } : {}}
       />
 
-      {/* Selected glow */}
-      {selected && (
+      {flowType === 'sdk' && selected && (
         <div
           className="absolute -inset-[2px] rounded-2xl pointer-events-none"
           style={{ boxShadow: `0 0 0 2px ${accentColor}, 0 0 20px ${accentColor}35` }}
         />
       )}
 
-      {/* Card */}
+      {/* Card - Different styles for SDK vs API flow */}
       <div
-        className="rounded-2xl overflow-hidden flex flex-col"
+        className="p-4 rounded-xl min-w-[200px] relative border-2 bg-white shadow-sm hover:shadow-md h-full w-full flex flex-col justify-start"
         style={{
-          background: 'linear-gradient(150deg, #ffffff 0%, #f8f9ff 100%)',
-          border: selected ? `2px solid ${accentColor}` : '2px solid rgba(226,232,240,0.9)',
-          boxShadow: selected
-            ? `0 8px 30px ${accentColor}20, 0 2px 8px rgba(0,0,0,0.07)`
-            : '0 2px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.04)',
-          transition: 'border-color 0.2s, box-shadow 0.2s',
-          minWidth: 280,
+          borderColor: selected ? '#9393D0' : '#E8E8ED',
         }}
       >
-        {/* Accent bar */}
-        <div style={{ height: 3, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}70)` }} />
+        {/* Group indicator circle - top right corner */}
+        {groupColor && (
+          <div
+            className="absolute top-2 right-2 w-3 h-3 rounded-full border border-white shadow-sm z-10"
+            style={{ backgroundColor: groupColor }}
+            title="Part of group"
+          />
+        )}
 
-        {/* ── HEADER ── */}
-        <div className="px-4 pt-3 pb-2.5">
-          <div className="flex items-start gap-3">
-            {/* Icon */}
-            <div
-              className="flex-shrink-0 flex items-center justify-center rounded-xl text-white"
-              style={{
-                width: 40, height: 40,
-                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}bb)`,
-                fontSize: 17,
-                boxShadow: `0 3px 10px ${accentColor}40`,
-              }}
-            >
-              {data.icon || '🔗'}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              {/* Method selector (generic) or badge (doc) */}
-              <div className="flex items-center gap-1.5 mb-1">
-                {isEditable ? (
+        <div className="flex items-center gap-3 mb-2">
+          <div
+            className="flex-shrink-0 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600"
+            style={{
+              width: 'clamp(36px, 12%, 48px)',
+              height: 'clamp(36px, 12%, 48px)',
+            }}
+          >
+            {isGeneric ? (
+              <svg 
+                style={{
+                  width: 'clamp(20px, 60%, 28px)',
+                  height: 'clamp(20px, 60%, 28px)'
+                }}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" 
+                />
+              </svg>
+            ) : (
+              <span style={{
+                width: 'clamp(20px, 60%, 28px)',
+                height: 'clamp(20px, 60%, 28px)',
+                fontSize: 'clamp(16px, 2.5vw, 20px)'
+              }}>
+                {data.icon || '🔗'}
+              </span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            <div className="flex items-center gap-2">
+              <div className="font-semibold text-primary-900 break-words" style={{ fontSize: 'clamp(13px, 3vw, 16px)' }}>
+                {isEditingTitle ? (
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={() => setIsEditingTitle(false)}
+                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none"
+                    placeholder="Enter module title..."
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                    className={isGeneric ? "cursor-pointer hover:text-blue-600" : ""}
+                    onClick={() => isGeneric && setIsEditingTitle(true)}
+                  >
+                    {title || 'Untitled Module'}
+                  </span>
+                )}
+              </div>
+              {flowType === 'api' && (
+                isGeneric ? (
                   <select
                     value={method}
                     onChange={(e) => setMethod(e.target.value)}
-                    className="text-[10px] font-bold rounded px-1 py-0.5 border focus:outline-none focus:ring-1 cursor-pointer"
-                    style={{
-                      background: methodStyle.bg,
-                      color: methodStyle.text,
-                      borderColor: methodStyle.border,
-                    }}
+                    className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full border-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     {METHODS.map((m) => (
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
                 ) : (
-                  <span
-                    className="px-1.5 py-0.5 text-[10px] font-bold rounded tracking-wider"
-                    style={{ background: methodStyle.bg, color: methodStyle.text, border: `1px solid ${methodStyle.border}` }}
-                  >
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
                     {method}
                   </span>
-                )}
-                <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-                  {isGeneric ? 'Generic API' : 'REST API'}
-                </span>
-              </div>
-
-              {/* Title */}
-              {isEditable ? (
-                isEditingTitle ? (
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    onBlur={() => setIsEditingTitle(false)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') setIsEditingTitle(false); }}
-                    className="w-full text-sm font-bold text-gray-900 bg-transparent border-0 border-b-2 focus:outline-none pb-0.5"
-                    style={{ borderColor: accentColor }}
-                    autoFocus
-                  />
-                ) : (
-                  <div
-                    className="text-sm font-bold text-gray-900 leading-snug break-words cursor-text"
-                    onDoubleClick={() => setIsEditingTitle(true)}
-                    title="Double-click to edit"
-                  >
-                    {title}
-                  </div>
                 )
-              ) : (
-                <div className="text-sm font-bold text-gray-900 leading-snug break-words">{title}</div>
+              )}
+            </div>
+            <div className="text-primary-600 break-words mt-0.5" style={{ fontSize: 'clamp(11px, 2.5vw, 13px)' }}>
+              {flowType === 'api' ? (isGeneric ? 'Generic Module' : 'REST API') : (
+                isGeneric ? (
+                  isEditingDescription ? (
+                    <input
+                      value={moduleDescription}
+                      onChange={(e) => setModuleDescription(e.target.value)}
+                      onBlur={() => setIsEditingDescription(false)}
+                      onKeyDown={(e) => e.key === 'Enter' && setIsEditingDescription(false)}
+                      className="w-full bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none text-primary-600"
+                      placeholder="Enter module type..."
+                      autoFocus
+                      style={{ fontSize: 'clamp(11px, 2.5vw, 13px)' }}
+                    />
+                  ) : (
+                    <span
+                      className="cursor-pointer hover:text-blue-600"
+                      onClick={() => setIsEditingDescription(true)}
+                    >
+                      {moduleDescription}
+                    </span>
+                  )
+                ) : 'api-module'
               )}
             </div>
           </div>
-
-          {/* Description */}
-          {isEditable ? (
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what this API does..."
-              rows={2}
-              className="mt-2 w-full text-[11px] bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300 text-gray-700 placeholder-gray-400"
-            />
-          ) : data.description ? (
-            <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{data.description}</p>
-          ) : null}
-
-          {/* Endpoint URL */}
-          {isEditable ? (
-            <div className="mt-2 flex items-center gap-1.5 rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50/60">
-              <span className="pl-2.5 text-[10px] font-bold text-indigo-400 flex-shrink-0">URL</span>
-              <input
-                type="text"
-                value={endpoint}
-                onChange={(e) => setEndpoint(e.target.value)}
-                placeholder="https://api.example.com/endpoint"
-                className="flex-1 text-[10px] font-mono bg-transparent focus:outline-none py-1.5 pr-2.5 text-indigo-700 placeholder-indigo-300"
-              />
-            </div>
-          ) : (
-            <div
-              className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
-              style={{ background: `${accentColor}0C`, border: `1px solid ${accentColor}1A` }}
-            >
-              <svg className="w-3 h-3 flex-shrink-0" style={{ color: accentColor }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-              <span className="text-[10px] font-mono truncate" style={{ color: accentColor }} title={data.endpoint}>
-                {data.endpoint}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* ── BUSINESS VIEW BODY ── */}
-        {viewMode === 'business' && (
-          <div className="px-4 pb-4 flex flex-col gap-2 border-t border-gray-100 pt-3">
-            {/* Success */}
-            <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Success</span>
-                <span className="ml-auto text-[9px] bg-emerald-200 text-emerald-700 px-1.5 py-0.5 rounded-full font-semibold">200 OK</span>
-              </div>
-              {isEditable ? (
-                <InlineInput
-                  value={successNote}
-                  onChange={setSuccessNote}
-                  placeholder="e.g. Returns user verification result..."
-                  multiline
+        {/* SDK Flow - Show description, success, and failure criteria directly on node (Advanced mode only) */}
+        {flowType === 'sdk' && sdkMode === 'advanced' && (
+          <div className="mt-3 space-y-2">
+            {/* Description */}
+            <div className="group relative">
+              {isGeneric ? (
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe what this module does..."
+                  rows={2}
+                  className="w-full text-xs p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               ) : (
-                <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  {successNote || (data.successResponse ? 'Returns expected JSON payload.' : 'Standard 200 OK response.')}
-                </p>
-              )}
-              {!isEditable && outputKeys.length > 0 && (
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  {outputKeys.slice(0, 4).map((k) => (
-                    <span key={k} className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-mono">{k}</span>
-                  ))}
+                <div className="text-xs text-gray-700 break-words leading-relaxed">
+                  {data.description || 'This API fetches verification information for the submitted document.'}
                 </div>
               )}
             </div>
 
-            {/* Failure */}
-            <div className="bg-red-50 rounded-xl p-3 border border-red-100">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+            <div className="space-y-1">
+              {/* Success */}
+              <div className="group relative">
+                <span className="text-xs font-semibold text-green-700">Success:</span>
+                <div className="text-xs text-green-600 mt-0.5">
+                  {data.successNote || 'Returns expected JSON payload with verification results.'}
                 </div>
-                <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider">Failure</span>
-                {(data.failureResponses || data.errorDetails) && (
-                  <span className="ml-auto text-[9px] bg-red-200 text-red-700 px-1.5 py-0.5 rounded-full font-semibold">4xx / 5xx</span>
-                )}
               </div>
-              {isEditable ? (
-                <InlineInput
-                  value={failureNote}
-                  onChange={setFailureNote}
-                  placeholder="e.g. Returns 401 if token is invalid..."
-                  multiline
-                />
-              ) : (
-                <p className="text-[11px] text-red-800 leading-relaxed">
-                  {failureNote
-                    ? `Error: ${failureNote}`
-                    : 'Returns error code and details on failure.'}
-                </p>
-              )}
+
+              {/* Failure */}
+              <div className="group relative">
+                <span className="text-xs font-semibold text-red-700">Failure:</span>
+                <div className="text-xs text-red-600 mt-0.5">
+                  {data.failureNote || 'Returns error message with details about the failure.'}
+                </div>
+              </div>
             </div>
+
+            {/* Endpoint URL */}
+            {isGeneric && (
+              <div className="mt-2">
+                <label className="text-xs font-semibold text-gray-700">Endpoint:</label>
+                <input
+                  type="text"
+                  value={endpoint}
+                  onChange={(e) => setEndpoint(e.target.value)}
+                  placeholder="https://api.example.com/endpoint"
+                  className="w-full text-xs p-2 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mt-1"
+                />
+              </div>
+            )}
           </div>
         )}
 
+
         {/* ── TECH VIEW BODY ── */}
-        {viewMode === 'tech' && (
+        {viewMode === 'tech' && !isGeneric && (
           <div className="px-4 pb-4 flex flex-col gap-2.5 border-t border-gray-100 pt-3">
 
             {/* Documentation link */}
@@ -593,34 +555,41 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
           className="px-4 py-1.5 flex items-center justify-between border-t"
           style={{ borderColor: 'rgba(226,232,240,0.5)', background: 'rgba(248,250,252,0.7)' }}
         >
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10B981' }} />
-            <span className="text-[10px] text-gray-400 font-medium">{isGeneric ? 'Custom API' : 'Active'}</span>
-          </div>
-          <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-            style={{
-              background: viewMode === 'business' ? '#EEF2FF' : '#0f0f1a',
-              color: viewMode === 'business' ? '#6366F1' : '#60A5FA',
-            }}
-          >
-            {viewMode === 'business' ? 'Business' : 'Tech'} View
-          </span>
+          {!isGeneric && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10B981' }} />
+              <span className="text-[10px] text-gray-400 font-medium">Active</span>
+            </div>
+          )}
+          {/* Only show view mode tag for non-generic modules */}
+          {!isGeneric && (
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              style={{
+                background: viewMode === 'business' ? '#EEF2FF' : '#0f0f1a',
+                color: viewMode === 'business' ? '#6366F1' : '#60A5FA',
+              }}
+            >
+              {viewMode === 'business' ? 'Business' : 'Tech'} View
+            </span>
+          )}
         </div>
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!w-3 !h-3 !border-2 !border-white"
-        style={{ background: accentColor }}
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        className={flowType === 'sdk' ? "!w-3 !h-3 !border-2 !border-white" : "w-3 h-3"} 
+        style={flowType === 'sdk' ? { background: accentColor } : {}}
       />
 
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
-      `}</style>
+      {flowType === 'sdk' && (
+        <style>{`
+          .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+          .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+          .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+        `}</style>
+      )}
     </div>
   );
 }
