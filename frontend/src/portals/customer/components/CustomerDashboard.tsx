@@ -262,6 +262,7 @@ export default function CustomerDashboard() {
                     created_at: selectedWorkflow.created_at || new Date().toISOString(),
                     updated_at: selectedWorkflow.updated_at || new Date().toISOString(),
                   }}
+                  onBack={() => { }}
                   readOnly={true}
                   initialData={selectedFlowData}
                 />
