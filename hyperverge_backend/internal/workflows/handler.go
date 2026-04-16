@@ -28,6 +28,7 @@ type FlowData struct {
 	Edges       []interface{} `json:"edges"`
 	FlowInputs  string        `json:"flowInputs"`
 	FlowOutputs string        `json:"flowOutputs"`
+	FlowType    string        `json:"flowType"`
 }
 
 type WorkflowResponse struct {
@@ -36,6 +37,7 @@ type WorkflowResponse struct {
 	Description    string   `json:"description"`
 	BusinessUnitID string   `json:"business_unit_id"`
 	OwnerID        string   `json:"owner_id"`
+	FlowType       string   `json:"flow_type"`
 	FlowData       FlowData `json:"flow_data"`
 	CreatedAt      string   `json:"created_at"`
 	UpdatedAt      string   `json:"updated_at"`
@@ -148,6 +150,7 @@ func Create(c *gin.Context) {
 			"description":      req.Description,
 			"business_unit_id": buId,
 			"flow_data":        string(flowDataJSON),
+			"flow_type":        req.FlowType,
 		}, false, "", "", "").
 		Execute()
 
@@ -173,12 +176,14 @@ func Create(c *gin.Context) {
 		Name:           getString(workflow, "name"),
 		Description:    getString(workflow, "description"),
 		BusinessUnitID: getString(workflow, "business_unit_id"),
-		OwnerID:        userId, // Set from the user who created this workflow
+		OwnerID:        userId,
+		FlowType:       req.FlowType,
 		FlowData: FlowData{
 			Nodes:       []interface{}{},
 			Edges:       []interface{}{},
 			FlowInputs:  "",
 			FlowOutputs: "",
+			FlowType:    req.FlowType,
 		},
 		CreatedAt: getString(workflow, "created_at"),
 		UpdatedAt: getString(workflow, "updated_at"),
@@ -308,12 +313,14 @@ func Get(c *gin.Context) {
 
 	result := results[0]
 
+	// Read dedicated flow_type column; fall back to value inside flow_data JSON
+	flowType := getString(result, "flow_type")
+
 	// Parse flow_data from JSON string to FlowData struct
 	var flowData FlowData
 	flowDataStr := getString(result, "flow_data")
 	if flowDataStr != "" {
 		if err := json.Unmarshal([]byte(flowDataStr), &flowData); err != nil {
-			// If parsing fails, use default empty flow data
 			flowData = FlowData{
 				Nodes:       []interface{}{},
 				Edges:       []interface{}{},
@@ -322,7 +329,6 @@ func Get(c *gin.Context) {
 			}
 		}
 	} else {
-		// Default empty flow data
 		flowData = FlowData{
 			Nodes:       []interface{}{},
 			Edges:       []interface{}{},
@@ -331,6 +337,15 @@ func Get(c *gin.Context) {
 		}
 	}
 
+	// Prefer dedicated column; fall back to what was stored in flow_data JSON
+	if flowType == "" {
+		flowType = flowData.FlowType
+	}
+	if flowType == "" {
+		flowType = "sdk"
+	}
+	flowData.FlowType = flowType
+
 	// Build properly formatted response
 	response := WorkflowResponse{
 		ID:             getString(result, "id"),
@@ -338,6 +353,7 @@ func Get(c *gin.Context) {
 		Description:    getString(result, "description"),
 		BusinessUnitID: getString(result, "business_unit_id"),
 		OwnerID:        getString(result, "owner_id"),
+		FlowType:       flowType,
 		FlowData:       flowData,
 		CreatedAt:      getString(result, "created_at"),
 		UpdatedAt:      getString(result, "updated_at"),

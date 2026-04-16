@@ -2,6 +2,7 @@ import { useCallback, useState, useMemo, useEffect } from 'react';
 import ReactFlow, {
     addEdge,
     Connection,
+    ConnectionLineType,
     Edge,
     Node,
     useNodesState,
@@ -18,7 +19,7 @@ import 'reactflow/dist/style.css';
 import ComponentNode, { ComponentNodeData } from './flow/ComponentNode';
 import TableNode, { TableNodeData } from './flow/TableNode';
 import LaneHeader, { LaneHeaderData } from './flow/LaneHeader';
-import CustomEdge from './flow/CustomEdge';
+import CustomEditableEdge from './CustomEditableEdge';
 import { loadSwimlaneDiagram, saveSwimlaneDiagram, updateWorkflowEnvironmentDiagram, saveEnvironmentDiagram, loadEnvironmentDiagram } from '../lib/api';
 
 interface Lane {
@@ -90,7 +91,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
     const [draggedLaneIndex, setDraggedLaneIndex] = useState<number | null>(null);
 
     const nodeTypes = useMemo(() => ({ component: ComponentNode, table: TableNode, laneHeader: LaneHeader }), []);
-    const edgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
+    const edgeTypes = useMemo(() => ({ custom: CustomEditableEdge }), []);
 
     const availableColors = ['blue', 'purple', 'green', 'indigo', 'red', 'yellow', 'pink', 'teal'];
 
@@ -219,15 +220,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
             return node;
         }));
 
-        setEdges(eds => eds.map(edge => ({
-            ...edge,
-            data: { ...edge.data, isEditMode, onDelete: handleEdgeDelete }
-        })));
-    }, [isEditMode, setNodes, setEdges]); // Removed handleEdgeDelete from dep array
-
-    const handleEdgeDelete = useCallback((id: string) => {
-        setEdges(eds => eds.filter(e => e.id !== id));
-    }, [setEdges]);
+    }, [isEditMode, setNodes, setEdges]);
 
     const onConnect = useCallback((params: Connection) => {
         setPendingConnection(params);
@@ -243,7 +236,6 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
                 markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
                 style: { strokeWidth: 2 },
                 label: edgeLabel || undefined,
-                data: { isEditMode, onDelete: handleEdgeDelete },
                 source: pendingConnection.source,
                 target: pendingConnection.target,
             };
@@ -252,7 +244,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
         setShowLabelModal(false);
         setPendingConnection(null);
         setEdgeLabel('');
-    }, [pendingConnection, edgeLabel, isEditMode, handleEdgeDelete, setEdges]);
+    }, [pendingConnection, edgeLabel, setEdges]);
 
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();
@@ -579,7 +571,9 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
                         panOnDrag={!isEditMode || undefined} // Allow regular panning in view mode, selection in edit
                         nodesDraggable={isEditMode}
                         connectOnClick={isEditMode}
-                        deleteKeyCode={isEditMode ? 'Backspace' : null}
+                        connectionLineType={ConnectionLineType.Step}
+                        connectionLineStyle={{ stroke: '#6366f1', strokeWidth: 2, strokeDasharray: '6 3' }}
+                        deleteKeyCode={isEditMode ? ['Backspace', 'Delete'] : null}
                     >
                         <Background gap={20} size={1} />
                         <Controls />

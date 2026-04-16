@@ -1,7 +1,8 @@
 import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from 'reactflow';
+import { Handle, Position, NodeProps, NodeResizer, useReactFlow, useUpdateNodeInternals } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
 import type { ModuleType } from '../types/index';
+import { extractCspUrlsForModule } from '../utils/cspUtils';
 
 interface ApiInput {
   name: string;
@@ -33,6 +34,7 @@ interface ApiModuleNodeData {
   ipAddresses?: string[];
   inputs?: ApiInput[];
   outputs?: ApiOutput[];
+  condition?: string;
   isGeneric?: boolean;
   readOnly?: boolean;
 }
@@ -40,10 +42,10 @@ interface ApiModuleNodeData {
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 const METHOD_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  GET:    { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' },
-  POST:   { bg: '#EEF2FF', text: '#4F46E5', border: '#C7D2FE' },
-  PUT:    { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
-  PATCH:  { bg: '#FFF7ED', text: '#EA580C', border: '#FDBA74' },
+  GET: { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' },
+  POST: { bg: '#EEF2FF', text: '#4F46E5', border: '#C7D2FE' },
+  PUT: { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
+  PATCH: { bg: '#FFF7ED', text: '#EA580C', border: '#FDBA74' },
   DELETE: { bg: '#FEF2F2', text: '#DC2626', border: '#FCA5A5' },
 };
 
@@ -144,20 +146,24 @@ const CARD_WIDTH = 300;
 
 function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   const viewMode = useFlowStore((state) => state.viewMode);
-  const { setNodes, updateNodeInternals } = useReactFlow();
+  const flowType = useFlowStore((state) => state.flowType);
+  const { setNodes } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
 
-  const [title, setTitle]             = useState(data.title || 'Generic API');
-  const [endpoint]                     = useState(data.endpoint || 'https://');
+  const [title, setTitle] = useState(data.title || 'Generic API');
+  const [endpoint] = useState(data.endpoint || 'https://');
   const [description, setDescription] = useState(data.description || '');
-  const [method, setMethod]           = useState(deriveMethod(data.curlExample, data.method));
+  const [method, setMethod] = useState(deriveMethod(data.curlExample, data.method));
   const [successNote, setSuccessNote] = useState(data.successNote || '');
   const [failureNote, setFailureNote] = useState(data.failureNote || '');
-  const [docUrl, setDocUrl]           = useState(data.docUrl || data.endpoint || '');
-  const [inputs, setInputs]           = useState<ApiInput[]>(data.inputs || []);
-  const [outputs, setOutputs]         = useState<ApiOutput[]>(data.outputs || []);
+  const [docUrl, setDocUrl] = useState(data.docUrl || data.endpoint || '');
+  const [inputs, setInputs] = useState<ApiInput[]>(data.inputs || []);
+  const [outputs, setOutputs] = useState<ApiOutput[]>(data.outputs || []);
+  const [condition, setCondition] = useState(data.condition || '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [showInputs, setShowInputs]   = useState(false);
+  const [showInputs, setShowInputs] = useState(false);
   const [showOutputs, setShowOutputs] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
   // Dynamically clear fixed heights so the node shrinks when content is hidden
   useEffect(() => {
@@ -206,11 +212,11 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
 
   const dynamicCspUrls = useMemo(() => extractCspUrlsForModule(tempModule), [tempModule]);
 
-  const isGeneric    = data.isGeneric ?? false;
-  const isEditable   = !(data.readOnly ?? false);
-  const accentColor  = data.color || '#6366F1';
-  const methodStyle  = METHOD_COLORS[method] || METHOD_COLORS.POST;
-  const outputKeys   = data.outputs?.map(o => o.name) ?? extractKeys(data.successResponse);
+  const isGeneric = data.isGeneric ?? false;
+  const isEditable = !(data.readOnly ?? false);
+  const accentColor = data.color || '#6366F1';
+  const methodStyle = METHOD_COLORS[method] || METHOD_COLORS.POST;
+  const outputKeys = data.outputs?.map(o => o.name) ?? extractKeys(data.successResponse);
 
   const nodeRef = useRef<HTMLDivElement>(null);
 
@@ -219,21 +225,21 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
       nodes.map((n) =>
         n.id !== id ? n : {
           ...n,
-          data: { ...n.data, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, cspUrls: dynamicCspUrls },
+          data: { ...n.data, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, cspUrls: dynamicCspUrls, condition },
         }
       )
     );
-  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, moduleDescription]);
+  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, dynamicCspUrls, condition]);
 
-  const addInput     = () => setInputs(p => [...p, { name: '', type: 'string', required: false }]);
-  const addOutput    = () => setOutputs(p => [...p, { name: '', type: 'string' }]);
-  const removeInput  = (i: number) => setInputs(p => p.filter((_, idx) => idx !== i));
+  const addInput = () => setInputs(p => [...p, { name: '', type: 'string', required: false }]);
+  const addOutput = () => setOutputs(p => [...p, { name: '', type: 'string' }]);
+  const removeInput = (i: number) => setInputs(p => p.filter((_, idx) => idx !== i));
   const removeOutput = (i: number) => setOutputs(p => p.filter((_, idx) => idx !== i));
-  const updateInput  = (i: number, f: 'name' | 'type', v: string) =>
+  const updateInput = (i: number, f: 'name' | 'type', v: string) =>
     setInputs(p => p.map((x, idx) => idx === i ? { ...x, [f]: v } : x));
   const updateOutput = (i: number, f: 'name' | 'type', v: string) =>
     setOutputs(p => p.map((x, idx) => idx === i ? { ...x, [f]: v } : x));
-  const toggleInputRequired  = (i: number) =>
+  const toggleInputRequired = (i: number) =>
     setInputs(p => p.map((x, idx) => idx === i ? { ...x, required: !x.required } : x));
   const toggleOutputRequired = (i: number) =>
     setOutputs(p => p.map((x, idx) => idx === i ? { ...x, required: !x.required } : x));
@@ -341,7 +347,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
             </div>
           </div>
 
-          {/* Description — 2 lines max, clipped */}
+          {/* Description */}
           {isEditable ? (
             <textarea
               value={description}
@@ -349,12 +355,29 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
               placeholder="Describe what this API does..."
               rows={2}
               className="mt-2 w-full text-[11px] bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-300 text-gray-700 placeholder-gray-400"
-              style={{ maxHeight: 46 }}
             />
           ) : data.description ? (
-            <p className="mt-1.5 text-[11px] text-gray-500 leading-relaxed">
-              {data.description}
-            </p>
+            <div className="mt-1.5">
+              <p
+                className="text-[11px] text-gray-500 leading-relaxed"
+                style={descriptionExpanded ? undefined : {
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                }}
+              >
+                {data.description}
+              </p>
+              {data.description.length > 80 && (
+                <button
+                  className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium mt-0.5 focus:outline-none"
+                  onClick={() => setDescriptionExpanded(v => !v)}
+                >
+                  {descriptionExpanded ? '...see less' : '...see more'}
+                </button>
+              )}
+            </div>
           ) : null}
         </div>
 
@@ -494,20 +517,20 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                     {isEditable ? (
                       inputs.length > 0
                         ? inputs.map((inp, i) => (
-                            <VarRow key={i} name={inp.name} type={inp.type} required={inp.required}
-                              onRemove={() => removeInput(i)} onChangeName={(v) => updateInput(i, 'name', v)} onChangeType={(v) => updateInput(i, 'type', v)}
-                              onToggleRequired={() => toggleInputRequired(i)} />
-                          ))
+                          <VarRow key={i} name={inp.name} type={inp.type} required={inp.required}
+                            onRemove={() => removeInput(i)} onChangeName={(v) => updateInput(i, 'name', v)} onChangeType={(v) => updateInput(i, 'type', v)}
+                            onToggleRequired={() => toggleInputRequired(i)} />
+                        ))
                         : <span className="text-[10px] text-gray-400 italic">Click + Add</span>
                     ) : (
                       data.inputs && data.inputs.length > 0
                         ? data.inputs.map((inp) => (
-                            <div key={inp.name} className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" title={inp.required ? 'Required' : 'Optional'} style={{ background: inp.required ? '#EF4444' : '#9CA3AF' }} />
-                              <span className="text-[10px] font-mono text-gray-700 truncate">{inp.name}</span>
-                              <span className="text-[9px] text-gray-400 ml-auto flex-shrink-0">{inp.type}</span>
-                            </div>
-                          ))
+                          <div key={inp.name} className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" title={inp.required ? 'Required' : 'Optional'} style={{ background: inp.required ? '#EF4444' : '#9CA3AF' }} />
+                            <span className="text-[10px] font-mono text-gray-700 truncate">{inp.name}</span>
+                            <span className="text-[9px] text-gray-400 ml-auto flex-shrink-0">{inp.type}</span>
+                          </div>
+                        ))
                         : <span className="text-[10px] text-gray-400 italic">None</span>
                     )}
                   </div>
@@ -547,10 +570,10 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                     {isEditable ? (
                       outputs.length > 0
                         ? outputs.map((out, i) => (
-                            <VarRow key={i} name={out.name} type={out.type}
-                              onRemove={() => removeOutput(i)} onChangeName={(v) => updateOutput(i, 'name', v)} onChangeType={(v) => updateOutput(i, 'type', v)}
-                              onToggleRequired={() => toggleOutputRequired(i)} />
-                          ))
+                          <VarRow key={i} name={out.name} type={out.type}
+                            onRemove={() => removeOutput(i)} onChangeName={(v) => updateOutput(i, 'name', v)} onChangeType={(v) => updateOutput(i, 'type', v)}
+                            onToggleRequired={() => toggleOutputRequired(i)} />
+                        ))
                         : <span className="text-[10px] text-gray-400 italic">Click + Add</span>
                     ) : (
                       (data.outputs && data.outputs.length > 0 ? data.outputs : outputKeys.map(k => ({ name: k, type: '' })))
@@ -567,6 +590,25 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Condition */}
+              <div className="rounded-xl border border-blue-100 overflow-hidden">
+                <div className="w-full flex items-center gap-1.5 px-2.5 py-2 bg-blue-50">
+                  <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Condition</span>
+                </div>
+                <div className="p-2.5 bg-blue-50/40">
+                  {isEditable ? (
+                    <InlineInput value={condition} onChange={setCondition} placeholder="e.g. response.status == 'success'" multiline />
+                  ) : (
+                    <div className="text-[10px] font-mono text-gray-700 whitespace-pre-wrap break-words">
+                      {condition || <span className="italic text-gray-400">None</span>}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -598,22 +640,23 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
         </div>
       </div>
 
-      {/* Success path — bottom (green) */}
+      {/* Success path — bottom left (green) */}
       <Handle
         type="source"
         position={Position.Bottom}
         id="success"
         className="!w-3 !h-3 !border-2 !border-white"
-        style={{ background: '#10B981' }}
+        style={{ background: '#10B981', left: '25%' }}
         title="Success path"
       />
-      {/* Failure path — right side (red) */}
+
+      {/* Failure path — bottom right (red) */}
       <Handle
         type="source"
-        position={Position.Right}
+        position={Position.Bottom}
         id="failure"
         className="!w-3 !h-3 !border-2 !border-white"
-        style={{ background: '#EF4444' }}
+        style={{ background: '#EF4444', left: '75%' }}
         title="Failure path"
       />
 
