@@ -17,6 +17,7 @@ type SaveSnapshotReq struct {
 	Edges       []interface{} `json:"edges"`
 	FlowInputs  string        `json:"flowInputs"`
 	FlowOutputs string        `json:"flowOutputs"`
+	FlowType    string        `json:"flowType"`
 }
 
 func Get(c *gin.Context) {
@@ -302,16 +303,18 @@ func SaveWorkflow(c *gin.Context) {
 		"edges":       req.Edges,
 		"flowInputs":  req.FlowInputs,
 		"flowOutputs": req.FlowOutputs,
+		"flowType":    req.FlowType,
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	flowDataJSON, _ := json.Marshal(snapshotData)
 
-	// Update the workflow's flow_data directly in test_workflows table
+	// Update the workflow's flow_data and flow_type directly in test_workflows table
 	_, _, err = db.Client.
 		From("test_workflows").
 		Update(map[string]interface{}{
-			"flow_data":   string(flowDataJSON),
+			"flow_data":  string(flowDataJSON),
+			"flow_type":  req.FlowType,
 			"updated_at": now,
 		}, "", "").
 		Eq("id", workflowId).

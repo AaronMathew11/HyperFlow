@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Node, Edge, addEdge, Connection, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
+import { Node, Edge, addEdge, Connection, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange, updateEdge } from 'reactflow';
 
 interface FlowState {
   nodes: Node[];
@@ -12,6 +12,7 @@ interface FlowState {
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
+  onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => void;
   addNode: (node: Node) => void;
   addEdge: (edge: Edge) => void;
   deleteNode: (nodeId: string) => void;
@@ -41,7 +42,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   onNodesChange: (changes) => {
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
-    
+
     // Filter out removal changes for start nodes
     const filteredChanges = changes.filter((change) => {
       if (change.type === 'remove') {
@@ -53,23 +54,23 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       }
       return true;
     });
-    
+
     // Find nodes that are being removed (after filtering)
     const removedNodeIds = filteredChanges
       .filter((change) => change.type === 'remove')
       .map((change) => change.id)
       .filter((id): id is string => id !== undefined);
-    
+
     // Update nodes with filtered changes
     const updatedNodes = applyNodeChanges(filteredChanges, currentNodes);
-    
+
     // Remove edges connected to deleted nodes
     const updatedEdges = removedNodeIds.length > 0
       ? currentEdges.filter(
-          (edge) => !removedNodeIds.includes(edge.source) && !removedNodeIds.includes(edge.target)
-        )
+        (edge) => !removedNodeIds.includes(edge.source) && !removedNodeIds.includes(edge.target)
+      )
       : currentEdges;
-    
+
     set({
       nodes: updatedNodes,
       edges: updatedEdges,
@@ -78,7 +79,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   onEdgesChange: (changes) => {
     const currentNodes = get().nodes;
     const currentEdges = get().edges;
-    
+
     // Filter out removal changes for edges connected to start nodes
     const filteredChanges = changes.filter((change) => {
       if (change.type === 'remove') {
@@ -93,14 +94,39 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       }
       return true;
     });
-    
+
     set({
       edges: applyEdgeChanges(filteredChanges, currentEdges),
     });
   },
   onConnect: (connection) => {
+    let edgeProps: any = { ...connection };
+
+    if (connection.sourceHandle === 'success') {
+      edgeProps = {
+        ...edgeProps,
+        style: { stroke: '#10B981', strokeWidth: 2 },
+        label: 'True',
+        labelStyle: { fill: '#10B981', fontWeight: 700, fontSize: 12 },
+        labelBgStyle: { fill: '#ffffff', color: '#fff', fillOpacity: 0.8 },
+      };
+    } else if (connection.sourceHandle === 'failure') {
+      edgeProps = {
+        ...edgeProps,
+        style: { stroke: '#EF4444', strokeWidth: 2 },
+        label: 'False',
+        labelStyle: { fill: '#EF4444', fontWeight: 700, fontSize: 12 },
+        labelBgStyle: { fill: '#ffffff', color: '#fff', fillOpacity: 0.8 },
+      };
+    }
+
     set({
-      edges: addEdge(connection, get().edges),
+      edges: addEdge(edgeProps, get().edges),
+    });
+  },
+  onEdgeUpdate: (oldEdge, newConnection) => {
+    set({
+      edges: updateEdge(oldEdge, newConnection, get().edges),
     });
   },
   addNode: (node) => {
@@ -115,12 +141,12 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
   deleteNode: (nodeId: string) => {
     const nodeToDelete = get().nodes.find(node => node.id === nodeId);
-    
+
     // Prevent deletion of start nodes
     if (nodeToDelete?.type === 'startNode') {
       return;
     }
-    
+
     set({
       nodes: get().nodes.filter(node => node.id !== nodeId),
       edges: get().edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId),
@@ -129,7 +155,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   deleteEdge: (edgeId: string) => {
     const currentNodes = get().nodes;
     const edgeToDelete = get().edges.find(edge => edge.id === edgeId);
-    
+
     // Prevent deletion of edges connected to start nodes
     if (edgeToDelete) {
       const sourceNode = currentNodes.find(node => node.id === edgeToDelete.source);
@@ -137,7 +163,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         return; // Prevent deletion of edges from start nodes
       }
     }
-    
+
     set({
       edges: get().edges.filter(edge => edge.id !== edgeId),
     });
@@ -172,26 +198,26 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set((state) => ({ flowInputs: [...state.flowInputs, input] }));
   },
   removeFlowInput: (index: number) => {
-    set((state) => ({ 
-      flowInputs: state.flowInputs.filter((_, i) => i !== index) 
+    set((state) => ({
+      flowInputs: state.flowInputs.filter((_, i) => i !== index)
     }));
   },
   updateFlowInput: (index: number, input: string) => {
-    set((state) => ({ 
-      flowInputs: state.flowInputs.map((item, i) => i === index ? input : item) 
+    set((state) => ({
+      flowInputs: state.flowInputs.map((item, i) => i === index ? input : item)
     }));
   },
   addFlowOutput: (output: string) => {
     set((state) => ({ flowOutputs: [...state.flowOutputs, output] }));
   },
   removeFlowOutput: (index: number) => {
-    set((state) => ({ 
-      flowOutputs: state.flowOutputs.filter((_, i) => i !== index) 
+    set((state) => ({
+      flowOutputs: state.flowOutputs.filter((_, i) => i !== index)
     }));
   },
   updateFlowOutput: (index: number, output: string) => {
-    set((state) => ({ 
-      flowOutputs: state.flowOutputs.map((item, i) => i === index ? output : item) 
+    set((state) => ({
+      flowOutputs: state.flowOutputs.map((item, i) => i === index ? output : item)
     }));
   },
 }));

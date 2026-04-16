@@ -155,13 +155,19 @@ function WorkflowView() {
     );
   }
 
-  // Convert Workflow to Board-like structure for Canvas compatibility
+  // Convert Workflow to Board-like structure for Canvas compatibility.
+  // Merge the dedicated flow_type column into flow_data so Canvas can always
+  // read flowType from board.flow_data.flowType regardless of which field is set.
+  const resolvedFlowType = currentWorkflow.flow_type ?? currentWorkflow.flow_data?.flowType ?? 'sdk';
   const boardLike: Board = {
     id: currentWorkflow.id,
     name: currentWorkflow.name,
     description: currentWorkflow.description,
     user_id: currentWorkflow.owner_id,
-    flow_data: currentWorkflow.flow_data,
+    flow_data: {
+      ...currentWorkflow.flow_data,
+      flowType: resolvedFlowType,
+    },
     created_at: currentWorkflow.created_at,
     updated_at: currentWorkflow.updated_at,
   };

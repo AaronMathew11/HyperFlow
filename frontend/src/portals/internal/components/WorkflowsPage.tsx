@@ -43,13 +43,24 @@ export default function WorkflowsPage() {
     const handleCreateWorkflow = async (name: string, description?: string, _environmentIds?: string[], flowType?: 'sdk' | 'api') => {
         if (!buId) return;
         if (flowType) setFlowType(flowType);
-        const wf = await createWorkflow(buId, name, description, envIds);
+        const wf = await createWorkflow(buId, name, flowType || 'sdk', description);
         if (wf) navigate(`/workflow/${wf.id}`);
     };
 
     const handleGenerateLink = async () => {
         if (!buId) return;
-        await createEnvironment(buId, data);
+        setIsGeneratingLink(true);
+        try {
+            const linkData = await createBUAccessLink(buId);
+            if (linkData) {
+                setGeneratedLink(linkData);
+                setIsLinkModalOpen(true);
+            }
+        } catch (error) {
+            console.error('Error generating link:', error);
+        } finally {
+            setIsGeneratingLink(false);
+        }
     };
 
     const handleDeleteEnvironment = async (environmentId: string) => {
@@ -138,7 +149,7 @@ export default function WorkflowsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 gap-1">
-                        
+
                         {/* WORKFLOWS */}
                         {activeTab === 'workflows' && workflows.map((wf) => (
                             <div
@@ -148,10 +159,10 @@ export default function WorkflowsPage() {
                             >
                                 <div className="w-28 h-28 bg-white border border-gray-200 rounded-2xl flex items-center justify-center hover:shadow-md">
                                     <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-                                    <svg className="h-7 w-7 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-  <path strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"
-    d="M4 6h4v4H4zM16 6h4v4h-4zM10 8h4M12 8v8M4 16h4v4H4zM16 16h4v4h-4zM8 18h8" />
-</svg>
+                                        <svg className="h-7 w-7 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"
+                                                d="M4 6h4v4H4zM16 6h4v4h-4zM10 8h4M12 8v8M4 16h4v4H4zM16 16h4v4h-4zM8 18h8" />
+                                        </svg>
                                     </div>
                                 </div>
 
@@ -180,10 +191,10 @@ export default function WorkflowsPage() {
                             >
                                 <div className="w-28 h-28 bg-white border border-gray-200 rounded-2xl flex items-center justify-center hover:shadow-md">
                                     <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center">
-                                    <svg className="h-7 w-7 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-  <path strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"
-    d="M4 6h16M4 12h16M4 18h16M6 6v12M12 6v12M18 6v12" />
-</svg>
+                                        <svg className="h-7 w-7 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"
+                                                d="M4 6h16M4 12h16M4 18h16M6 6v12M12 6v12M18 6v12" />
+                                        </svg>
                                     </div>
                                 </div>
 
@@ -228,7 +239,7 @@ export default function WorkflowsPage() {
                         <p className="text-sm text-gray-500 mb-6">
                             Share this link and password with the customer so they can view the workflows.
                         </p>
-                        
+
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Share URL</label>
@@ -246,7 +257,7 @@ export default function WorkflowsPage() {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                                 <div className="flex">

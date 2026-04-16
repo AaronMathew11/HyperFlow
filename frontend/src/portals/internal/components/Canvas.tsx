@@ -7,7 +7,7 @@ import ReactFlow, {
   BackgroundVariant,
   Node,
   useReactFlow,
-  SmoothStepEdge,
+  ConnectionLineType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -26,6 +26,7 @@ import SdkNotes from '../../../shared/components/SdkNotes';
 import NoteNode from '../../../shared/components/NoteNode';
 import SdkInputsNode from '../../../shared/components/SdkInputsNode';
 import ContextMenu from '../../../shared/components/ContextMenu';
+import CustomEditableEdge from '../../../shared/components/CustomEditableEdge';
 
 const nodeTypes = {
   moduleNode: ModuleNode,
@@ -39,7 +40,8 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
-  default: SmoothStepEdge,
+  default: CustomEditableEdge,
+  smoothstep: CustomEditableEdge,
 };
 
 interface FlowCanvasProps {
@@ -62,7 +64,7 @@ interface FlowCanvasProps {
 
 function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcrumbNavigation, initialData }: FlowCanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode, addEdge, deleteNode } = useFlowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onEdgeUpdate, addNode, addEdge, deleteNode } = useFlowStore();
   const { saveCurrentBoardData, setCurrentBoard, loadBoardSnapshot } = useBoardStore();
   const { project } = useReactFlow();
   const viewMode = useFlowStore((state) => state.viewMode);
@@ -239,19 +241,19 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
 
     const clickX = event.clientX - reactFlowBounds.left;
     const clickY = event.clientY - reactFlowBounds.top;
-    
+
     // Convert screen coordinates to flow coordinates
     const flowPosition = project({ x: clickX, y: clickY });
-    
+
     // Check if click is inside any group
     const currentNodes = useFlowStore.getState().nodes;
     const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
-    
+
     let isInsideGroup = false;
     for (const group of groups) {
       const groupW = (group.style?.width as number) || 380;
       const groupH = (group.style?.height as number) || 240;
-      
+
       if (
         flowPosition.x >= group.position.x &&
         flowPosition.y >= group.position.y &&
@@ -322,13 +324,13 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
 
   const handleUngroupAll = useCallback(() => {
     if (!contextMenu?.nodeId) return;
-    
+
     const groupId = contextMenu.nodeId;
     const currentNodes = useFlowStore.getState().nodes;
     const groupNode = currentNodes.find(n => n.id === groupId);
-    
+
     if (!groupNode) return;
-    
+
     useFlowStore.setState({
       nodes: currentNodes.map((node) => {
         if (node.parentNode === groupId) {
@@ -350,14 +352,14 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
 
   const handleUngroupNode = useCallback(() => {
     if (!contextMenu?.nodeId) return;
-    
+
     const nodeId = contextMenu.nodeId;
     const currentNodes = useFlowStore.getState().nodes;
     const nodeToUngroup = currentNodes.find(n => n.id === nodeId);
     const groupNode = nodeToUngroup?.parentNode ? currentNodes.find(n => n.id === nodeToUngroup.parentNode) : null;
-    
+
     if (!nodeToUngroup || !groupNode) return;
-    
+
     useFlowStore.setState({
       nodes: currentNodes.map((node) => {
         if (node.id === nodeId) {
@@ -388,7 +390,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
 
     const currentNodes = useFlowStore.getState().nodes;
     const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
-    
+
     // draggedNode.positionAbsolute contains the absolute canvas coordinates
     const nx = draggedNode.positionAbsolute?.x ?? draggedNode.position.x;
     const ny = draggedNode.positionAbsolute?.y ?? draggedNode.position.y;
@@ -418,14 +420,13 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         // Parent changed or node was newly parented
         const groupX = targetGroup.positionAbsolute?.x ?? targetGroup.position.x;
         const groupY = targetGroup.positionAbsolute?.y ?? targetGroup.position.y;
-        
+
         useFlowStore.setState({
           nodes: currentNodes.map(n => {
             if (n.id === draggedNode.id) {
-              const { extent, ...rest } = n;
               return {
                 ...n,
-                parentNode: group.id,
+                parentNode: targetGroup!.id,
                 extent: 'parent' as const,
                 zIndex: 1,
                 position: {
@@ -752,6 +753,9 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         onNodesChange={readOnly ? undefined : onNodesChange}
         onEdgesChange={readOnly ? undefined : onEdgesChange}
         onConnect={readOnly ? undefined : onConnect}
+        onEdgeUpdate={readOnly ? undefined : onEdgeUpdate}
+        edgesUpdatable={!readOnly}
+        edgesFocusable={!readOnly}
         onDrop={readOnly ? undefined : onDrop}
         onDragOver={readOnly ? undefined : onDragOver}
         onNodeDragStop={readOnly ? undefined : onNodeDragStop}
@@ -772,6 +776,8 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         nodesConnectable={!readOnly}
         elementsSelectable={!readOnly}
         defaultEdgeOptions={{ type: 'smoothstep' }}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        connectionLineStyle={{ stroke: '#4F46E5', strokeWidth: 2, strokeDasharray: '6 3' }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />

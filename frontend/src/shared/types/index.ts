@@ -120,6 +120,7 @@ export interface Workflow {
   description?: string;
   business_unit_id: string;
   owner_id: string;
+  flow_type?: 'sdk' | 'api';
   flow_data: {
     nodes: any[];
     edges: any[];
