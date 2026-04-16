@@ -52,6 +52,7 @@ export interface Board {
     edges: any[];
     flowInputs?: string;
     flowOutputs?: string;
+    flowType?: 'sdk' | 'api';
   };
   created_at: string;
   updated_at: string;
@@ -99,6 +100,7 @@ export interface WorkflowEnvironment {
     edges: any[];
     flowInputs?: string;
     flowOutputs?: string;
+    flowType?: 'sdk' | 'api';
   };
   is_active: boolean;
   deployed_at?: string;
@@ -123,6 +125,7 @@ export interface Workflow {
     edges: any[];
     flowInputs?: string;
     flowOutputs?: string;
+    flowType?: 'sdk' | 'api';
   };
   created_at: string;
   updated_at: string;

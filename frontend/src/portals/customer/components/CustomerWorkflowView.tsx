@@ -30,7 +30,6 @@ export default function CustomerWorkflowView() {
         business_unit_id: businessUnitId || '',
         owner_id: 'owner-1',
         flow_data: { nodes: [], edges: [] },
-        environment_ids: ['env-1'],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });

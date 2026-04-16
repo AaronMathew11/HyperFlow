@@ -7,6 +7,7 @@ import ReactFlow, {
   BackgroundVariant,
   Node,
   useReactFlow,
+  SmoothStepEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -37,6 +38,10 @@ const nodeTypes = {
   sdkInputsNode: SdkInputsNode,
 };
 
+const edgeTypes = {
+  default: SmoothStepEdge,
+};
+
 interface FlowCanvasProps {
   board: Board;
   onBack: () => void;
@@ -49,8 +54,9 @@ interface FlowCanvasProps {
   initialData?: {
     nodes?: any[];
     edges?: any[];
-    flowInputs?: string;
-    flowOutputs?: string;
+    flowInputs?: string | string[];
+    flowOutputs?: string | string[];
+    flowType?: string;
   } | null;
 }
 
@@ -78,6 +84,9 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           flowInputs: Array.isArray(initialData.flowInputs) ? initialData.flowInputs : (initialData.flowInputs ? [initialData.flowInputs] : []),
           flowOutputs: Array.isArray(initialData.flowOutputs) ? initialData.flowOutputs : (initialData.flowOutputs ? [initialData.flowOutputs] : []),
         });
+        if (initialData.flowType) {
+          useFlowStore.setState({ flowType: initialData.flowType as any });
+        }
         setIsLoaded(true);
         return;
       }
@@ -95,6 +104,12 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             flowInputs: Array.isArray(snapshot.flowInputs) ? snapshot.flowInputs : (snapshot.flowInputs ? [snapshot.flowInputs] : []),
             flowOutputs: Array.isArray(snapshot.flowOutputs) ? snapshot.flowOutputs : (snapshot.flowOutputs ? [snapshot.flowOutputs] : []),
           });
+          // Use snapshot.flowType, falling back to board.flow_data?.flowType for workflows
+          // created before the snapshot had flowType (or before the first save)
+          const resolvedFlowType = snapshot.flowType || board.flow_data?.flowType;
+          if (resolvedFlowType) {
+            useFlowStore.setState({ flowType: resolvedFlowType as any });
+          }
 
           // Store initial state for change detection
           lastSavedNodesRef.current = JSON.stringify(snapshot.nodes || []);
@@ -115,12 +130,13 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
     const handleKeyDown = async (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        const { flowInputs, flowOutputs } = useFlowStore.getState();
+        const { flowInputs, flowOutputs, flowType } = useFlowStore.getState();
         const success = await saveCurrentBoardData({
           nodes,
           edges,
           flowInputs: flowInputs.join(', '),
           flowOutputs: flowOutputs.join(', '),
+          flowType,
         });
 
         if (success) {
@@ -145,12 +161,13 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
       // Only save if there are actual changes
       if (currentNodes !== lastSavedNodesRef.current ||
         currentEdges !== lastSavedEdgesRef.current) {
-        const { flowInputs, flowOutputs } = useFlowStore.getState();
+        const { flowInputs, flowOutputs, flowType } = useFlowStore.getState();
         const success = await saveCurrentBoardData({
           nodes,
           edges,
           flowInputs: flowInputs.join(', '),
           flowOutputs: flowOutputs.join(', '),
+          flowType,
         });
 
         if (success) {
@@ -574,9 +591,11 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           data: {
             title: apiDoc.name,
             endpoint: apiDoc.url,
+            docUrl: apiDoc.docUrl || apiDoc.url,
             color: apiDoc.color,
             icon: '🌐',
             description: apiDoc.description,
+            method: apiDoc.method,
             curlExample: apiDoc.curlExample,
             successResponse: apiDoc.successResponse,
             failureResponses: apiDoc.failureResponses,
@@ -659,7 +678,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             id: `${startNodeId}-${newNode.id}`,
             source: startNodeId,
             target: newNode.id,
-            type: 'default',
+            type: 'smoothstep',
           };
           addEdge(edge);
         }
@@ -708,7 +727,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             id: `${startNodeId}-${newNode.id}`,
             source: startNodeId,
             target: newNode.id,
-            type: 'default',
+            type: 'smoothstep',
           };
           addEdge(edge);
         }
@@ -740,6 +759,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         onNodeContextMenu={readOnly ? undefined : handleNodeContextMenu}
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         selectionOnDrag={!readOnly}
         panOnDrag={[1, 2]}
@@ -751,6 +771,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         nodesDraggable={!readOnly}
         nodesConnectable={!readOnly}
         elementsSelectable={!readOnly}
+        defaultEdgeOptions={{ type: 'smoothstep' }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />

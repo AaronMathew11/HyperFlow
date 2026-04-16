@@ -33,117 +33,74 @@ export interface ApiOutput {
 }
 
 export interface ApiDocumentationWithDetails extends ApiDocumentation {
-  inputs?: ApiInput[];
-  outputs?: ApiOutput[];
+  api_inputs_new?: ApiInput[];
+  api_outputs_new?: ApiOutput[];
 }
 
 class ApiDocumentationService {
-  private baseUrl = '/api/documentation'; // This will be proxied to the backend
-
-  async getAllApis(category?: string): Promise<ApiDocumentation[]> {
+  async getAllApis(category?: string): Promise<ApiDocumentationWithDetails[]> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+      let query = supabase
+        .from('api_documentation_new')
+        .select('*, api_inputs_new(*), api_outputs_new(*)');
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      let url = this.baseUrl;
       if (category) {
-        url += `?category=${category}`;
+        query = query.eq('category', category);
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const { data, error } = await query;
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch APIs: ${response.statusText}`);
+      if (error) {
+        console.error('Error fetching APIs:', error);
+        return [];
       }
 
-      return await response.json();
+      return (data as ApiDocumentationWithDetails[]) || [];
     } catch (error) {
       console.error('Error fetching APIs:', error);
-      // Return empty array as fallback
       return [];
     }
   }
 
   async getApiById(id: string): Promise<ApiDocumentationWithDetails | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('User not authenticated');
+      const { data, error } = await supabase
+        .from('api_documentation_new')
+        .select('*, api_inputs_new(*), api_outputs_new(*)')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching API by ID:', error);
+        return null;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      const response = await fetch(`${this.baseUrl}/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(`Failed to fetch API: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return data as ApiDocumentationWithDetails;
     } catch (error) {
       console.error('Error fetching API by ID:', error);
       return null;
     }
   }
 
-  async searchApis(query: string, category?: string): Promise<ApiDocumentation[]> {
+  async searchApis(query: string, category?: string): Promise<ApiDocumentationWithDetails[]> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+      let dbQuery = supabase
+        .from('api_documentation_new')
+        .select('*, api_inputs_new(*), api_outputs_new(*)')
+        .ilike('name', `%${query}%`);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      let url = `${this.baseUrl}/search?q=${encodeURIComponent(query)}`;
       if (category) {
-        url += `&category=${category}`;
+        dbQuery = dbQuery.eq('category', category);
       }
 
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const { data, error } = await dbQuery;
 
-      if (!response.ok) {
-        throw new Error(`Failed to search APIs: ${response.statusText}`);
+      if (error) {
+        console.error('Error searching APIs:', error);
+        return [];
       }
 
-      return await response.json();
+      return (data as ApiDocumentationWithDetails[]) || [];
     } catch (error) {
       console.error('Error searching APIs:', error);
       return [];

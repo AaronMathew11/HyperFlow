@@ -14,7 +14,7 @@ interface ContextMenuProps {
   isInGroup?: boolean;
 }
 
-export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote, onDeleteNode, onUngroupAll, onUngroupNode, hasChildren, isInGroup }: ContextMenuProps) {
+export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote, onDeleteNode }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ApiDocumentation, apiDocumentationService } from '../lib/apiDocumentation';
+import { ApiDocumentationWithDetails, apiDocumentationService } from '../lib/apiDocumentation';
 
 export const useApiDocumentation = (category?: string) => {
-  const [apis, setApis] = useState<ApiDocumentation[]>([]);
+  const [apis, setApis] = useState<ApiDocumentationWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

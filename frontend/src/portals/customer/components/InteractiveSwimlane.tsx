@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -9,7 +9,6 @@ import ReactFlow, {
   Controls,
   Background,
   BackgroundVariant,
-  Position,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Environment } from '../../../shared/types';
@@ -320,7 +319,7 @@ export default function InteractiveSwimlane({ environments, environmentFormData 
     }] : [])
   ];
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(

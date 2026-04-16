@@ -8,7 +8,7 @@ interface NoteData {
 export default function NoteNode({ data, selected }: NodeProps<NoteData>) {
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(data.text || 'Click to edit note...');
-  const _textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {

@@ -40,7 +40,7 @@ export default function WorkflowsPage() {
 
     const { setFlowType } = useFlowStore.getState();
 
-    const handleCreateWorkflow = async (name: string, description?: string, envIds?: string[], flowType?: 'sdk' | 'api') => {
+    const handleCreateWorkflow = async (name: string, description?: string, _environmentIds?: string[], flowType?: 'sdk' | 'api') => {
         if (!buId) return;
         if (flowType) setFlowType(flowType);
         const wf = await createWorkflow(buId, name, description, envIds);
@@ -49,13 +49,20 @@ export default function WorkflowsPage() {
 
     const handleGenerateLink = async () => {
         if (!buId) return;
-        setIsGeneratingLink(true);
-        try {
-            const res = await createBUAccessLink(buId);
-            setGeneratedLink(res);
-            setIsLinkModalOpen(true);
-        } finally {
-            setIsGeneratingLink(false);
+        await createEnvironment(buId, data);
+    };
+
+    const handleDeleteEnvironment = async (environmentId: string) => {
+        await deleteEnvironment(environmentId);
+    };
+
+    const handleUpdateEnvironment = async (_data: any) => {
+        // Implementation will depend on your environment store's update method
+        // For now, close the modal and refresh
+        setIsEditEnvModalOpen(false);
+        setSelectedEnvironment(null);
+        if (buId) {
+            loadEnvironments(buId);
         }
     };
 

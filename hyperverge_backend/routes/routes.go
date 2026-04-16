@@ -4,6 +4,7 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -138,7 +139,48 @@ func Register(r *gin.Engine) {
 
 		c.JSON(http.StatusOK, data)
 	})
-	api.GET("/documentation/search", func(c *gin.Context) {
+
+	api.GET("/documentation/new", func(c *gin.Context) {
+		category := c.Query("category")
+
+		url := os.Getenv("SUPABASE_URL") + "/rest/v1/api_documentation_new?select=*,api_inputs_new(*),api_outputs_new(*)"
+		if category != "" {
+			url += "&category=eq." + category
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request: " + err.Error()})
+			return
+		}
+
+		req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+		req.Header.Set("Authorization", c.GetHeader("Authorization"))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch APIs: " + err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			c.JSON(resp.StatusCode, gin.H{"error": "Failed to fetch APIs from DB: " + string(bodyBytes)})
+			return
+		}
+
+		var data []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode APIs"})
+			return
+		}
+
+		c.JSON(http.StatusOK, data)
+	})
+
+	api.GET("/documentation/new/search", func(c *gin.Context) {
 		searchQuery := c.Query("q")
 		category := c.Query("category")
 
@@ -147,7 +189,7 @@ func Register(r *gin.Engine) {
 			return
 		}
 
-		url := os.Getenv("SUPABASE_URL") + "/rest/v1/api_documentation?select=id,name,description,url,category,curl_example,success_response,failure_responses,error_details,created_at,updated_at"
+		url := os.Getenv("SUPABASE_URL") + "/rest/v1/api_documentation_new?select=*,api_inputs_new(*),api_outputs_new(*)"
 		url += "&name=ilike.*" + searchQuery + "*"
 		if category != "" {
 			url += "&category=eq." + category
@@ -196,20 +238,28 @@ func Register(r *gin.Engine) {
 	// Temporary test endpoint for documentation (no auth)
 	public.GET("/test-docs", func(c *gin.Context) {
 		fmt.Printf("DEBUG: Testing ServiceClient connection\n")
-		
+
 		if db.ServiceClient == nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Service client not available"})
 			return
 		}
-		
-		data, _, err := db.ServiceClient.From("api_documentation").Select("id, name, description", "", false).Limit(5, "").Execute()
-		if err != nil {
-			fmt.Printf("ERROR: Test query failed: %v\n", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		
-		c.Header("Content-Type", "application/json")
-		c.Data(http.StatusOK, "application/json", data)
+
+		data1, _, err1 := db.ServiceClient.From("api_documentation_new").Select("*", "", false).Limit(1, "").Execute()
+		data2, _, err2 := db.ServiceClient.From("api_inputs_new").Select("*", "", false).Limit(1, "").Execute()
+		data3, _, err3 := db.ServiceClient.From("api_outputs_new").Select("*", "", false).Limit(1, "").Execute()
+
+		var results1, results2, results3 []map[string]interface{}
+		json.Unmarshal(data1, &results1)
+		json.Unmarshal(data2, &results2)
+		json.Unmarshal(data3, &results3)
+
+		c.JSON(http.StatusOK, gin.H{
+			"api_documentation_new": results1,
+			"err1": err1,
+			"api_inputs_new": results2,
+			"err2": err2,
+			"api_outputs_new": results3,
+			"err3": err3,
+		})
 	})
 }

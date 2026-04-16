@@ -3,7 +3,7 @@ import { modules } from '../../../shared/data/modules';
 import ModuleIcon from '../../../shared/components/ModuleIcon';
 import { useFlowStore } from '../store/flowStore';
 import { useApiDocumentation } from '../../../hooks/useApiDocumentation';
-import { ApiDocumentation } from '../../../lib/apiDocumentation';
+import { ApiDocumentationWithDetails } from '../../../lib/apiDocumentation';
 import VariableInput from '../../../shared/components/VariableInput';
 
 export default function Sidebar() {
@@ -37,8 +37,10 @@ export default function Sidebar() {
       name: api.label,
       description: api.description,
       url: api.url,
+      docUrl: api.url, // use same URL as documentation link
       category: api.category,
       color: api.color,
+      method: api.method,
       curlExample: api.curlExample,
       successResponse: api.successResponse,
       failureResponses: api.failureResponses,
@@ -54,8 +56,17 @@ export default function Sidebar() {
     module.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Derive HTTP method from curl example
+  const deriveMethodFromCurl = (curl?: string): string => {
+    if (!curl) return 'POST';
+    const match = curl.match(/(?:-X|--request)\s+(\w+)/i);
+    if (match) return match[1].toUpperCase();
+    if (!/(?:\s-d|\s--data|\s--data-raw|\s-F|\s--form)\s/.test(curl)) return 'GET';
+    return 'POST';
+  };
+
   // Transform APIs to module-like structure for consistent rendering
-  const apiModules = apis.map((api: ApiDocumentation) => ({
+  const apiModules = apis.map((api: ApiDocumentationWithDetails) => ({
     id: api.id,
     label: api.name,
     description: api.description || 'API endpoint',
@@ -63,12 +74,13 @@ export default function Sidebar() {
     icon: '🌐',
     category: api.category,
     url: api.url,
+    method: deriveMethodFromCurl(api.curl_example),
     curlExample: api.curl_example,
     successResponse: api.success_response,
     failureResponses: api.failure_responses,
     errorDetails: api.error_details,
-    inputs: (api as any).inputs,
-    outputs: (api as any).outputs,
+    inputs: (api as any).api_inputs_new?.map((i: any) => ({ name: i.name, type: i.type, required: i.required })) || [],
+    outputs: (api as any).api_outputs_new?.map((o: any) => ({ name: o.name, type: o.type, required: o.required })) || [],
   }));
 
   // Handle search for both SDK modules and APIs
@@ -261,15 +273,17 @@ export default function Sidebar() {
               onUpdate={updateFlowInput}
             />
 
-            {/* SDK Outputs */}
-            <VariableInput
-              label="SDK Outputs"
-              variables={flowOutputs}
-              placeholder="verification_status"
-              onAdd={addFlowOutput}
-              onRemove={removeFlowOutput}
-              onUpdate={updateFlowOutput}
-            />
+            {/* SDK Outputs — only shown for SDK flow */}
+            {flowType === 'sdk' && (
+              <VariableInput
+                label="SDK Outputs"
+                variables={flowOutputs}
+                placeholder="verification_status"
+                onAdd={addFlowOutput}
+                onRemove={removeFlowOutput}
+                onUpdate={updateFlowOutput}
+              />
+            )}
           </div>
         )}
 

@@ -41,7 +41,6 @@ export const useCustomerStore = create<CustomerStore>((set) => ({
             nodes: [],
             edges: [],
           },
-          environment_ids: ['env-1', 'env-2'],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -64,8 +63,6 @@ export const useCustomerStore = create<CustomerStore>((set) => ({
         {
           id: 'env-1',
           name: 'Production',
-          type: 'production',
-          baseUrl: 'https://api.example.com',
           business_unit_id: businessUnitId,
           owner_id: 'owner-1',
           description: 'Production environment',

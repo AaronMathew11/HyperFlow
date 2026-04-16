@@ -92,7 +92,7 @@ export default function CreateWorkflowModal({ isOpen, onClose, onCreate, environ
                                     SDK Flow
                                 </div>
                                 <div className="text-xs text-gray-500 leading-relaxed">
-                                    Module-based workflow using HyperVerse SDK integrations
+                                    Module-based workflow using HyperVerge SDK integrations
                                 </div>
                             </button>
 
