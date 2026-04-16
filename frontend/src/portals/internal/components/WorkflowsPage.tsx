@@ -77,12 +77,21 @@ export default function WorkflowsPage() {
 
     const { setFlowType } = useFlowStore.getState();
 
-    const handleCreateWorkflow = async (name: string, description?: string, environmentIds?: string[], flowType?: 'sdk' | 'api') => {
+    const handleCreateWorkflow = async (name: string, description?: string, _environmentIds?: string[], flowType?: 'sdk' | 'api') => {
         if (!buId) return;
         // Set the flow type in the canvas store BEFORE navigating
         if (flowType) setFlowType(flowType);
-        const newWorkflow = await createWorkflow(buId, name, description, environmentIds);
+        const newWorkflow = await createWorkflow(buId, name, flowType || 'sdk', description);
         if (newWorkflow) {
+            // Immediately persist flowType in the snapshot so it survives refresh/crash
+            const { saveWorkflow } = await import('../../../shared/lib/api');
+            await saveWorkflow(newWorkflow.id, {
+                nodes: [],
+                edges: [],
+                flowInputs: '',
+                flowOutputs: '',
+                flowType: flowType || 'sdk',
+            });
             navigate(`/workflow/${newWorkflow.id}`);
         }
     };
@@ -104,12 +113,7 @@ export default function WorkflowsPage() {
         await deleteEnvironment(environmentId);
     };
 
-    const handleEditEnvironment = (environment: Environment) => {
-        setSelectedEnvironment(environment);
-        setIsEditEnvModalOpen(true);
-    };
-
-    const handleUpdateEnvironment = async (data: any) => {
+    const handleUpdateEnvironment = async (_data: any) => {
         // Implementation will depend on your environment store's update method
         // For now, close the modal and refresh
         setIsEditEnvModalOpen(false);

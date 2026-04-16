@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { verifyLinkPassword, getPublicBoard } from '../lib/api';
 import { Board } from '../types';
@@ -11,7 +11,6 @@ export default function PublicBoardView() {
     const [board, setBoard] = useState<Board | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [storedPassword, setStoredPassword] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,7 +27,6 @@ export default function PublicBoardView() {
             const result = await getPublicBoard(linkId, password);
             if (result) {
                 setBoard(result.board);
-                setStoredPassword(password);
                 setVerified(true);
             }
         } catch (err) {

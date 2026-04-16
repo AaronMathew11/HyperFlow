@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -328,7 +328,7 @@ function DummyWorkflowViewerContent({ workflow }: DummyWorkflowViewerProps) {
   
   const { nodes: initialNodes, edges: initialEdges } = generateWorkflowNodes(workflow.id);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const onConnect = useCallback(

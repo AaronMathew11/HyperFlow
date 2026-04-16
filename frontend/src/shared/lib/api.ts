@@ -216,7 +216,7 @@ export async function fetchWorkflows(buId: string): Promise<Workflow[]> {
     }
 }
 
-export async function createWorkflow(buId: string, name: string, description?: string): Promise<Workflow | null> {
+export async function createWorkflow(buId: string, name: string, flowType: string, description?: string): Promise<Workflow | null> {
     try {
         const headers = await getAuthHeaders();
         if (!headers) return null;
@@ -224,7 +224,7 @@ export async function createWorkflow(buId: string, name: string, description?: s
         const response = await fetch(`${API_URL}/api/business-units/${buId}/workflows`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ name, description }),
+            body: JSON.stringify({ name, description, flowType }),
         });
 
         if (!response.ok) {
@@ -463,6 +463,7 @@ export interface WorkflowData {
     edges: any[];
     flowInputs: string;
     flowOutputs: string;
+    flowType?: 'sdk' | 'api';
 }
 
 export interface SaveWorkflowResponse {

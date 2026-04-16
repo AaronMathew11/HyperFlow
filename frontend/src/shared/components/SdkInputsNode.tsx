@@ -6,7 +6,7 @@ interface SdkInputsNodeData {
   label: string;
 }
 
-function SdkInputsNode({ data }: NodeProps<SdkInputsNodeData>) {
+function SdkInputsNode(_: NodeProps<SdkInputsNodeData>) {
   const flowInputs = useFlowStore((state) => state.flowInputs);
 
   if (!flowInputs) return null;

@@ -11,7 +11,7 @@ interface ContextMenuProps {
 }
 
 export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote, onDeleteNode }: ContextMenuProps) {
-  const _menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

@@ -13,13 +13,11 @@ interface EndStatusNodeData {
 }
 
 function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
-  const [showDetails, setShowDetails] = useState(false);
   const [editingField, setEditingField] = useState<'reason' | 'resumeFrom' | null>(null);
   const [editValues, setEditValues] = useState({
     reason: data.reason || '',
     resumeFrom: data.resumeFrom || ''
   });
-  const viewMode = useFlowStore((state) => state.viewMode);
   const flowType = useFlowStore((state) => state.flowType);
   const sdkMode = useFlowStore((state) => state.sdkMode);
   const nodes = useFlowStore((state) => state.nodes);

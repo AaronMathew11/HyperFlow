@@ -253,6 +253,7 @@ export default function CustomerDashboard() {
             <div className="flex-1" style={{ height: 'calc(100vh - 73px)' }}>
               {selectedFlowData ? (
                 <Canvas
+                  key={selectedWorkflow.id}
                   board={{
                     id: selectedWorkflow.id,
                     name: selectedWorkflow.name,

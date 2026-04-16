@@ -14,6 +14,7 @@ import (
 type CreateWorkflowReq struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	FlowType    string `json:"flowType"`
 }
 
 type UpdateWorkflowReq struct {
@@ -136,6 +137,7 @@ func Create(c *gin.Context) {
 		"edges":       []interface{}{},
 		"flowInputs":  "",
 		"flowOutputs": "",
+		"flowType":    req.FlowType,
 	}
 	flowDataJSON, _ := json.Marshal(defaultFlowData)
 

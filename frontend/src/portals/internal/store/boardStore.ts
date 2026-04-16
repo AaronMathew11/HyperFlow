@@ -126,6 +126,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
                 edges: flowData.edges,
                 flowInputs: flowData.flowInputs || '',
                 flowOutputs: flowData.flowOutputs || '',
+                flowType: flowData.flowType,
             });
 
             if (!result) {

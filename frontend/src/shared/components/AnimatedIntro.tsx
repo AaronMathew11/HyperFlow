@@ -22,8 +22,8 @@ export default function AnimatedIntro({ onComplete }: AnimatedIntroProps) {
 
   const playFuturisticSound = () => {
     try {
-      const _audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const _now = audioContext.currentTime;
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const now = audioContext.currentTime;
 
       // Create a series of rising tones for futuristic effect
       const notes = [
@@ -36,8 +36,8 @@ export default function AnimatedIntro({ onComplete }: AnimatedIntroProps) {
       ];
 
       notes.forEach(({ freq, start, duration }) => {
-        const _osc = audioContext.createOscillator();
-        const _gain = audioContext.createGain();
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
 
         osc.connect(gain);
         gain.connect(audioContext.destination);
