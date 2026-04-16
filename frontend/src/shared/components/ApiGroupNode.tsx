@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { NodeProps, NodeResizer } from 'reactflow';
+import { NodeProps, NodeResizer, useReactFlow } from 'reactflow';
 
 export interface ApiGroupNodeData {
   label: string;
@@ -15,11 +15,17 @@ const GROUP_COLORS = [
   { label: 'Violet', value: '#8B5CF6' },
 ];
 
-function ApiGroupNode({ data, selected }: NodeProps<ApiGroupNodeData>) {
+function ApiGroupNode({ id, data, selected }: NodeProps<ApiGroupNodeData>) {
+  const { getNodes, setNodes } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(data.label || 'Product Group');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [color, setColor] = useState(data.color || '#6366F1');
+  
+  // Check if group has children
+  const nodes = getNodes();
+  const childNodes = nodes.filter(node => node.parentNode === id);
+  const hasChildren = childNodes.length > 0;
 
   const hexToRgba = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -28,6 +34,7 @@ function ApiGroupNode({ data, selected }: NodeProps<ApiGroupNodeData>) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
+
   return (
     <div
       className="w-full h-full relative"
@@ -35,6 +42,39 @@ function ApiGroupNode({ data, selected }: NodeProps<ApiGroupNodeData>) {
         borderRadius: '16px',
         border: `2px dashed ${color}`,
         backgroundColor: hexToRgba(color, 0.04),
+        minWidth: '220px',
+        minHeight: '160px',
+        cursor: 'default',
+      }}
+      onClick={(e) => {
+        // Support Cmd+Click on Mac as alternative to right-click for ungrouping
+        if (e.metaKey && hasChildren) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Trigger ungroup functionality
+          const currentNodes = getNodes();
+          const groupNode = currentNodes.find(n => n.id === id);
+          
+          if (groupNode) {
+            setNodes((nodes) =>
+              nodes.map((node) => {
+                if (node.parentNode === id) {
+                  return {
+                    ...node,
+                    parentNode: undefined,
+                    extent: undefined,
+                    position: {
+                      x: groupNode.position.x + node.position.x + 20,
+                      y: groupNode.position.y + node.position.y + 20,
+                    },
+                  };
+                }
+                return node;
+              })
+            );
+          }
+        }
       }}
     >
       <NodeResizer
@@ -83,6 +123,7 @@ function ApiGroupNode({ data, selected }: NodeProps<ApiGroupNodeData>) {
             {label}
           </span>
         )}
+
       </div>
 
       {/* Color picker dropdown */}
@@ -105,6 +146,14 @@ function ApiGroupNode({ data, selected }: NodeProps<ApiGroupNodeData>) {
                 e.stopPropagation();
                 setColor(c.value);
                 setShowColorPicker(false);
+                // Persist color to node data
+                setNodes((nodes) =>
+                  nodes.map((node) =>
+                    node.id === id
+                      ? { ...node, data: { ...node.data, color: c.value } }
+                      : node
+                  )
+                );
               }}
               title={c.label}
             />
@@ -113,14 +162,17 @@ function ApiGroupNode({ data, selected }: NodeProps<ApiGroupNodeData>) {
       )}
 
       {/* Subtle inner hint when empty */}
-      <div
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        style={{ opacity: 0.25 }}
-      >
-        <span className="text-xs font-medium" style={{ color }}>
-          Drop API nodes here to group them
-        </span>
-      </div>
+      {!hasChildren && (
+        <div
+          className="absolute inset-4 flex items-center justify-center pointer-events-none"
+          style={{ opacity: 0.25 }}
+        >
+          <span className="text-xs font-medium" style={{ color }}>
+            Drop nodes here to group them
+          </span>
+        </div>
+      )}
+
     </div>
   );
 }

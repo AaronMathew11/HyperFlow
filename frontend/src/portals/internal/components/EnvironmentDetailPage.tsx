@@ -63,7 +63,7 @@ export default function EnvironmentDetailPage() {
         <div className="h-screen flex flex-col overflow-hidden min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
             <TopNav />
             {/* Compact Header */}
-            <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
+            {/* <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
                 <Breadcrumb items={breadcrumbItems} />
                 <button
                     onClick={handleBack}
@@ -74,7 +74,7 @@ export default function EnvironmentDetailPage() {
                     </svg>
                     Back
                 </button>
-            </header>
+            </header> */}
 
             {/* Full-page Swimlane */}
             <div className="flex-1 overflow-hidden">

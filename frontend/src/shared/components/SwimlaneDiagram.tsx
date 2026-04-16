@@ -442,26 +442,6 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
 
     return (
         <div className="flex flex-col h-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                <div>
-                    {/* Title or Breadcrumb can go here if needed, or keeping it clean */}
-                </div>
-                <div className="flex gap-3 items-center">
-                    {lastSaved && <span className="text-xs text-gray-400 mr-2">Saved {lastSaved}</span>}
-                    {(workflowId || environmentId) && !readOnly && (
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors bg-green-600 text-white hover:bg-green-700 disabled:opacity-50`}
-                        >
-                            {isSaving ? 'Saving...' : 'Save Diagram'}
-                        </button>
-                    )}
-
-
-                </div>
-            </div>
 
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar (Edit Mode Only) */}
@@ -604,7 +584,31 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
                         <Background gap={20} size={1} />
                         <Controls />
                         <MiniMap style={{ height: 120 }} zoomable pannable />
-                        {isEditMode && <Panel position="top-right" className="bg-white p-2 rounded shadow-md text-xs text-gray-500">Drag components & draw connections</Panel>}
+                        {isEditMode && <Panel position="top-right" className="bg-white p-2 rounded shadow-md text-xs text-gray-500 mt-16">Drag components & draw connections</Panel>}
+                        
+                        {/* Floating Action Buttons */}
+                        <Panel position="top-right" className="flex gap-2 items-center">
+                            {lastSaved && <span className="text-xs text-gray-400 mr-2 bg-white px-2 py-1 rounded shadow">Saved {lastSaved}</span>}
+                            
+                            {/* Back Button */}
+                            <button
+                                onClick={() => window.history.back()}
+                                className="px-4 py-2 rounded-lg font- text-sm transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 shadow-md"
+                            >
+                                ← Back
+                            </button>
+                            
+                            {/* Save Button */}
+                            {(workflowId || environmentId) && !readOnly && (
+                                <button
+                                    onClick={handleSave}
+                                    disabled={isSaving}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 shadow-md`}
+                                >
+                                    {isSaving ? 'Saving...' : 'Save Diagram'}
+                                </button>
+                            )}
+                        </Panel>
                     </ReactFlow>
                 </div>
             </div>

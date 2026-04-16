@@ -12,7 +12,7 @@ export default function TopNav() {
                 onClick={() => navigate('/')}
             >
                 <h1 className="text-xl font-bold text-gray-900 leading-tight">Hypervision</h1>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Workflow Management</p>
+                {/* <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Workflow Management</p> */}
             </div>
 
             {user && (
