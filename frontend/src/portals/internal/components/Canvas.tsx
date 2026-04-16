@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -99,6 +99,12 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         // Load snapshot from database
         const snapshot = await loadBoardSnapshot(board.id);
 
+        // Always resolve flowType: snapshot wins, then board.flow_data, then keep default
+        const resolvedFlowType = snapshot?.flowType || board.flow_data?.flowType;
+        if (resolvedFlowType) {
+          useFlowStore.setState({ flowType: resolvedFlowType as any });
+        }
+
         if (snapshot) {
           useFlowStore.setState({
             nodes: snapshot.nodes || [],
@@ -106,12 +112,6 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             flowInputs: Array.isArray(snapshot.flowInputs) ? snapshot.flowInputs : (snapshot.flowInputs ? [snapshot.flowInputs] : []),
             flowOutputs: Array.isArray(snapshot.flowOutputs) ? snapshot.flowOutputs : (snapshot.flowOutputs ? [snapshot.flowOutputs] : []),
           });
-          // Use snapshot.flowType, falling back to board.flow_data?.flowType for workflows
-          // created before the snapshot had flowType (or before the first save)
-          const resolvedFlowType = snapshot.flowType || board.flow_data?.flowType;
-          if (resolvedFlowType) {
-            useFlowStore.setState({ flowType: resolvedFlowType as any });
-          }
 
           // Store initial state for change detection
           lastSavedNodesRef.current = JSON.stringify(snapshot.nodes || []);
@@ -737,6 +737,15 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
     [addNode, addEdge, nodes, project]
   );
 
+  const displayEdges = useMemo(() => {
+    if (flowType !== 'api' || viewMode !== 'business') return edges;
+    return edges.map(edge => {
+      if (edge.label === 'True') return { ...edge, label: 'Success', labelStyle: { ...edge.labelStyle, fill: '#10B981' } };
+      if (edge.label === 'False') return { ...edge, label: 'Failure', labelStyle: { ...edge.labelStyle, fill: '#EF4444' } };
+      return edge;
+    });
+  }, [edges, flowType, viewMode]);
+
   return (
     <div className="flex-1 h-full relative overflow-hidden" ref={reactFlowWrapper}>
       {/* Glass effect background */}
@@ -749,7 +758,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
 
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={displayEdges}
         onNodesChange={readOnly ? undefined : onNodesChange}
         onEdgesChange={readOnly ? undefined : onEdgesChange}
         onConnect={readOnly ? undefined : onConnect}
