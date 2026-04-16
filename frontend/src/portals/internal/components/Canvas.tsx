@@ -66,6 +66,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
   const { saveCurrentBoardData, setCurrentBoard, loadBoardSnapshot } = useBoardStore();
   const { project } = useReactFlow();
   const viewMode = useFlowStore((state) => state.viewMode);
+  const flowType = useFlowStore((state) => state.flowType);
   const flowInputs = useFlowStore((state) => state.flowInputs);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; nodeType?: string } | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -236,11 +237,40 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
     const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
     if (!reactFlowBounds) return;
 
-    setContextMenu({
-      x: event.clientX - reactFlowBounds.left,
-      y: event.clientY - reactFlowBounds.top,
-    });
-  }, []);
+    const clickX = event.clientX - reactFlowBounds.left;
+    const clickY = event.clientY - reactFlowBounds.top;
+    
+    // Convert screen coordinates to flow coordinates
+    const flowPosition = project({ x: clickX, y: clickY });
+    
+    // Check if click is inside any group
+    const currentNodes = useFlowStore.getState().nodes;
+    const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
+    
+    let isInsideGroup = false;
+    for (const group of groups) {
+      const groupW = (group.style?.width as number) || 380;
+      const groupH = (group.style?.height as number) || 240;
+      
+      if (
+        flowPosition.x >= group.position.x &&
+        flowPosition.y >= group.position.y &&
+        flowPosition.x <= group.position.x + groupW &&
+        flowPosition.y <= group.position.y + groupH
+      ) {
+        isInsideGroup = true;
+        break;
+      }
+    }
+
+    // Only show context menu if NOT inside a group
+    if (!isInsideGroup) {
+      setContextMenu({
+        x: clickX,
+        y: clickY,
+      });
+    }
+  }, [project]);
 
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
@@ -290,6 +320,63 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
     }
   }, [contextMenu, deleteNode]);
 
+  const handleUngroupAll = useCallback(() => {
+    if (!contextMenu?.nodeId) return;
+    
+    const groupId = contextMenu.nodeId;
+    const currentNodes = useFlowStore.getState().nodes;
+    const groupNode = currentNodes.find(n => n.id === groupId);
+    
+    if (!groupNode) return;
+    
+    useFlowStore.setState({
+      nodes: currentNodes.map((node) => {
+        if (node.parentNode === groupId) {
+          // Remove from group and adjust position
+          return {
+            ...node,
+            parentNode: undefined,
+            extent: undefined,
+            position: {
+              x: groupNode.position.x + node.position.x + 20, // Offset slightly
+              y: groupNode.position.y + node.position.y + 20,
+            },
+          };
+        }
+        return node;
+      }),
+    });
+  }, [contextMenu]);
+
+  const handleUngroupNode = useCallback(() => {
+    if (!contextMenu?.nodeId) return;
+    
+    const nodeId = contextMenu.nodeId;
+    const currentNodes = useFlowStore.getState().nodes;
+    const nodeToUngroup = currentNodes.find(n => n.id === nodeId);
+    const groupNode = nodeToUngroup?.parentNode ? currentNodes.find(n => n.id === nodeToUngroup.parentNode) : null;
+    
+    if (!nodeToUngroup || !groupNode) return;
+    
+    useFlowStore.setState({
+      nodes: currentNodes.map((node) => {
+        if (node.id === nodeId) {
+          // Remove this specific node from group and adjust position
+          return {
+            ...node,
+            parentNode: undefined,
+            extent: undefined,
+            position: {
+              x: groupNode.position.x + node.position.x + 20, // Offset slightly
+              y: groupNode.position.y + node.position.y + 20,
+            },
+          };
+        }
+        return node;
+      }),
+    });
+  }, [contextMenu]);
+
   const handlePaneClick = useCallback(() => {
     setContextMenu(null);
   }, []);
@@ -337,8 +424,10 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             if (n.id === draggedNode.id) {
               const { extent, ...rest } = n;
               return {
-                ...rest,
-                parentNode: targetGroup.id,
+                ...n,
+                parentNode: group.id,
+                extent: 'parent' as const,
+                zIndex: 1,
                 position: {
                   x: nx - groupX,
                   y: ny - groupY,
@@ -460,10 +549,10 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           position,
           style: { width: 500, height: 450 },
           data: {
-            label: 'Product Group',
+            label: flowType === 'api' ? 'Product Group' : 'Module Group',
             color: '#6366F1',
           },
-          zIndex: -1,
+          zIndex: 0,
         };
         addNode(newGroup);
       } else if (type === 'api-documentation') {
@@ -514,7 +603,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             inputs: apiDoc.inputs,
             outputs: apiDoc.outputs,
           },
-          ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const } : {}),
+          ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
         };
         addNode(newNode);
       } else if (type === 'api-module') {
@@ -579,7 +668,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             inputs: [],
             outputs: [],
           },
-          ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const } : {}),
+          ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
         };
         addNode(newNode);
 
@@ -707,6 +796,10 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           onClose={() => setContextMenu(null)}
           onAddNote={handleAddNote}
           onDeleteNode={handleDeleteNode}
+          onUngroupAll={handleUngroupAll}
+          onUngroupNode={handleUngroupNode}
+          hasChildren={contextMenu.nodeId ? nodes.some(n => n.parentNode === contextMenu.nodeId) : false}
+          isInGroup={contextMenu.nodeId ? !!nodes.find(n => n.id === contextMenu.nodeId)?.parentNode : false}
         />
       )}
     </div>

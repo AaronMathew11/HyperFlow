@@ -1,8 +1,7 @@
 import { memo, useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
-import { extractCspUrlsForModule } from '../utils/cspUtils';
-import { ModuleType } from '../types';
+import type { ModuleType } from '../types/index';
 
 interface ApiInput {
   name: string;
@@ -224,7 +223,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
         }
       )
     );
-  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, dynamicCspUrls]);
+  }, [id, setNodes, title, endpoint, description, method, docUrl, successNote, failureNote, inputs, outputs, moduleDescription]);
 
   const addInput     = () => setInputs(p => [...p, { name: '', type: 'string', required: false }]);
   const addOutput    = () => setOutputs(p => [...p, { name: '', type: 'string' }]);
@@ -242,7 +241,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   return (
     <div className="relative group w-full" ref={nodeRef} onBlur={isEditable ? persistData : undefined}>
       <NodeResizer
-        color={accentColor}
+        color={flowType === 'sdk' ? accentColor : "#9393D0"}
         isVisible={selected}
         minWidth={CARD_WIDTH}
         minHeight={120}
@@ -250,8 +249,8 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !border-2 !border-white"
-        style={{ background: accentColor }}
+        className={flowType === 'sdk' ? "!w-3 !h-3 !border-2 !border-white" : "w-3 h-3"}
+        style={flowType === 'sdk' ? { background: accentColor } : {}}
       />
 
       {selected && (
@@ -578,19 +577,24 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
           className="px-4 py-1.5 flex items-center justify-between border-t flex-shrink-0"
           style={{ borderColor: 'rgba(226,232,240,0.5)', background: 'rgba(248,250,252,0.7)' }}
         >
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10B981' }} />
-            <span className="text-[10px] text-gray-400 font-medium">{isGeneric ? 'Custom API' : 'Active'}</span>
-          </div>
-          <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-            style={{
-              background: viewMode === 'business' ? '#EEF2FF' : '#0f0f1a',
-              color: viewMode === 'business' ? '#6366F1' : '#60A5FA',
-            }}
-          >
-            {viewMode === 'business' ? 'Business' : 'Tech'} View
-          </span>
+          {!isGeneric && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10B981' }} />
+              <span className="text-[10px] text-gray-400 font-medium">Active</span>
+            </div>
+          )}
+          {/* Only show view mode tag for non-generic modules */}
+          {!isGeneric && (
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              style={{
+                background: viewMode === 'business' ? '#EEF2FF' : '#0f0f1a',
+                color: viewMode === 'business' ? '#6366F1' : '#60A5FA',
+              }}
+            >
+              {viewMode === 'business' ? 'Business' : 'Tech'} View
+            </span>
+          )}
         </div>
       </div>
 

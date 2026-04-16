@@ -12,7 +12,7 @@ export interface EnvironmentFormData {
     name: string;
     description?: string;
     integrationType: 'api' | 'sdk';
-    sdkPlatform?: 'android' | 'ios' | 'web' | 'linkkyc';
+    sdkPlatform?: 'android' | 'ios' | 'web' | 'linkkyc' | 'react-native' | 'flutter';
     usesResultsApi: boolean;
     usesOutputsApi: boolean;
     reliesOnWebhooks: boolean;
@@ -165,51 +165,55 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                         <option value="android">Android</option>
                                         <option value="ios">iOS</option>
                                         <option value="web">Web</option>
+                                        <option value="react-native">React Native</option>
+                                        <option value="flutter">Flutter</option>
                                         <option value="linkkyc">LinkKYC</option>
                                     </select>
                                 </div>
                             )}
 
-                            {/* API Usage Questions */}
-                            <div className="space-y-3">
-                                <h4 className="text-sm font-medium text-gray-900">API Usage</h4>
+                            {/* API Usage Questions - only show for SDK integration */}
+                            {formData.integrationType === 'sdk' && (
+                                <div className="space-y-3">
+                                    <h4 className="text-sm font-medium text-gray-900">API Usage</h4>
 
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-2">Which API is the client using?</p>
-                                    <div className="space-y-2">
-                                        <label className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="apiType"
-                                                checked={formData.usesResultsApi}
-                                                onChange={() => setFormData({ ...formData, usesResultsApi: true, usesOutputsApi: false })}
-                                                className="mr-2"
-                                            />
-                                            <span className="text-sm text-gray-700">Results API</span>
-                                        </label>
-                                        <label className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="apiType"
-                                                checked={formData.usesOutputsApi}
-                                                onChange={() => setFormData({ ...formData, usesResultsApi: false, usesOutputsApi: true })}
-                                                className="mr-2"
-                                            />
-                                            <span className="text-sm text-gray-700">Outputs API</span>
-                                        </label>
+                                    <div>
+                                        <p className="text-sm text-gray-600 mb-2">Which API is the client using?</p>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="apiType"
+                                                    checked={formData.usesResultsApi}
+                                                    onChange={() => setFormData({ ...formData, usesResultsApi: true, usesOutputsApi: false })}
+                                                    className="mr-2"
+                                                />
+                                                <span className="text-sm text-gray-700">Results API</span>
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="apiType"
+                                                    checked={formData.usesOutputsApi}
+                                                    onChange={() => setFormData({ ...formData, usesResultsApi: false, usesOutputsApi: true })}
+                                                    className="mr-2"
+                                                />
+                                                <span className="text-sm text-gray-700">Outputs API</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.reliesOnWebhooks}
-                                        onChange={(e) => setFormData({ ...formData, reliesOnWebhooks: e.target.checked })}
-                                        className="mr-2"
-                                    />
-                                    <span className="text-sm text-gray-700">Is the client relying on webhooks?</span>
-                                </label>
-                            </div>
+                                    <label className="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.reliesOnWebhooks}
+                                            onChange={(e) => setFormData({ ...formData, reliesOnWebhooks: e.target.checked })}
+                                            className="mr-2"
+                                        />
+                                        <span className="text-sm text-gray-700">Is the client relying on webhooks?</span>
+                                    </label>
+                                </div>
+                            )}
                         </div>
 
 

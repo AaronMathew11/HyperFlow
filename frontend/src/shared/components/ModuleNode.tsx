@@ -1,5 +1,5 @@
 import { memo, useState, useMemo } from 'react';
-import { Handle, Position, NodeProps, NodeResizer } from 'reactflow';
+import { Handle, Position, NodeProps, NodeResizer, useReactFlow } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
 import { modules } from '../data/modules';
 import ModuleIcon from './ModuleIcon';
@@ -15,7 +15,8 @@ interface ModuleNodeData {
   ipAddresses?: string[];
 }
 
-function ModuleNode({ data, selected }: NodeProps<ModuleNodeData>) {
+function ModuleNode({ data, selected, id }: NodeProps<ModuleNodeData>) {
+  const { getNodes } = useReactFlow();
   const viewMode = useFlowStore((state) => state.viewMode);
   const flowType = useFlowStore((state) => state.flowType);
   const sdkMode = useFlowStore((state) => state.sdkMode);
@@ -29,6 +30,12 @@ function ModuleNode({ data, selected }: NodeProps<ModuleNodeData>) {
   });
 
   const selectedModule = modules.find(m => m.id === data.moduleType) || null;
+  
+  // Get group information for this node
+  const nodes = getNodes();
+  const currentNode = nodes.find(node => node.id === id);
+  const parentGroupNode = currentNode?.parentNode ? nodes.find(node => node.id === currentNode.parentNode) : null;
+  const groupColor = parentGroupNode?.data?.color || null;
   
   // Dynamically extract CSP URLs using the CSP script logic
   const dynamicCspUrls = useMemo(() => {
@@ -76,18 +83,30 @@ function ModuleNode({ data, selected }: NodeProps<ModuleNodeData>) {
           borderColor: selected ? '#9393D0' : '#E8E8ED',
         }}
       >
-        {/* Info button - top right corner (only in API flow) */}
-        {flowType === 'api' && selectedModule?.apiInfo && (
-          <button
-            onClick={handleInfoClick}
-            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center text-blue-600 transition-colors z-10"
-            title="View API details"
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
-        )}
+        {/* Group indicator circle - top right corner */}
+        <div className="absolute top-2 right-2 flex items-center gap-1">
+          {/* Group membership indicator */}
+          {groupColor && (
+            <div
+              className="w-3 h-3 rounded-full border border-white shadow-sm"
+              style={{ backgroundColor: groupColor }}
+              title="Part of group"
+            />
+          )}
+          
+          {/* Info button - (only in API flow) */}
+          {flowType === 'api' && selectedModule?.apiInfo && (
+            <button
+              onClick={handleInfoClick}
+              className="w-6 h-6 rounded-full bg-blue-100 hover:bg-blue-200 flex items-center justify-center text-blue-600 transition-colors z-10"
+              title="View API details"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          )}
+        </div>
         <NodeResizer
           color="#9393D0"
           isVisible={selected}

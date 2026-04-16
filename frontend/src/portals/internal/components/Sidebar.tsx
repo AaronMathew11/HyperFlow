@@ -10,6 +10,8 @@ export default function Sidebar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSdkCollapsed, setIsSdkCollapsed] = useState(false);
   const flowType = useFlowStore((state) => state.flowType);
+  const sdkMode = useFlowStore((state) => state.sdkMode);
+  const setSdkMode = useFlowStore((state) => state.setSdkMode);
   // flowType is now set at workflow creation — not toggled in the sidebar
   const flowInputs = useFlowStore((state) => state.flowInputs);
   const flowOutputs = useFlowStore((state) => state.flowOutputs);
@@ -99,7 +101,7 @@ export default function Sidebar() {
 
   const apiModule = {
     id: 'api-module',
-    label: 'Generic API',
+    label: 'Generic Module',
     description: 'Custom API endpoint module',
     color: '#6366F1',
     icon: '🔗',
@@ -196,7 +198,7 @@ export default function Sidebar() {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6 relative z-10">
+      <div className="mb-4 relative z-10">
         <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -211,6 +213,40 @@ export default function Sidebar() {
           />
         </div>
       </div>
+
+      {/* SDK Mode Toggle - Only show for SDK flow */}
+      {flowType === 'sdk' && (
+        <div className="mb-6 relative z-10">
+          <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg">
+            <button
+              onClick={() => setSdkMode('general')}
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
+                sdkMode === 'general'
+                  ? 'bg-white text-primary-700 shadow-sm'
+                  : 'text-primary-500 hover:text-primary-600'
+              }`}
+            >
+              General
+            </button>
+            <button
+              onClick={() => setSdkMode('advanced')}
+              className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
+                sdkMode === 'advanced'
+                  ? 'bg-white text-primary-700 shadow-sm'
+                  : 'text-primary-500 hover:text-primary-600'
+              }`}
+            >
+              Advanced
+            </button>
+          </div>
+          <p className="text-xs text-primary-500 mt-2">
+            {sdkMode === 'general' 
+              ? 'Simple workflow view with basic module information' 
+              : 'Detailed view with descriptions, success/failure criteria'
+            }
+          </p>
+        </div>
+      )}
 
       {/* Configuration */}
       {flowType === 'sdk' && (
@@ -296,60 +332,35 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Groups - only in API flow */}
-      {flowType === 'api' && (
-        <div className="mb-6 relative z-10">
-          <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Groups</h3>
-          <div
-            className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-indigo-200"
-            draggable
-            onDragStart={(e) => onDragStart(e, 'api-group')}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 group-hover:bg-indigo-100 transition-colors">
-                {/* Group icon — dashed rectangle */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="4" />
-                  <rect x="7" y="7" width="4" height="4" rx="1" strokeDasharray="0" />
-                  <rect x="13" y="7" width="4" height="4" rx="1" strokeDasharray="0" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm text-primary-900 truncate">
-                  Product Group
-                </div>
-                <div className="text-xs text-primary-600 truncate mt-0.5">
-                  Group multiple APIs together
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* API Module */}
+      {/* Groups - available in both API and SDK flows */}
       <div className="mb-6 relative z-10">
-        <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">API</h3>
+        <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Groups</h3>
         <div
-          className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100"
+          className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-indigo-200"
           draggable
-          onDragStart={(e) => onDragStart(e, apiModule.id)}
+          onDragStart={(e) => onDragStart(e, 'api-group')}
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors">
-              <ModuleIcon type="api-module" className="w-5 h-5" />
+            <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 group-hover:bg-indigo-100 transition-colors">
+              {/* Group icon — dashed rectangle */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="4" />
+                <rect x="7" y="7" width="4" height="4" rx="1" strokeDasharray="0" />
+                <rect x="13" y="7" width="4" height="4" rx="1" strokeDasharray="0" />
+              </svg>
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium text-sm text-primary-900 truncate">
-                {apiModule.label}
+                {flowType === 'api' ? 'Product Group' : 'Module Group'}
               </div>
               <div className="text-xs text-primary-600 truncate mt-0.5">
-                {apiModule.description}
+                {flowType === 'api' ? 'Group multiple APIs together' : 'Group multiple modules together'}
               </div>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Modules/APIs */}
       <div className="mb-6 relative z-10">
@@ -376,6 +387,28 @@ export default function Sidebar() {
         {/* SDK Modules */}
         {flowType === 'sdk' && (
           <div className="space-y-2">
+            {/* Generic Module */}
+            <div
+              className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100"
+              draggable
+              onDragStart={(e) => onDragStart(e, apiModule.id)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors">
+                  <ModuleIcon type="api-module" className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm text-primary-900 truncate">
+                    {apiModule.label}
+                  </div>
+                  <div className="text-xs text-primary-600 truncate mt-0.5">
+                    {apiModule.description}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Regular SDK Modules */}
             {filteredModules.map((module) => (
               <div
                 key={module.id}

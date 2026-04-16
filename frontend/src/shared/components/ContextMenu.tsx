@@ -8,6 +8,10 @@ interface ContextMenuProps {
   onClose: () => void;
   onAddNote: () => void;
   onDeleteNode?: () => void;
+  onUngroupAll?: () => void;
+  onUngroupNode?: () => void;
+  hasChildren?: boolean;
+  isInGroup?: boolean;
 }
 
 export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote, onDeleteNode }: ContextMenuProps) {
@@ -46,6 +50,20 @@ export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote
     }
   };
 
+  const handleUngroupAll = () => {
+    if (onUngroupAll) {
+      onUngroupAll();
+      onClose();
+    }
+  };
+
+  const handleUngroupNode = () => {
+    if (onUngroupNode) {
+      onUngroupNode();
+      onClose();
+    }
+  };
+
   return (
     <div
       ref={menuRef}
@@ -70,7 +88,24 @@ export default function ContextMenu({ x, y, nodeId, nodeType, onClose, onAddNote
             Add Note
           </button>
         )}
-        {nodeId && onDeleteNode && nodeType !== 'startNode' && (
+        {nodeId && (nodeType === 'apiGroupNode' || hasChildren) && onUngroupAll && (
+          <button
+            onClick={handleUngroupAll}
+            className="w-full px-3 py-2 text-left text-sm text-primary-700 hover:bg-primary-50 transition-colors flex items-center gap-2"
+          >
+            <span className="text-blue-500">📤</span>
+            Ungroup All
+          </button>
+        )}
+        {nodeId && isInGroup && onUngroupNode && nodeType !== 'apiGroupNode' && (
+          <button
+            onClick={handleUngroupNode}
+            className="w-full px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-2"
+          >
+            Ungroup
+          </button>
+        )}
+        {nodeId && !isInGroup && onDeleteNode && nodeType !== 'startNode' && nodeType !== 'apiGroupNode' && (
           <button
             onClick={handleDeleteNode}
             className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"

@@ -96,7 +96,7 @@ export default function CustomerDashboard() {
   };
 
   const handleBackToWorkflowsPage = () => {
-    navigate(`/customer/env/${envId}`);
+    navigate(`/customer/environments`);
   };
 
   if (loading) {
@@ -113,7 +113,7 @@ export default function CustomerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       {/* Left Sidebar */}
-      <aside className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+      <aside className="w-65 bg-white shadow-lg border-r border-gray-200 flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
@@ -228,7 +228,7 @@ export default function CustomerDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col bg-white">
         {activeView === 'workflows' && selectedWorkflow ? (
           <div className="flex-1 flex flex-col">
             {/* Workflow Header */}
@@ -275,7 +275,7 @@ export default function CustomerDashboard() {
             </div>
           </div>
         ) : activeView === 'swimlane' ? (
-          <div className="flex-1 flex flex-col overflow-y-auto">
+          <div className="flex-1 flex flex-col">
             {/* Swimlane Header */}
             <div className="bg-white border-b border-gray-200 px-6 py-4">
               <div className="flex items-center gap-4">
@@ -285,20 +285,20 @@ export default function CustomerDashboard() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-gray-900">Architecture & Documentation</h1>
+                  <h3 className="text-xl font-bold text-gray-900">Architecture & Documentation</h3>
                   <p className="text-gray-600">Integration architecture and documentation for {environment?.name}</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-8 space-y-8">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Environment Swimlane Diagram */}
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                <div className="px-6 py-4 border-b border-gray-200 bg-gray-20">
                   <h3 className="text-lg font-semibold text-gray-900">Integration Architecture</h3>
                   <p className="text-sm text-gray-600 mt-1">Interactive swimlane diagram for {environment?.name}</p>
                 </div>
-                <div style={{ height: '600px' }}>
+                <div style={{ height: '400px' }}>
                   <SwimlaneDiagram
                     readOnly={true}
                     initialData={envFlowData}
@@ -311,7 +311,7 @@ export default function CustomerDashboard() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Integration Documentation</h3>
                 <p className="text-sm text-gray-500 mb-6">Explore our comprehensive guides and API references</p>
 
-                <div className="flex items-center mb-6">
+                {/* <div className="flex items-center mb-6">
                   <a
                     href="https://documentation.hyperverge.co/"
                     target="_blank"
@@ -323,59 +323,118 @@ export default function CustomerDashboard() {
                     </svg>
                     Full Application Documentation
                   </a>
-                </div>
+                </div> */}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <a
-                    href="https://documentation.hyperverge.co/docs/sdk-integration"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex flex-col p-6 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all"
-                  >
-                    <div className="flex items-center mb-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
-                        <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
-                      </div>
-                      <h4 className="text-lg font-semibold text-gray-900">SDK Integration</h4>
-                    </div>
-                    <p className="text-gray-600 text-sm flex-1">Complete guide for integrating HyperVerge SDK into your frontend applications with code examples and best practices.</p>
-                  </a>
+                  {environment?.integration_type === 'sdk' && (() => {
+                    const platform = environment?.variables?.sdk_platform;
+                    let sdkUrl = 'https://documentation.hyperverge.co/sdks/web/quick_start_web_sdk'; // default
+                    let platformName = 'Web';
+                    
+                    switch (platform) {
+                      case 'android':
+                        sdkUrl = 'https://documentation.hyperverge.co/sdks/android-hyperKYC-sdk/quick_start_android_sdk';
+                        platformName = 'Android';
+                        break;
+                      case 'ios':
+                        sdkUrl = 'https://documentation.hyperverge.co/sdks/ios-sdk/quick_start_ios';
+                        platformName = 'iOS';
+                        break;
+                      case 'web':
+                        sdkUrl = 'https://documentation.hyperverge.co/sdks/web/quick_start_web_sdk';
+                        platformName = 'Web';
+                        break;
+                      case 'react-native':
+                        sdkUrl = 'https://documentation.hyperverge.co/sdks/react-native/quick_start_react_native_sdk';
+                        platformName = 'React Native';
+                        break;
+                      case 'flutter':
+                        sdkUrl = 'https://documentation.hyperverge.co/sdks/flutter/quick_start_flutter_sdk';
+                        platformName = 'Flutter';
+                        break;
+                      case 'linkkyc':
+                        sdkUrl = 'https://documentation.hyperverge.co/sdks/web/quick_start_web_sdk';
+                        platformName = 'LinkKYC Web';
+                        break;
+                    }
+                    
+                    return (
+                      <a
+                        href={sdkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex flex-col p-6 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all"
+                      >
+                        <div className="flex items-center mb-4">
+                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                            </svg>
+                          </div>
+                          <h4 className="text-lg font-semibold text-gray-900">{platformName} SDK Integration</h4>
+                        </div>
+                        <p className="text-gray-600 text-sm flex-1">Complete guide for integrating HyperVerge SDK into your {platformName} applications with code examples and best practices.</p>
+                      </a>
+                    );
+                  })()}
 
-                  <a
-                    href="https://documentation.hyperverge.co/docs/api-reference"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex flex-col p-6 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all"
-                  >
-                    <div className="flex items-center mb-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-green-200 transition-colors">
-                        <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                  {(environment?.integration_type === 'api' || environment?.variables?.uses_results_api) && (
+                    <a
+                      href="https://documentation.hyperverge.co/accessing-results/results-api"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex flex-col p-6 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all"
+                    >
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-green-200 transition-colors">
+                          <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-900">Results API</h4>
                       </div>
-                      <h4 className="text-lg font-semibold text-gray-900">Results API</h4>
-                    </div>
-                    <p className="text-gray-600 text-sm flex-1">Comprehensive API reference for accessing verification results, processing responses, and handling different result formats.</p>
-                  </a>
+                      <p className="text-gray-600 text-sm flex-1">Comprehensive API reference for accessing verification results, processing responses, and handling different result formats.</p>
+                    </a>
+                  )}
 
-                  <a
-                    href="https://documentation.hyperverge.co/accessing-results/results-webhook/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex flex-col p-6 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all"
-                  >
-                    <div className="flex items-center mb-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-purple-200 transition-colors">
-                        <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM4 15h8v-2H4v2zM4 11h8V9H4v2z" />
-                        </svg>
+                  {environment?.variables?.relies_on_webhooks && (
+                    <a
+                      href="https://documentation.hyperverge.co/accessing-results/results-webhook/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex flex-col p-6 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all"
+                    >
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-purple-200 transition-colors">
+                          <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4 19h6v-2H4v2zM4 15h8v-2H4v2zM4 11h8V9H4v2z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-900">Webhooks</h4>
                       </div>
-                      <h4 className="text-lg font-semibold text-gray-900">Webhooks</h4>
-                    </div>
-                    <p className="text-gray-600 text-sm flex-1">Set up and configure webhooks for real-time result notifications, including payload formats and security considerations.</p>
-                  </a>
+                      <p className="text-gray-600 text-sm flex-1">Set up and configure webhooks for real-time result notifications, including payload formats and security considerations.</p>
+                    </a>
+                  )}
+
+                  {environment?.variables?.uses_outputs_api && (
+                    <a
+                      href="https://documentation.hyperverge.co/accessing-results/output_api"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex flex-col p-6 border border-gray-200 rounded-lg hover:border-yellow-300 hover:bg-yellow-50 transition-all"
+                    >
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-yellow-200 transition-colors">
+                          <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-lg font-semibold text-gray-900">Outputs API</h4>
+                      </div>
+                      <p className="text-gray-600 text-sm flex-1">Detailed documentation for accessing and processing output data from verification workflows.</p>
+                    </a>
+                  )}
+
                 </div>
               </div>
             </div>
