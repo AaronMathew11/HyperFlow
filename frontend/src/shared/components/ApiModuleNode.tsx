@@ -33,6 +33,7 @@ interface ApiModuleNodeData {
   inputs?: ApiInput[];
   outputs?: ApiOutput[];
   isGeneric?: boolean;
+  readOnly?: boolean; // true in customer portal, false/undefined in internal
 }
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -160,6 +161,9 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   const groupColor = parentGroupNode?.data?.color || null;
   
   const isGeneric = data.isGeneric ?? false;
+  // editable = not readOnly (internal portal). Generic nodes are always editable when not readOnly.
+  // Doc-linked nodes are also editable internally (title, description, doc URL, inputs, outputs).
+  const isEditable = !(data.readOnly ?? false);
   const accentColor = data.color || '#6366F1';
   const methodStyle = METHOD_COLORS[method] || METHOD_COLORS.POST;
 
@@ -168,22 +172,6 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
 
   // Output keys for non-generic nodes (read-only doc nodes)
   const outputKeys = data.outputs?.map(o => o.name) ?? extractKeys(data.successResponse);
-  const failureSummary = (() => {
-    if (data.errorDetails) {
-      try {
-        const arr = Array.isArray(data.errorDetails) ? data.errorDetails : [data.errorDetails];
-        return arr.slice(0, 2).map((e: any) => e?.code || e?.message || String(e)).join(', ');
-      } catch { /* */ }
-    }
-    if (data.failureResponses) {
-      try {
-        const arr = Array.isArray(data.failureResponses) ? data.failureResponses : [data.failureResponses];
-        return arr.slice(0, 2).map((e: any) => e?.code || e?.status || e?.message || String(e)).join(', ');
-      } catch { /* */ }
-    }
-    return null;
-  })();
-
   // Persist all local state back into the node data store
   const persistData = useCallback(() => {
     setNodes((nodes) =>
@@ -223,7 +211,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
     setOutputs(outputs.map((out, idx) => idx === i ? { ...out, [field]: val } : out));
 
   return (
-    <div className="relative group" ref={nodeRef} onBlur={isGeneric ? persistData : undefined}>
+    <div className="relative group" ref={nodeRef} onBlur={isEditable ? persistData : undefined}>
       <NodeResizer
         color={flowType === 'sdk' ? accentColor : "#9393D0"}
         isVisible={selected}
@@ -425,7 +413,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
             {/* Documentation link */}
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 block">Documentation</label>
-              {isGeneric ? (
+              {isEditable ? (
                 <div className="flex items-center gap-1.5 rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50/60">
                   <svg className="w-3 h-3 ml-2.5 flex-shrink-0 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -474,14 +462,14 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                     </svg>
                     <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: accentColor }}>Inputs</span>
                   </div>
-                  {isGeneric && (
+                  {isEditable && (
                     <button onClick={addInput} className="text-[9px] font-bold hover:opacity-80 transition-opacity" style={{ color: accentColor }}>
                       + Add
                     </button>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  {isGeneric ? (
+                  {isEditable ? (
                     inputs.length > 0 ? inputs.map((inp, i) => (
                       <VarRow
                         key={i}
@@ -519,14 +507,14 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                     </svg>
                     <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Outputs</span>
                   </div>
-                  {isGeneric && (
+                  {isEditable && (
                     <button onClick={addOutput} className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
                       + Add
                     </button>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  {isGeneric ? (
+                  {isEditable ? (
                     outputs.length > 0 ? outputs.map((out, i) => (
                       <VarRow
                         key={i}
