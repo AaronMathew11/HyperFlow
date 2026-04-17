@@ -102,10 +102,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
       return;
     }
 
-    const nodeIds = selectedNodes.map(node => node.id);
-    const edgeIds = selectedEdges.map(edge => edge.id);
-
-    deleteElements({ nodes: nodeIds, edges: edgeIds });
+    deleteElements({ nodes: selectedNodes, edges: selectedEdges });
   };
 
   const handleClear = () => {

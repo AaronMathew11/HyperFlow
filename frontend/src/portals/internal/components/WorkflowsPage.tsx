@@ -67,15 +67,6 @@ export default function WorkflowsPage() {
         await deleteEnvironment(environmentId);
     };
 
-    const handleUpdateEnvironment = async (_data: any) => {
-        // Implementation will depend on your environment store's update method
-        // For now, close the modal and refresh
-        setIsEditEnvModalOpen(false);
-        setSelectedEnvironment(null);
-        if (buId) {
-            loadEnvironments(buId);
-        }
-    };
 
     const breadcrumbItems = useMemo(() => [
         { label: 'Home', path: '/' },
