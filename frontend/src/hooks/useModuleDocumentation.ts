@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ModuleDocumentation, moduleDocumentationService } from '../lib/moduleDocumentation';
 
 export const useModuleDocumentation = (category?: string) => {
+  const allModules = useRef<ModuleDocumentation[]>([]);
   const [modules, setModules] = useState<ModuleDocumentation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -9,9 +10,10 @@ export const useModuleDocumentation = (category?: string) => {
   const fetchModules = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await moduleDocumentationService.getAllModules(category);
+      allModules.current = data;
       setModules(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch modules');
@@ -25,24 +27,20 @@ export const useModuleDocumentation = (category?: string) => {
     fetchModules();
   }, [category]);
 
-  const searchModules = async (query: string) => {
+  const searchModules = (query: string) => {
     if (!query.trim()) {
-      fetchModules();
+      setModules(allModules.current);
       return;
     }
-
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await moduleDocumentationService.searchModules(query, category);
-      setModules(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to search modules');
-      console.error('Error searching modules:', err);
-    } finally {
-      setLoading(false);
-    }
+    const q = query.toLowerCase();
+    setModules(
+      allModules.current.filter(
+        m =>
+          m.name.toLowerCase().includes(q) ||
+          m.description?.toLowerCase().includes(q) ||
+          m.category?.toLowerCase().includes(q)
+      )
+    );
   };
 
   return {

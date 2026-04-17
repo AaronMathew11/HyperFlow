@@ -89,7 +89,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
   const handleDeleteSelected = () => {
     const selectedNodes = nodes.filter(node => node.selected);
     const selectedEdges = edges.filter(edge => edge.selected);
-    
+
     // Prevent deleting start nodes
     const hasStartNode = selectedNodes.some(node => node.type === 'startNode');
     if (hasStartNode) {
@@ -104,7 +104,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
 
     const nodeIds = selectedNodes.map(node => node.id);
     const edgeIds = selectedEdges.map(edge => edge.id);
-    
+
     deleteElements({ nodes: nodeIds, edges: edgeIds });
   };
 
@@ -276,7 +276,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
     <>
       {/* Breadcrumb Navigation and Board Name */}
       <div
-        className="absolute top-4 left-4 z-30 rounded-xl p-2 flex items-center gap-3 border shadow-lg"
+        className="absolute top-4 left-[25vw] z-30 rounded-xl p-2 flex items-center gap-3 border shadow-lg"
         style={{
           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
           backdropFilter: 'blur(40px) saturate(200%)',

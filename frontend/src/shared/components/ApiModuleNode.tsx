@@ -3,6 +3,7 @@ import { Handle, Position, NodeProps, NodeResizer, useReactFlow, useUpdateNodeIn
 import { useFlowStore } from '../../portals/internal/store/flowStore';
 import type { ModuleType } from '../types/index';
 import { extractCspUrlsForModule } from '../utils/cspUtils';
+import ModuleIcon from './ModuleIcon';
 
 interface ApiInput {
   name: string;
@@ -274,18 +275,17 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
 
       {/* Card — height grows with content */}
       <div
-        className="rounded-2xl flex flex-col overflow-hidden w-full"
+        className="rounded-2xl flex flex-col overflow-hidden w-full bg-white"
         style={{
-          background: 'linear-gradient(150deg, #ffffff 0%, #f8f9ff 100%)',
           border: selected ? `2px solid ${accentColor}` : '2px solid rgba(226,232,240,0.9)',
           boxShadow: selected
-            ? `0 8px 30px ${accentColor}20, 0 2px 8px rgba(0,0,0,0.07)`
-            : '0 2px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.04)',
+            ? `0 4px 16px rgba(0,0,0,0.08)`
+            : '0 2px 8px rgba(0,0,0,0.04)',
           transition: 'border-color 0.2s, box-shadow 0.2s',
         }}
       >
         {/* Accent bar */}
-        <div style={{ height: 3, flexShrink: 0, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}70)` }} />
+        <div style={{ height: 3, flexShrink: 0, backgroundColor: accentColor }} />
 
         {/* Group indicator circle - top right corner */}
         {groupColor && (
@@ -301,15 +301,14 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
           <div className="flex items-center gap-3">
             {/* Icon */}
             <div
-              className="flex-shrink-0 flex items-center justify-center rounded-xl text-white"
+              className="flex-shrink-0 flex items-center justify-center rounded-lg"
               style={{
                 width: 36, height: 36,
-                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}bb)`,
-                fontSize: 16,
-                boxShadow: `0 3px 10px ${accentColor}40`,
+                backgroundColor: `${accentColor}18`,
+                color: accentColor,
               }}
             >
-              {data.icon || '🔗'}
+              <ModuleIcon type="api-module" className="w-5 h-5" />
             </div>
 
             <div className="flex-1 min-w-0">
@@ -403,21 +402,17 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
           {viewMode === 'business' && (
             <div className="px-4 py-3 flex flex-col gap-2">
               {/* Success */}
-              <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+              <div className="rounded-xl p-3 border border-gray-100 bg-gray-50">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Success</span>
-                  <span className="ml-auto text-[9px] bg-emerald-200 text-emerald-700 px-1.5 py-0.5 rounded-full font-semibold">200 OK</span>
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#10B981' }} />
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Success</span>
+                  <span className="ml-auto text-[9px] text-emerald-600 border border-emerald-200 bg-white px-1.5 py-0.5 rounded-full font-medium">200 OK</span>
                 </div>
                 {isEditable ? (
                   <InlineInput value={successNote} onChange={setSuccessNote} placeholder="e.g. Returns user verification result..." multiline />
                 ) : (
                   <p
-                    className="text-[11px] text-emerald-800 leading-relaxed"
+                    className="text-[11px] text-gray-600 leading-relaxed"
                     style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
                   >
                     {successNote || (data.successResponse ? 'Returns expected JSON payload.' : 'Standard 200 OK response.')}
@@ -426,33 +421,29 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 {!isEditable && outputKeys.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1">
                     {outputKeys.slice(0, 4).map((k) => (
-                      <span key={k} className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-mono">{k}</span>
+                      <span key={k} className="text-[9px] bg-white text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded font-mono">{k}</span>
                     ))}
                   </div>
                 )}
               </div>
 
               {/* Failure */}
-              <div className="bg-red-50 rounded-xl p-3 border border-red-100">
+              <div className="rounded-xl p-3 border border-gray-100 bg-gray-50">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </div>
-                  <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider">Failure</span>
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#EF4444' }} />
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Failure</span>
                   {(data.failureResponses || data.errorDetails) && (
-                    <span className="ml-auto text-[9px] bg-red-200 text-red-700 px-1.5 py-0.5 rounded-full font-semibold">4xx / 5xx</span>
+                    <span className="ml-auto text-[9px] text-red-500 border border-red-200 bg-white px-1.5 py-0.5 rounded-full font-medium">4xx / 5xx</span>
                   )}
                 </div>
                 {isEditable ? (
                   <InlineInput value={failureNote} onChange={setFailureNote} placeholder="e.g. Returns 401 if token is invalid..." multiline />
                 ) : (
                   <p
-                    className="text-[11px] text-red-800 leading-relaxed"
+                    className="text-[11px] text-gray-600 leading-relaxed"
                     style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
                   >
-                    {failureNote ? `Error: ${failureNote}` : 'Returns error code and details on failure.'}
+                    {failureNote ? failureNote : 'Returns error code and details on failure.'}
                   </p>
                 )}
               </div>
@@ -553,15 +544,15 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
               </div>
 
               {/* Outputs — collapsible */}
-              <div className="rounded-xl border border-emerald-100 overflow-hidden">
+              <div className="rounded-xl border border-gray-100 overflow-hidden">
                 <button
                   onClick={() => setShowOutputs(v => !v)}
-                  className="w-full flex items-center gap-1.5 px-2.5 py-2 bg-emerald-50"
+                  className="w-full flex items-center gap-1.5 px-2.5 py-2 bg-gray-50"
                 >
-                  <svg className="w-3 h-3 text-emerald-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Outputs</span>
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Outputs</span>
                   <span className="text-[9px] text-gray-400 font-medium">
                     {isEditable ? outputs.length : (data.outputs?.length ?? outputKeys.length)}
                   </span>
@@ -575,13 +566,13 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                   {isEditable && showOutputs && (
                     <span
                       role="button"
-                      className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 ml-1"
+                      className="text-[9px] font-semibold text-gray-500 hover:text-gray-700 ml-1"
                       onClick={(e) => { e.stopPropagation(); addOutput(); }}
                     >+ Add</span>
                   )}
                 </button>
                 {showOutputs && (
-                  <div className="px-2.5 pb-2.5 pt-1.5 flex flex-col gap-1 bg-emerald-50/40">
+                  <div className="px-2.5 pb-2.5 pt-1.5 flex flex-col gap-1 bg-white">
                     {isEditable ? (
                       outputs.length > 0
                         ? outputs.map((out, i) => (
@@ -594,7 +585,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                       (data.outputs && data.outputs.length > 0 ? data.outputs : outputKeys.map(k => ({ name: k, type: '' })))
                         .map((out) => (
                           <div key={out.name} className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
                             <span className="text-[10px] font-mono text-gray-700 truncate">{out.name}</span>
                             {out.type && <span className="text-[9px] text-gray-400 ml-auto flex-shrink-0">{out.type}</span>}
                           </div>
@@ -608,18 +599,18 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
               </div>
 
               {/* Condition */}
-              <div className="rounded-xl border border-blue-100 overflow-hidden">
-                <div className="w-full flex items-center gap-1.5 px-2.5 py-2 bg-blue-50">
-                  <svg className="w-3 h-3 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="rounded-xl border border-gray-100 overflow-hidden">
+                <div className="w-full flex items-center gap-1.5 px-2.5 py-2 bg-gray-50">
+                  <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                   </svg>
-                  <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Condition</span>
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Condition</span>
                 </div>
-                <div className="p-2.5 bg-blue-50/40">
+                <div className="p-2.5 bg-white">
                   {isEditable ? (
                     <InlineInput value={condition} onChange={setCondition} placeholder="e.g. response.status == 'success'" multiline />
                   ) : (
-                    <div className="text-[10px] font-mono text-gray-700 whitespace-pre-wrap break-words">
+                    <div className="text-[10px] font-mono text-gray-600 whitespace-pre-wrap break-words">
                       {condition || <span className="italic text-gray-400">None</span>}
                     </div>
                   )}

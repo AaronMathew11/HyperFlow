@@ -1,11 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEnvironmentStore } from '../store/environmentStore';
-import Breadcrumb from '../../../shared/components/Breadcrumb';
 import SwimlaneDiagram from '../../../shared/components/SwimlaneDiagram';
 import { getClient, getBusinessUnit } from '../../../shared/lib/api';
 import { Client, BusinessUnit } from '../../../shared/types';
-import TopNav from './TopNav';
 
 export default function EnvironmentDetailPage() {
     const { clientId, buId, environmentId } = useParams<{ clientId: string; buId: string; environmentId: string }>();
@@ -17,27 +15,33 @@ export default function EnvironmentDetailPage() {
     const environment = environments.find(env => env.id === environmentId);
 
     useEffect(() => {
-        if (buId) {
-            loadEnvironments(buId);
-        }
-        if (clientId) {
-            getClient(clientId).then(setClient);
-        }
-        if (buId) {
-            getBusinessUnit(buId).then(setBusinessUnit);
-        }
+        if (buId) loadEnvironments(buId);
+        if (clientId) getClient(clientId).then(setClient);
+        if (buId) getBusinessUnit(buId).then(setBusinessUnit);
     }, [buId, clientId, loadEnvironments]);
 
     const handleBack = () => {
         navigate(`/client/${clientId}/bu/${buId}`);
     };
 
-    const breadcrumbItems = useMemo(() => [
-        { label: 'Home', path: '/' },
-        { label: client?.name || 'Loading...', path: clientId ? `/client/${clientId}` : undefined },
-        { label: businessUnit?.name || 'Loading...', path: (clientId && buId) ? `/client/${clientId}/bu/${buId}` : undefined },
-        { label: environment?.name || 'Loading...', path: undefined },
-    ], [client, businessUnit, environment, clientId, buId]);
+    const handleBreadcrumbNavigation = (level: 'clients' | 'businessUnits' | 'environments') => {
+        switch (level) {
+            case 'clients':
+                navigate('/');
+                break;
+            case 'businessUnits':
+                if (clientId) navigate(`/client/${clientId}`);
+                break;
+            case 'environments':
+                if (clientId && buId) navigate(`/client/${clientId}/bu/${buId}`);
+                break;
+        }
+    };
+
+    const breadcrumbData = useMemo(() => ({
+        client: client ? { name: client.name } : undefined,
+        businessUnit: businessUnit ? { name: businessUnit.name } : undefined,
+    }), [client, businessUnit]);
 
     if (!environment) {
         return (
@@ -50,7 +54,7 @@ export default function EnvironmentDetailPage() {
                     <p className="text-gray-600 mb-6">The environment you're looking for doesn't exist or has been removed.</p>
                     <button
                         onClick={handleBack}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                     >
                         Go Back
                     </button>
@@ -60,26 +64,12 @@ export default function EnvironmentDetailPage() {
     }
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <TopNav />
-            {/* Compact Header */}
-            {/* <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
-                <Breadcrumb items={breadcrumbItems} />
-                <button
-                    onClick={handleBack}
-                    className="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Back
-                </button>
-            </header> */}
-
-            {/* Full-page Swimlane */}
-            <div className="flex-1 overflow-hidden">
-                <SwimlaneDiagram environmentId={environmentId} />
-            </div>
-        </div>
+        <SwimlaneDiagram
+            environmentId={environmentId}
+            boardName={environment.name}
+            onBack={handleBack}
+            breadcrumbData={breadcrumbData}
+            onBreadcrumbNavigation={handleBreadcrumbNavigation}
+        />
     );
 }

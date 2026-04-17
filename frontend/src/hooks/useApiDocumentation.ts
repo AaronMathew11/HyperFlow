@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ApiDocumentationWithDetails, apiDocumentationService } from '../lib/apiDocumentation';
 
 export const useApiDocumentation = (category?: string) => {
+  const allApis = useRef<ApiDocumentationWithDetails[]>([]);
   const [apis, setApis] = useState<ApiDocumentationWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -9,9 +10,10 @@ export const useApiDocumentation = (category?: string) => {
   const fetchApis = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await apiDocumentationService.getAllApis(category);
+      allApis.current = data;
       setApis(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch APIs');
@@ -25,24 +27,20 @@ export const useApiDocumentation = (category?: string) => {
     fetchApis();
   }, [category]);
 
-  const searchApis = async (query: string) => {
+  const searchApis = (query: string) => {
     if (!query.trim()) {
-      fetchApis();
+      setApis(allApis.current);
       return;
     }
-
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await apiDocumentationService.searchApis(query, category);
-      setApis(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to search APIs');
-      console.error('Error searching APIs:', err);
-    } finally {
-      setLoading(false);
-    }
+    const q = query.toLowerCase();
+    setApis(
+      allApis.current.filter(
+        a =>
+          a.name.toLowerCase().includes(q) ||
+          a.description?.toLowerCase().includes(q) ||
+          a.category?.toLowerCase().includes(q)
+      )
+    );
   };
 
   return {

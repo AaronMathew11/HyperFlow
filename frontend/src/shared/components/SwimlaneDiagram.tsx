@@ -8,9 +8,8 @@ import ReactFlow, {
     useNodesState,
     useEdgesState,
     Background,
-    Controls,
+    BackgroundVariant,
     MiniMap,
-    Panel,
     MarkerType,
     ReactFlowProvider,
     useReactFlow,
@@ -60,14 +59,37 @@ const DEFAULT_LANES: Lane[] = [
 
 const LANE_WIDTH = 400;
 
+const glassStyle: React.CSSProperties = {
+    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
+    backdropFilter: 'blur(40px) saturate(150%)',
+    WebkitBackdropFilter: 'blur(40px) saturate(150%)',
+    border: '1px solid rgba(255, 255, 255, 0.6)',
+    boxShadow: '0 8px 32px rgba(6, 6, 61, 0.1), 0 2px 8px rgba(6, 6, 61, 0.05)',
+};
+
+const floatingBarStyle: React.CSSProperties = {
+    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
+    backdropFilter: 'blur(40px) saturate(200%)',
+    WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+    borderColor: 'rgba(6, 6, 61, 0.08)',
+    boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.08)',
+};
+
 interface SwimlaneDiagramProps {
     workflowId?: string;
     environmentId?: string;
     readOnly?: boolean;
     initialData?: { nodes: any[]; edges: any[] } | null;
+    boardName?: string;
+    onBack?: () => void;
+    breadcrumbData?: {
+        client?: { name: string };
+        businessUnit?: { name: string };
+    };
+    onBreadcrumbNavigation?: (level: 'clients' | 'businessUnits' | 'environments') => void;
 }
 
-function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, initialData }: SwimlaneDiagramProps) {
+function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, initialData, boardName, onBack, breadcrumbData, onBreadcrumbNavigation }: SwimlaneDiagramProps) {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [lanes, setLanes] = useState<Lane[]>(DEFAULT_LANES);
@@ -78,7 +100,6 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<string | null>(null);
 
-    // Custom UI State
     const [showCustomLaneForm, setShowCustomLaneForm] = useState(false);
     const [customLaneName, setCustomLaneName] = useState('');
 
@@ -87,7 +108,6 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
     const [customCompDesc, setCustomCompDesc] = useState('');
     const [customCompDocUrl, setCustomCompDocUrl] = useState('');
 
-    // Lane Drag/Drop State
     const [draggedLaneIndex, setDraggedLaneIndex] = useState<number | null>(null);
 
     const nodeTypes = useMemo(() => ({ component: ComponentNode, table: TableNode, laneHeader: LaneHeader }), []);
@@ -95,12 +115,9 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
 
     const availableColors = ['blue', 'purple', 'green', 'indigo', 'red', 'yellow', 'pink', 'teal'];
 
-    // Convert to React Flow instance for saving
-    const { toObject } = useReactFlow();
+    const { toObject, zoomIn, zoomOut, fitView } = useReactFlow();
 
-    // Load data
     useEffect(() => {
-        // If initialData is provided, use it directly (for customer portal)
         if (initialData) {
             setNodes(initialData.nodes || []);
             setEdges(initialData.edges || []);
@@ -165,7 +182,6 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
         }
     };
 
-    // Initialize Lanes (skip when initialData is provided since saved data includes lane headers)
     useEffect(() => {
         if (initialData) return;
 
@@ -187,39 +203,26 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
         }));
 
         setNodes(nds => {
-            // Remove old lane headers
             const contentNodes = nds.filter(n => n.type !== 'laneHeader');
-
-            // Re-apply colors to components
             const updatedComponents = contentNodes.map(node => {
                 if (node.type === 'component') {
                     const laneIndex = Math.max(0, Math.floor(node.position.x / LANE_WIDTH));
                     const color = availableColors[laneIndex % availableColors.length];
-                    return {
-                        ...node,
-                        data: { ...node.data, color }
-                    };
+                    return { ...node, data: { ...node.data, color } };
                 }
                 return node;
             });
-
             return [...laneNodes, ...updatedComponents];
         });
     }, [lanes, isEditMode, initialData, setNodes]);
 
-    // Update component nodes edit mode
     useEffect(() => {
         setNodes(nds => nds.map(node => {
-            // Logic to update isEditMode in node data
             if (node.type === 'component' || node.type === 'table') {
-                return {
-                    ...node,
-                    data: { ...node.data, isEditMode }
-                };
+                return { ...node, data: { ...node.data, isEditMode } };
             }
             return node;
         }));
-
     }, [isEditMode, setNodes, setEdges]);
 
     const onConnect = useCallback((params: Connection) => {
@@ -256,16 +259,9 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
             if (node.type === 'component') {
                 const laneIndex = Math.max(0, Math.floor(node.position.x / LANE_WIDTH));
                 const color = availableColors[laneIndex % availableColors.length];
-
-                // Only update if color changes to avoid excessive re-renders
                 if (node.data.color !== color) {
                     setNodes((nds) => nds.map((n) => {
-                        if (n.id === node.id) {
-                            return {
-                                ...n,
-                                data: { ...n.data, color },
-                            };
-                        }
+                        if (n.id === node.id) return { ...n, data: { ...n.data, color } };
                         return n;
                     }));
                 }
@@ -281,20 +277,16 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
             const type = event.dataTransfer.getData('application/reactflow');
             const componentData = JSON.parse(event.dataTransfer.getData('application/componentData'));
 
-            if (typeof type === 'undefined' || !type || !componentData) {
-                return;
-            }
+            if (typeof type === 'undefined' || !type || !componentData) return;
 
-            // Get drop position
             const reactFlowBounds = document.querySelector('.react-flow')?.getBoundingClientRect();
 
             if (reactFlowBounds) {
                 const position = {
-                    x: event.clientX - reactFlowBounds.left - 128, // Center node
+                    x: event.clientX - reactFlowBounds.left - 128,
                     y: event.clientY - reactFlowBounds.top - 40,
                 };
 
-                // Determine color based on drop position
                 const laneIndex = Math.max(0, Math.floor(position.x / LANE_WIDTH));
                 const color = availableColors[laneIndex % availableColors.length];
 
@@ -307,7 +299,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
                         position,
                         data: {
                             ...componentData,
-                            color, // Assign dynamic color
+                            color,
                             isEditMode,
                             onDelete: (id: string) => setNodes((nds) => nds.filter((n) => n.id !== id)),
                             onViewDocs: (url: string) => window.location.hash = url
@@ -326,13 +318,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
                             onAddField: (nodeId: string, name: string, fieldType: string) => {
                                 setNodes(nds => nds.map(node => {
                                     if (node.id === nodeId) {
-                                        return {
-                                            ...node,
-                                            data: {
-                                                ...node.data,
-                                                fields: [...node.data.fields, { id: Date.now().toString(), name, type: fieldType }]
-                                            }
-                                        };
+                                        return { ...node, data: { ...node.data, fields: [...node.data.fields, { id: Date.now().toString(), name, type: fieldType }] } };
                                     }
                                     return node;
                                 }));
@@ -340,13 +326,7 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
                             onRemoveField: (nodeId: string, fieldId: string) => {
                                 setNodes(nds => nds.map(node => {
                                     if (node.id === nodeId) {
-                                        return {
-                                            ...node,
-                                            data: {
-                                                ...node.data,
-                                                fields: node.data.fields.filter((f: any) => f.id !== fieldId)
-                                            }
-                                        };
+                                        return { ...node, data: { ...node.data, fields: node.data.fields.filter((f: any) => f.id !== fieldId) } };
                                     }
                                     return node;
                                 }));
@@ -373,7 +353,6 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
     const handleLaneDragStart = (e: React.DragEvent, index: number) => {
         setDraggedLaneIndex(index);
         e.dataTransfer.effectAllowed = 'move';
-        // Use a generic type to allow generic drag - but maybe customize so it doesn't conflict with node drops
         e.dataTransfer.setData('application/lane', index.toString());
     };
 
@@ -405,205 +384,329 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
 
     const addCustomLane = () => {
         if (!customLaneName.trim()) return;
-        const newLane: Lane = {
-            id: `custom-${Date.now()}`,
-            name: customLaneName,
-            enabled: true,
-        };
-        setLanes(prev => [...prev, newLane]);
+        setLanes(prev => [...prev, { id: `custom-${Date.now()}`, name: customLaneName, enabled: true }]);
         setCustomLaneName('');
         setShowCustomLaneForm(false);
     };
 
     const addCustomComponent = () => {
         if (!customCompName.trim()) return;
-        const newComp: Component = {
+        PREDEFINED_COMPONENTS.push({
             id: `custom-${Date.now()}`,
             name: customCompName,
             description: customCompDesc || 'Custom Component',
             defaultLane: 'client-frontend',
             documentationUrl: customCompDocUrl,
             isCustom: true,
-        };
-        PREDEFINED_COMPONENTS.push(newComp);
+        });
         setCustomCompName('');
         setCustomCompDesc('');
         setCustomCompDocUrl('');
         setShowCustomCompForm(false);
     };
 
+    const handleBack = () => {
+        if (onBack) onBack();
+        else window.history.back();
+    };
+
     return (
-        <div className="flex flex-col h-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div
+            className="relative h-screen w-screen overflow-hidden"
+            style={{
+                background: 'radial-gradient(circle at 20% 30%, rgba(147, 147, 208, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(6, 6, 61, 0.02) 0%, transparent 50%), linear-gradient(135deg, #FAFAFA 0%, #FFFFFF 100%)',
+            }}
+        >
+            {/* Glass Sidebar — overlaid on canvas, same pattern as workflow */}
+            {isEditMode && !readOnly && (
+                <div className="absolute top-0 left-0 z-20 pointer-events-none h-full">
+                    <div className="pointer-events-auto">
+                <aside
+                    className="w-80 p-5 overflow-y-auto relative m-4 rounded-2xl shadow-2xl"
+                    style={{
+                        ...glassStyle,
+                        height: 'calc(100vh - 32px)',
+                    }}
+                >
+                    {/* Subtle top highlight */}
+                    <div
+                        className="absolute top-0 left-0 right-0 h-px pointer-events-none rounded-t-2xl"
+                        style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.8) 50%, transparent 100%)' }}
+                    />
 
-            <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar (Edit Mode Only) */}
-                {isEditMode && !readOnly && (
-                    <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col max-h-full">
-                        <div className="overflow-y-auto p-4 space-y-4 flex-1">
-                            {/* Lanes Config */}
-                            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                                <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider">Lanes</h3>
-                                <div className="space-y-2">
-                                    {lanes.map((lane, index) => (
-                                        <div
-                                            key={lane.id}
-                                            draggable
-                                            onDragStart={(e) => handleLaneDragStart(e, index)}
-                                            onDragOver={handleLaneDragOver}
-                                            onDrop={(e) => handleLaneDrop(e, index)}
-                                            className={`flex items-center gap-2 p-2 rounded border border-gray-100 cursor-grab active:cursor-grabbing transition-colors ${draggedLaneIndex === index ? 'bg-blue-50 border-blue-200 opacity-50' : 'bg-gray-50 hover:bg-gray-100'
-                                                }`}
-                                        >
-                                            <div className="mr-1 text-gray-400 cursor-grab">⋮⋮</div>
-                                            <input
-                                                type="checkbox"
-                                                checked={lane.enabled}
-                                                onChange={() => setLanes(ls => ls.map(l => l.id === lane.id ? { ...l, enabled: !l.enabled } : l))}
-                                                className="rounded text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm font-medium text-gray-700 flex-1 select-none">{lane.name}</span>
+                    {/* Header */}
+                    <div className="mb-8 relative z-10">
+                        <h2 className="text-2xl font-semibold text-primary-900 mb-1 tracking-tight">Hypervision</h2>
+                        <p className="text-sm text-primary-600 font-medium">Drag components to build your environment diagram</p>
+                    </div>
 
-                                        </div>
-                                    ))}
-                                    {/* Custom Lane Form */}
-                                    {showCustomLaneForm ? (
-                                        <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-100 space-y-2">
-                                            <input
-                                                type="text"
-                                                placeholder="Lane Name"
-                                                value={customLaneName}
-                                                onChange={e => setCustomLaneName(e.target.value)}
-                                                className="w-full px-2 py-1 text-sm border rounded"
-                                            />
-
-                                            <div className="flex gap-2">
-                                                <button onClick={addCustomLane} className="flex-1 bg-blue-600 text-white text-xs py-1 rounded">Add</button>
-                                                <button onClick={() => setShowCustomLaneForm(false)} className="flex-1 bg-gray-300 text-gray-700 text-xs py-1 rounded">Cancel</button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => setShowCustomLaneForm(true)}
-                                            className="w-full mt-2 py-1.5 text-sm text-blue-600 border border-blue-200 rounded hover:bg-blue-50 transition-colors"
-                                        >
-                                            + Add Custom Lane
-                                        </button>
-                                    )}
-                                </div>
+                    {/* Environment badge */}
+                    <div className="mb-5 relative z-10">
+                        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/80 border border-gray-200">
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#6366F1' }}>
+                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                </svg>
                             </div>
-
-                            {/* Component Palette */}
-                            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                                <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase tracking-wider">Components</h3>
-                                <div className="space-y-2">
-                                    {PREDEFINED_COMPONENTS.map(comp => (
-                                        <div
-                                            key={comp.id}
-                                            onDragStart={(event) => onDragStart(event, 'component', comp)}
-                                            draggable
-                                            className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm cursor-move hover:shadow-md transition-shadow flex items-center gap-3"
-                                        >
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-gray-400`}>
-                                                {comp.name[0]}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-gray-900">{comp.name}</p>
-                                                <p className="text-xs text-gray-500">{comp.description}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {/* Custom Component Form */}
-                                    {showCustomCompForm ? (
-                                        <div className="mt-3 p-3 bg-yellow-50 rounded border border-yellow-100 space-y-2">
-                                            <input
-                                                value={customCompName}
-                                                onChange={e => setCustomCompName(e.target.value)}
-                                                className="w-full px-2 py-1 text-sm border rounded"
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Description"
-                                                value={customCompDesc}
-                                                onChange={e => setCustomCompDesc(e.target.value)}
-                                                className="w-full px-2 py-1 text-sm border rounded"
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Documentation URL (optional)"
-                                                value={customCompDocUrl}
-                                                onChange={e => setCustomCompDocUrl(e.target.value)}
-                                                className="w-full px-2 py-1 text-sm border rounded"
-                                            />
-                                            <div className="flex gap-2">
-                                                <button onClick={addCustomComponent} className="flex-1 bg-yellow-600 text-white text-xs py-1 rounded">Add</button>
-                                                <button onClick={() => setShowCustomCompForm(false)} className="flex-1 bg-gray-300 text-gray-700 text-xs py-1 rounded">Cancel</button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => setShowCustomCompForm(true)}
-                                            className="w-full mt-2 py-1.5 text-sm text-yellow-600 border border-yellow-200 rounded hover:bg-yellow-50 transition-colors"
-                                        >
-                                            + Add Custom Component
-                                        </button>
-                                    )}
-                                </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-gray-800">Environment Diagram</p>
+                                <p className="text-xs text-gray-500">Swimlane architecture view</p>
                             </div>
                         </div>
                     </div>
-                )}
 
-                {/* React Flow Canvas */}
-                <div className="flex-1 relative bg-gray-50">
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        onDragOver={onDragOver}
-                        onDrop={onDrop}
-                        onNodeDrag={onNodeDrag}
-                        nodeTypes={nodeTypes}
-                        edgeTypes={edgeTypes}
-                        panOnScroll
-                        selectionOnDrag
-                        panOnDrag={!isEditMode || undefined} // Allow regular panning in view mode, selection in edit
-                        nodesDraggable={isEditMode}
-                        connectOnClick={isEditMode}
-                        connectionLineType={ConnectionLineType.Step}
-                        connectionLineStyle={{ stroke: '#6366f1', strokeWidth: 2, strokeDasharray: '6 3' }}
-                        deleteKeyCode={isEditMode ? ['Backspace', 'Delete'] : null}
-                    >
-                        <Background gap={20} size={1} />
-                        <Controls />
-                        <MiniMap style={{ height: 120 }} zoomable pannable />
-                        {isEditMode && <Panel position="top-right" className="bg-white p-2 rounded shadow-md text-xs text-gray-500 mt-16">Drag components & draw connections</Panel>}
-                        
-                        {/* Floating Action Buttons */}
-                        <Panel position="top-right" className="flex gap-2 items-center">
-                            {lastSaved && <span className="text-xs text-gray-400 mr-2 bg-white px-2 py-1 rounded shadow">Saved {lastSaved}</span>}
-                            
-                            {/* Back Button */}
-                            <button
-                                onClick={() => window.history.back()}
-                                className="px-4 py-2 rounded-lg font- text-sm transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 shadow-md"
-                            >
-                                ← Back
-                            </button>
-                            
-                            {/* Save Button */}
-                            {(workflowId || environmentId) && !readOnly && (
-                                <button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 shadow-md`}
+                    {/* Lanes Section */}
+                    <div className="mb-6 relative z-10">
+                        <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Lanes</h3>
+                        <div className="space-y-2">
+                            {lanes.map((lane, index) => (
+                                <div
+                                    key={lane.id}
+                                    draggable
+                                    onDragStart={(e) => handleLaneDragStart(e, index)}
+                                    onDragOver={handleLaneDragOver}
+                                    onDrop={(e) => handleLaneDrop(e, index)}
+                                    className={`flex items-center gap-2.5 p-3 bg-white/80 rounded-xl border cursor-grab active:cursor-grabbing transition-all duration-200 shadow-sm ${draggedLaneIndex === index ? 'opacity-50 border-primary-300 bg-primary-50/50' : 'border-primary-100 hover:shadow-md'}`}
                                 >
-                                    {isSaving ? 'Saving...' : 'Save Diagram'}
+                                    <span className="text-primary-400 select-none text-sm">⋮⋮</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={lane.enabled}
+                                        onChange={() => setLanes(ls => ls.map(l => l.id === lane.id ? { ...l, enabled: !l.enabled } : l))}
+                                        className="rounded text-primary-600 focus:ring-primary-500 flex-shrink-0"
+                                    />
+                                    <span className="text-sm font-medium text-primary-900 flex-1 select-none">{lane.name}</span>
+                                </div>
+                            ))}
+
+                            {showCustomLaneForm ? (
+                                <div className="mt-2 p-3 bg-primary-50/60 rounded-xl border border-primary-100 space-y-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Lane name"
+                                        value={customLaneName}
+                                        onChange={e => setCustomLaneName(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-sm border border-primary-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400/30 bg-white/80"
+                                        onKeyDown={e => e.key === 'Enter' && addCustomLane()}
+                                    />
+                                    <div className="flex gap-2">
+                                        <button onClick={addCustomLane} className="flex-1 bg-primary-600 text-white text-xs py-1.5 rounded-lg hover:bg-primary-700 transition-colors">Add</button>
+                                        <button onClick={() => setShowCustomLaneForm(false)} className="flex-1 bg-gray-200 text-gray-700 text-xs py-1.5 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowCustomLaneForm(true)}
+                                    className="w-full mt-1 py-2 text-xs font-medium text-primary-600 border border-dashed border-primary-200 rounded-xl hover:bg-primary-50 transition-colors"
+                                >
+                                    + Add Custom Lane
                                 </button>
                             )}
-                        </Panel>
-                    </ReactFlow>
+                        </div>
+                    </div>
+
+                    {/* Components Section */}
+                    <div className="mb-6 relative z-10">
+                        <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Components</h3>
+                        <div className="space-y-2">
+                            {PREDEFINED_COMPONENTS.map(comp => (
+                                <div
+                                    key={comp.id}
+                                    onDragStart={(event) => onDragStart(event, 'component', comp)}
+                                    draggable
+                                    className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors flex-shrink-0 text-sm font-bold">
+                                            {comp.name[0]}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm text-primary-900 truncate">{comp.name}</p>
+                                            <p className="text-xs text-primary-600 truncate mt-0.5">{comp.description}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {showCustomCompForm ? (
+                                <div className="mt-2 p-3 bg-amber-50/60 rounded-xl border border-amber-100 space-y-2">
+                                    <input
+                                        placeholder="Component name"
+                                        value={customCompName}
+                                        onChange={e => setCustomCompName(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/30 bg-white/80"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Description"
+                                        value={customCompDesc}
+                                        onChange={e => setCustomCompDesc(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/30 bg-white/80"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Documentation URL (optional)"
+                                        value={customCompDocUrl}
+                                        onChange={e => setCustomCompDocUrl(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-sm border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/30 bg-white/80"
+                                    />
+                                    <div className="flex gap-2">
+                                        <button onClick={addCustomComponent} className="flex-1 bg-amber-500 text-white text-xs py-1.5 rounded-lg hover:bg-amber-600 transition-colors">Add</button>
+                                        <button onClick={() => setShowCustomCompForm(false)} className="flex-1 bg-gray-200 text-gray-700 text-xs py-1.5 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowCustomCompForm(true)}
+                                    className="w-full mt-1 py-2 text-xs font-medium text-amber-600 border border-dashed border-amber-200 rounded-xl hover:bg-amber-50 transition-colors"
+                                >
+                                    + Add Custom Component
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </aside>
+                    </div>
+                </div>
+            )}
+
+            {/* Canvas Area — full screen, same as workflow */}
+            <div className="absolute inset-0">
+                {/* Floating Breadcrumb — top left */}
+                <div
+                    className="absolute top-4 left-4 z-30 rounded-xl p-2 flex items-center gap-2 border shadow-lg"
+                    style={floatingBarStyle}
+                >
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => onBreadcrumbNavigation ? onBreadcrumbNavigation('clients') : handleBack()}
+                            className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition-all duration-200"
+                        >
+                            Clients
+                        </button>
+
+                        {breadcrumbData?.client && (
+                            <>
+                                <svg className="h-3 w-3 text-primary-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <button
+                                    onClick={() => onBreadcrumbNavigation ? onBreadcrumbNavigation('businessUnits') : handleBack()}
+                                    className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition-all duration-200"
+                                >
+                                    {breadcrumbData.client.name}
+                                </button>
+                            </>
+                        )}
+
+                        {breadcrumbData?.businessUnit && (
+                            <>
+                                <svg className="h-3 w-3 text-primary-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <button
+                                    onClick={() => onBreadcrumbNavigation ? onBreadcrumbNavigation('environments') : handleBack()}
+                                    className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-800 hover:bg-primary-50 rounded transition-all duration-200"
+                                >
+                                    {breadcrumbData.businessUnit.name}
+                                </button>
+                            </>
+                        )}
+
+                        {boardName && (
+                            <>
+                                <svg className="h-3 w-3 text-primary-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                                <span className="px-2 py-1 text-xs font-semibold text-primary-900">{boardName}</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Floating Action Bar — top right */}
+                <div
+                    className="absolute top-4 right-4 z-30 rounded-xl p-2 flex gap-2 items-center border shadow-lg"
+                    style={floatingBarStyle}
+                >
+                    {lastSaved && (
+                        <span className="text-xs text-primary-500 px-2">
+                            Saved {lastSaved}
+                        </span>
+                    )}
+                    {(workflowId || environmentId) && !readOnly && (
+                        <>
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${isSaving ? 'bg-primary-100 text-primary-400 cursor-not-allowed' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
+                                title="Save Diagram"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M3 5a2 2 0 012-2h8.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V15a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" />
+                                    <path d="M7 3v4h6V3H7z" />
+                                    <path d="M7 11v6h6v-6H7z" />
+                                </svg>
+                                {isSaving ? 'Saving...' : 'Save'}
+                            </button>
+                        </>
+                    )}
+                </div>
+
+                {/* React Flow Canvas */}
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onDragOver={onDragOver}
+                    onDrop={onDrop}
+                    onNodeDrag={onNodeDrag}
+                    nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
+                    panOnScroll
+                    selectionOnDrag
+                    panOnDrag={!isEditMode || undefined}
+                    nodesDraggable={isEditMode}
+                    connectOnClick={isEditMode}
+                    connectionLineType={ConnectionLineType.Step}
+                    connectionLineStyle={{ stroke: '#4F46E5', strokeWidth: 2, strokeDasharray: '6 3' }}
+                    deleteKeyCode={isEditMode ? ['Backspace', 'Delete'] : null}
+                >
+                    <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
+                    <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" style={{ height: 120 }} zoomable pannable />
+                </ReactFlow>
+
+                {/* Zoom Controls — bottom right */}
+                <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-1">
+                    <button
+                        onClick={() => zoomIn()}
+                        className="w-10 h-10 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-200"
+                        title="Zoom In"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => zoomOut()}
+                        className="w-10 h-10 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-200"
+                        title="Zoom Out"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+                        </svg>
+                    </button>
+                    <button
+                        onClick={() => fitView()}
+                        className="w-10 h-10 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-200"
+                        title="Fit View"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -611,13 +714,13 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
             {showLabelModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-xl shadow-xl w-96">
-                        <h3 className="text-lg font-bold mb-4">Add Connection Label</h3>
+                        <h3 className="text-lg font-bold mb-4 text-primary-900">Add Connection Label</h3>
                         <input
                             type="text"
                             placeholder="e.g., API Call, Response"
                             value={edgeLabel}
                             onChange={(e) => setEdgeLabel(e.target.value)}
-                            className="w-full px-4 py-2 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full px-4 py-2 border border-primary-200 rounded-lg mb-4 focus:ring-2 focus:ring-primary-400/30 focus:border-primary-400 outline-none text-sm"
                             autoFocus
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') confirmConnection();
@@ -628,8 +731,8 @@ function SwimlaneDiagramContent({ workflowId, environmentId, readOnly = false, i
                             }}
                         />
                         <div className="flex gap-3">
-                            <button onClick={confirmConnection} className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium">Add Connection</button>
-                            <button onClick={() => { setShowLabelModal(false); setPendingConnection(null); }} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium">Cancel</button>
+                            <button onClick={confirmConnection} className="flex-1 bg-primary-600 text-white py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors text-sm">Add Connection</button>
+                            <button onClick={() => { setShowLabelModal(false); setPendingConnection(null); }} className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm">Cancel</button>
                         </div>
                     </div>
                 </div>

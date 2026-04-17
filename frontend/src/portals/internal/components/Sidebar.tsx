@@ -103,14 +103,14 @@ export default function Sidebar() {
     outputs: (api as any).api_outputs_new?.map((o: any) => ({ name: o.name, type: o.type, required: o.required })) || [],
   }));
 
-  // Handle search for both SDK modules and APIs
+  // Filter both SDK modules and APIs client-side on every keystroke
   useEffect(() => {
-    if (flowType === 'api' && searchTerm.trim()) {
-      searchApis(searchTerm);
-    } else if (flowType === 'sdk' && searchTerm.trim()) {
+    if (flowType === 'sdk') {
       searchModules(searchTerm);
+    } else if (flowType === 'api') {
+      searchApis(searchTerm);
     }
-  }, [flowType, searchTerm, searchApis, searchModules]);
+  }, [searchTerm, flowType]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
 
@@ -524,10 +524,10 @@ export default function Sidebar() {
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-9 h-9 flex items-center justify-center rounded-lg text-white text-base flex-shrink-0"
-                    style={{ backgroundColor: api.color }}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
+                    style={{ backgroundColor: `${api.color}18`, color: api.color }}
                   >
-                    🌐
+                    <ModuleIcon type="api-module" className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-primary-900 truncate">

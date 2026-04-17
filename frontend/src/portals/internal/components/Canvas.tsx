@@ -657,6 +657,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             id: `generic-module-${Date.now()}`,
             type: 'moduleNode',
             position: childPosition,
+            style: { width: 280 },
             data: {
               label: 'Generic Module',
               moduleType: 'api-module',
@@ -769,6 +770,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             id: `db-module-${moduleData.id}-${Date.now()}`,
             type: 'moduleNode',
             position: childPosition,
+            style: { width: 280 },
             data: {
               label: moduleData.name,
               moduleType: moduleData.id,
