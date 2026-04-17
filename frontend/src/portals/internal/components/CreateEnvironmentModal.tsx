@@ -65,26 +65,16 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
 
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold text-gray-900">{environment ? 'Edit Environment' : 'Create Environment'}</h2>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{environment ? 'Edit Environment' : 'Create Environment'}</h3>
+                <p className="text-sm text-gray-500 mb-6">Configure the environment properties and integration settings</p>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Basic Info */}
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                                     Environment Name *
                                 </label>
                                 <input
@@ -93,13 +83,13 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
                                     placeholder="e.g., Production API, Staging Environment"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                                     Description
                                 </label>
                                 <textarea
@@ -107,7 +97,7 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     rows={3}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm resize-none"
                                     placeholder="Optional description of this environment"
                                 />
                             </div>
@@ -115,33 +105,31 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
 
                         {/* Integration Configuration */}
                         <div className="space-y-4">
-                            <h3 className="text-lg font-medium text-gray-900">Integration Configuration</h3>
-
                             {/* Integration Type */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Is it an API integration or an SDK integration? *
                                 </label>
                                 <div className="flex space-x-4">
-                                    <label className="flex items-center">
+                                    <label className="flex items-center text-sm">
                                         <input
                                             type="radio"
                                             name="integrationType"
                                             value="api"
                                             checked={formData.integrationType === 'api'}
                                             onChange={(e) => setFormData({ ...formData, integrationType: e.target.value as 'api' | 'sdk', sdkPlatform: undefined })}
-                                            className="mr-2"
+                                            className="mr-2 w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
                                         />
                                         API Integration
                                     </label>
-                                    <label className="flex items-center">
+                                    <label className="flex items-center text-sm">
                                         <input
                                             type="radio"
                                             name="integrationType"
                                             value="sdk"
                                             checked={formData.integrationType === 'sdk'}
                                             onChange={(e) => setFormData({ ...formData, integrationType: e.target.value as 'api' | 'sdk' })}
-                                            className="mr-2"
+                                            className="mr-2 w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
                                         />
                                         SDK Integration
                                     </label>
@@ -151,7 +139,7 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                             {/* SDK Platform Selection - only show if SDK integration */}
                             {formData.integrationType === 'sdk' && (
                                 <div>
-                                    <label htmlFor="sdkPlatform" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="sdkPlatform" className="block text-sm font-medium text-gray-700 mb-1">
                                         Mode of Integration *
                                     </label>
                                     <select
@@ -159,7 +147,7 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                         required={formData.integrationType === 'sdk'}
                                         value={formData.sdkPlatform || ''}
                                         onChange={(e) => setFormData({ ...formData, sdkPlatform: e.target.value as any })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
                                     >
                                         <option value="">Select platform</option>
                                         <option value="android">Android</option>
@@ -174,11 +162,9 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
 
                             {/* API Usage Questions - only show for SDK integration */}
                             {formData.integrationType === 'sdk' && (
-                                <div className="space-y-3">
-                                    <h4 className="text-sm font-medium text-gray-900">API Usage</h4>
-
+                                <div className="space-y-3 pt-2">
                                     <div>
-                                        <p className="text-sm text-gray-600 mb-2">Which API is the client using?</p>
+                                        <p className="text-sm font-medium text-gray-700 mb-2">Which API is the client using?</p>
                                         <div className="space-y-2">
                                             <label className="flex items-center">
                                                 <input
@@ -186,7 +172,7 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                                     name="apiType"
                                                     checked={formData.usesResultsApi}
                                                     onChange={() => setFormData({ ...formData, usesResultsApi: true, usesOutputsApi: false })}
-                                                    className="mr-2"
+                                                    className="mr-2 w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
                                                 />
                                                 <span className="text-sm text-gray-700">Results API</span>
                                             </label>
@@ -196,45 +182,46 @@ export default function CreateEnvironmentModal({ isOpen, onClose, onCreate, envi
                                                     name="apiType"
                                                     checked={formData.usesOutputsApi}
                                                     onChange={() => setFormData({ ...formData, usesResultsApi: false, usesOutputsApi: true })}
-                                                    className="mr-2"
+                                                    className="mr-2 w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
                                                 />
                                                 <span className="text-sm text-gray-700">Outputs API</span>
                                             </label>
                                         </div>
                                     </div>
 
-                                    <label className="flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.reliesOnWebhooks}
-                                            onChange={(e) => setFormData({ ...formData, reliesOnWebhooks: e.target.checked })}
-                                            className="mr-2"
-                                        />
-                                        <span className="text-sm text-gray-700">Is the client relying on webhooks?</span>
-                                    </label>
+                                    <div className="pt-2">
+                                        <label className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.reliesOnWebhooks}
+                                                onChange={(e) => setFormData({ ...formData, reliesOnWebhooks: e.target.checked })}
+                                                className="mr-2 w-4 h-4 text-gray-900 rounded border-gray-300 focus:ring-gray-900"
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Is the client relying on webhooks?</span>
+                                        </label>
+                                    </div>
                                 </div>
                             )}
                         </div>
 
 
                         {/* Actions */}
-                        <div className="flex gap-3 pt-4 border-t">
+                        <div className="mt-8 flex justify-end gap-3">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                                className="px-5 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                                className="px-5 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
                             >
                                 {environment ? 'Update Environment' : 'Create Environment'}
                             </button>
                         </div>
                     </form>
-                </div>
             </div>
         </div>
     );
