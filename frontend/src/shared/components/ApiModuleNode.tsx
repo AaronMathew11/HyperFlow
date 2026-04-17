@@ -147,8 +147,14 @@ const CARD_WIDTH = 300;
 function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
   const viewMode = useFlowStore((state) => state.viewMode);
   const flowType = useFlowStore((state) => state.flowType);
-  const { setNodes } = useReactFlow();
+  const { setNodes, getNodes } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
+
+  // Get parent group color for group indicator
+  const nodes = getNodes();
+  const currentNode = nodes.find(n => n.id === id);
+  const parentGroup = currentNode?.parentNode ? nodes.find(n => n.id === currentNode.parentNode) : null;
+  const groupColor = parentGroup?.data?.color;
 
   const [title, setTitle] = useState(data.title || 'Generic API');
   const [endpoint] = useState(data.endpoint || 'https://');
@@ -280,6 +286,15 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
       >
         {/* Accent bar */}
         <div style={{ height: 3, flexShrink: 0, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}70)` }} />
+
+        {/* Group indicator circle - top right corner */}
+        {groupColor && (
+          <div
+            className="absolute top-2 right-2 w-3 h-3 rounded-full border border-white shadow-sm"
+            style={{ backgroundColor: groupColor, zIndex: 20 }}
+            title="Part of group"
+          />
+        )}
 
         {/* ── HEADER (fixed height) ── */}
         <div className="px-4 pt-3 pb-2.5" style={{ flexShrink: 0 }}>

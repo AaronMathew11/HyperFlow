@@ -426,7 +426,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             if (n.id === draggedNode.id) {
               return {
                 ...n,
-                parentNode: targetGroup!.id,
+                parentNode: targetGroup.id,
                 extent: 'parent' as const,
                 zIndex: 1,
                 position: {

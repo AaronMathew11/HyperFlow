@@ -160,15 +160,7 @@ export default function Sidebar() {
 
       {/* Flow Type Badge — read-only display, set at workflow creation */}
       <div className="mb-5 relative z-10">
-        <div
-          className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
-          style={{
-            background: flowType === 'api'
-              ? 'linear-gradient(135deg, #ECFDF5, #D1FAE5)'
-              : 'linear-gradient(135deg, #EEF2FF, #E0E7FF)',
-            border: flowType === 'api' ? '1px solid #A7F3D0' : '1px solid #C7D2FE',
-          }}
-        >
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/80 border border-gray-200">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ background: flowType === 'api' ? '#10B981' : '#6366F1' }}
@@ -184,13 +176,10 @@ export default function Sidebar() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p
-              className="text-xs font-bold tracking-wide"
-              style={{ color: flowType === 'api' ? '#065F46' : '#3730A3' }}
-            >
+            <p className="text-xs font-semibold text-gray-800">
               {flowType === 'api' ? 'API Flow' : 'SDK Flow'}
             </p>
-            <p className="text-[10px]" style={{ color: flowType === 'api' ? '#6EE7B7' : '#A5B4FC' }}>
+            <p className="text-xs text-gray-500">
               {flowType === 'api' ? 'REST endpoints & groups' : 'SDK module integrations'}
             </p>
           </div>
