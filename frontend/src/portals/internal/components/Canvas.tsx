@@ -650,38 +650,149 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
           }
         }
 
-        // Handle API module
-        const newNode: Node = {
-          id: `api-module-${Date.now()}`,
-          type: 'apiModuleNode',
-          position: childPosition,
-          data: {
-            title: 'Generic API',
-            endpoint: 'https://api.example.com/endpoint',
-            color: '#6366F1',
-            icon: '🔗',
-            isGeneric: true,
-            description: '',
-            method: 'POST',
-            successNote: '',
-            failureNote: '',
-            curlExample: '',
-            inputs: [],
-            outputs: [],
-          },
-          ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
-        };
-        addNode(newNode);
-
-        // Auto-connect to start node if this is the first module
-        if (isFirstNode && startNodeId) {
-          const edge = {
-            id: `${startNodeId}-${newNode.id}`,
-            source: startNodeId,
-            target: newNode.id,
-            type: 'smoothstep',
+        // Handle generic module - different behavior based on flow type
+        if (flowType === 'sdk') {
+          // For SDK flow, create a regular module node
+          const newNode = {
+            id: `generic-module-${Date.now()}`,
+            type: 'moduleNode',
+            position: childPosition,
+            data: {
+              label: 'Generic Module',
+              moduleType: 'api-module',
+              color: '#6366F1',
+              icon: 'module',
+              cspUrls: [],
+              ipAddresses: [],
+              isGeneric: true,
+            },
+            ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
           };
-          addEdge(edge);
+          addNode(newNode);
+          
+          // Auto-connect to start node if this is the first module
+          if (isFirstNode && startNodeId) {
+            const edge = {
+              id: `${startNodeId}-${newNode.id}`,
+              source: startNodeId,
+              target: newNode.id,
+              type: 'smoothstep',
+            };
+            addEdge(edge);
+          }
+        } else {
+          // For API flow, create an API module node
+          const newNode: Node = {
+            id: `api-module-${Date.now()}`,
+            type: 'apiModuleNode',
+            position: childPosition,
+            data: {
+              title: 'Generic API',
+              endpoint: 'https://api.example.com/endpoint',
+              color: '#6366F1',
+              icon: '🔗',
+              isGeneric: true,
+              description: '',
+              method: 'POST',
+              successNote: '',
+              failureNote: '',
+              curlExample: '',
+              inputs: [],
+              outputs: [],
+            },
+            ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
+          };
+          addNode(newNode);
+          
+          // Auto-connect to start node if this is the first module
+          if (isFirstNode && startNodeId) {
+            const edge = {
+              id: `${startNodeId}-${newNode.id}`,
+              source: startNodeId,
+              target: newNode.id,
+              type: 'smoothstep',
+            };
+            addEdge(edge);
+          }
+        }
+      } else if (type === 'moduleNode') {
+        // Handle database modules from module_documentation_new table
+        const moduleDataRaw = event.dataTransfer.getData('application/moduledata');
+        if (moduleDataRaw) {
+          // Database module
+          const moduleData = JSON.parse(moduleDataRaw);
+          
+          // Create start node if this is the first module and no start node exists
+          if (isFirstNode && !existingStartNode) {
+            startNodeId = `start-${Date.now()}`;
+            const startNode = {
+              id: startNodeId,
+              type: 'startNode',
+              position: {
+                x: position.x,
+                y: position.y - 120,
+              },
+              data: {
+                label: 'Start',
+                color: '#22C55E',
+                icon: '',
+              },
+            };
+            addNode(startNode);
+          }
+
+          // Check if drop position is inside a group
+          const currentNodes = useFlowStore.getState().nodes;
+          const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
+          let parentNodeId: string | undefined;
+          let childPosition = position;
+          
+          for (const group of groups) {
+            const gw = (group.style?.width as number) || 380;
+            const gh = (group.style?.height as number) || 240;
+            if (
+              position.x > group.position.x &&
+              position.y > group.position.y &&
+              position.x < group.position.x + gw &&
+              position.y < group.position.y + gh
+            ) {
+              parentNodeId = group.id;
+              childPosition = {
+                x: position.x - group.position.x,
+                y: position.y - group.position.y,
+              };
+              break;
+            }
+          }
+
+          const newNode = {
+            id: `db-module-${moduleData.id}-${Date.now()}`,
+            type: 'moduleNode',
+            position: childPosition,
+            data: {
+              label: moduleData.name,
+              moduleType: moduleData.id,
+              color: moduleData.color,
+              icon: moduleData.icon,
+              description: moduleData.description,
+              category: moduleData.category,
+              cspUrls: moduleData.cspUrls || [],
+              ipAddresses: moduleData.ipAddresses || [],
+            },
+            ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
+          };
+          addNode(newNode);
+          
+          // Auto-connect to start node if this is the first module
+          if (isFirstNode && startNodeId) {
+            const edge = {
+              id: `${startNodeId}-${newNode.id}`,
+              source: startNodeId,
+              target: newNode.id,
+              type: 'smoothstep',
+            };
+            addEdge(edge);
+          }
         }
       } else {
         // Create start node if this is the first module and no start node exists

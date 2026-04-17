@@ -3,7 +3,9 @@ import { modules } from '../../../shared/data/modules';
 import ModuleIcon from '../../../shared/components/ModuleIcon';
 import { useFlowStore } from '../store/flowStore';
 import { useApiDocumentation } from '../../../hooks/useApiDocumentation';
+import { useModuleDocumentation } from '../../../hooks/useModuleDocumentation';
 import { ApiDocumentationWithDetails } from '../../../lib/apiDocumentation';
+import { ModuleDocumentation } from '../../../lib/moduleDocumentation';
 import VariableInput from '../../../shared/components/VariableInput';
 
 export default function Sidebar() {
@@ -24,6 +26,9 @@ export default function Sidebar() {
 
   // API Documentation hook - only used when flowType is 'api'
   const { apis, loading: apisLoading, error: apisError, searchApis } = useApiDocumentation();
+  
+  // Module Documentation hook - only used when flowType is 'sdk'
+  const { modules: dbModules, loading: modulesLoading, error: modulesError, searchModules } = useModuleDocumentation();
 
   const onDragStart = (event: React.DragEvent, moduleType: string) => {
     event.dataTransfer.setData('application/reactflow', moduleType);
@@ -47,6 +52,21 @@ export default function Sidebar() {
       errorDetails: api.errorDetails,
       inputs: api.inputs,
       outputs: api.outputs,
+    }));
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragStartDbModule = (event: React.DragEvent, module: ModuleDocumentation) => {
+    event.dataTransfer.setData('application/reactflow', 'moduleNode');
+    event.dataTransfer.setData('application/moduledata', JSON.stringify({
+      id: module.id,
+      name: module.name,
+      description: module.description,
+      category: module.category,
+      color: module.color,
+      icon: module.icon,
+      cspUrls: module.csp_urls || [],
+      ipAddresses: module.ip_addresses || [],
     }));
     event.dataTransfer.effectAllowed = 'move';
   };
@@ -87,8 +107,11 @@ export default function Sidebar() {
   useEffect(() => {
     if (flowType === 'api' && searchTerm.trim()) {
       searchApis(searchTerm);
+    } else if (flowType === 'sdk' && searchTerm.trim()) {
+      searchModules(searchTerm);
     }
-  }, [flowType, searchTerm, searchApis]);
+  }, [flowType, searchTerm, searchApis, searchModules]);
+
 
 
   const conditionBox = {
@@ -99,12 +122,12 @@ export default function Sidebar() {
     icon: '◊',
   };
 
-  const apiModule = {
+  const genericModule = {
     id: 'api-module',
     label: 'Generic Module',
-    description: 'Custom API endpoint module',
+    description: 'Custom module for SDK integration',
     color: '#6366F1',
-    icon: '🔗',
+    icon: 'module',
   };
 
   const endStatuses = [
@@ -372,33 +395,93 @@ export default function Sidebar() {
             <p className="text-xs">{apisError}</p>
           </div>
         )}
+
+        {/* Loading state for Modules */}
+        {flowType === 'sdk' && modulesLoading && (
+          <div className="text-center text-primary-400 text-sm py-4">
+            <div className="animate-spin w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full mx-auto mb-2"></div>
+            Loading modules...
+          </div>
+        )}
+        
+        {/* Error state for Modules */}
+        {flowType === 'sdk' && modulesError && (
+          <div className="text-center text-red-500 text-sm py-4 bg-red-50 rounded-lg border border-red-200">
+            <p className="font-medium mb-1">Failed to load modules</p>
+            <p className="text-xs">{modulesError}</p>
+          </div>
+        )}
         
         {/* SDK Modules */}
-        {flowType === 'sdk' && (
+        {flowType === 'sdk' && !modulesLoading && !modulesError && (
           <div className="space-y-2">
-            {/* Generic Module */}
+            {/* Generic Module - Only for SDK Flow */}
             <div
               className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100"
               draggable
-              onDragStart={(e) => onDragStart(e, apiModule.id)}
+              onDragStart={(e) => onDragStart(e, genericModule.id)}
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-100 transition-colors">
-                  <ModuleIcon type="api-module" className="w-5 h-5" />
+                  <ModuleIcon type={genericModule.icon} className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm text-primary-900 truncate">
-                    {apiModule.label}
+                    {genericModule.label}
                   </div>
                   <div className="text-xs text-primary-600 truncate mt-0.5">
-                    {apiModule.description}
+                    {genericModule.description}
                   </div>
                 </div>
               </div>
             </div>
             
-            {/* Regular SDK Modules */}
-            {filteredModules.map((module) => (
+            {/* Database Modules - Primary source for SDK */}
+            {dbModules.length === 0 && !searchTerm && (
+              <div className="text-center text-primary-400 text-xs py-4 bg-white/60 rounded-lg border border-dashed border-primary-200">
+                No modules available in database.
+              </div>
+            )}
+            {dbModules.map((module) => (
+              <div
+                key={module.id}
+                className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border cursor-move"
+                style={{ borderColor: (module.color || '#6366F1') + '40' }}
+                draggable
+                onDragStart={(e) => onDragStartDbModule(e, module)}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 flex items-center justify-center rounded-lg text-white flex-shrink-0"
+                    style={{ backgroundColor: module.color || '#6366F1' }}
+                  >
+                    <ModuleIcon type={module.icon || 'module'} className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-primary-900 truncate">
+                      {module.name}
+                    </div>
+                    <div className="text-xs text-primary-600 truncate mt-0.5">
+                      {module.description}
+                    </div>
+                    {module.category && (
+                      <div className="text-xs truncate mt-1 flex items-center gap-1.5">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: module.color || '#6366F1' }}
+                        />
+                        <span style={{ color: module.color || '#6366F1' }} className="font-medium">
+                          {module.category}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* Fallback: Regular SDK Modules from JSON (if no DB modules) */}
+            {dbModules.length === 0 && searchTerm && filteredModules.map((module) => (
               <div
                 key={module.id}
                 className="group p-3.5 bg-white/80 rounded-xl hover:shadow-md transition-all duration-200 shadow-sm border border-primary-100 cursor-move"
@@ -504,7 +587,7 @@ export default function Sidebar() {
 
       {/* No results message */}
       {searchTerm && (
-        (flowType === 'sdk' && filteredModules.length === 0) ||
+        (flowType === 'sdk' && !modulesLoading && dbModules.length === 0 && filteredModules.length === 0) ||
         (flowType === 'api' && !apisLoading && apiModules.length === 0)
       ) && (
         <div className="text-center text-primary-400 text-sm py-8">
