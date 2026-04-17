@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '../contexts/CustomerAuthContext';
 import { Environment } from '../../../shared/types';
 import CustomerTopNav from './CustomerTopNav';
+import Breadcrumb from '../../../shared/components/Breadcrumb';
 
 export default function EnvironmentSelection() {
   const navigate = useNavigate();
   const { buData, loadBUData } = useCustomerAuth();
+
   const [environments, setEnvironments] = useState<Environment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,44 +57,54 @@ export default function EnvironmentSelection() {
     }
   };
 
+  const breadcrumbItems = [{ label: 'Environments' }];
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <CustomerTopNav />
 
-      {/* Main Content */}
       <main className="flex-1 px-10 py-8 max-w-[1400px] w-full mx-auto">
-        {/* Page Title */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-semibold text-gray-900">Environments</h2>
-          <p className="text-gray-500 mt-1">
-            {environments.length} {environments.length === 1 ? 'environment' : 'environments'}
-          </p>
+        {/* <Breadcrumb items={breadcrumbItems} /> */}
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">Environments</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {environments.length} {environments.length === 1 ? 'environment' : 'environments'}
+            </p>
+          </div>
         </div>
 
+        {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-500">Loading environments...</p>
-            </div>
+          <div className="flex items-center justify-center py-32">
+            <div className="animate-spin h-10 w-10 border-2 border-gray-300 border-t-gray-900 rounded-full" />
           </div>
         ) : environments.length === 0 ? (
-          <div className="text-center py-20">
-            <svg
-              className="h-20 w-20 mx-auto text-gray-300 mb-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-            >
-              <path
-                strokeWidth={1.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 6h16M4 12h16M4 18h16M6 6v12M12 6v12M18 6v12"
-              />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No environments yet</h3>
-            <p className="text-gray-500">No environments configured for this business unit.</p>
+          <div className="flex flex-col items-center justify-center py-32 bg-white border border-gray-200 rounded-2xl">
+            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
+              <svg
+                className="h-8 w-8 text-gray-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path
+                  strokeWidth={1.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16M6 6v12M12 6v12M18 6v12"
+                />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-medium text-gray-900">
+              No environments yet
+            </h3>
+            <p className="text-gray-500 text-sm mt-1">
+              No environments configured for this business unit
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 gap-1">
@@ -107,13 +119,9 @@ export default function EnvironmentSelection() {
                 >
                   {/* Card */}
                   <div className="w-28 h-28 bg-white border border-gray-200 rounded-2xl flex items-center justify-center hover:shadow-md hover:border-gray-300 transition-all">
-
-                    {/* Icon Container */}
                     <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${colors.bg}`}>
-
-                      {/* Environment Icon */}
                       <svg
-                        className={`h-14 w-14 ${colors.icon}`}
+                        className={`h-7 w-7 ${colors.icon}`}
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"

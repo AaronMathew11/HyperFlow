@@ -33,66 +33,68 @@ export default function CustomerLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
+    <div className="min-h-screen bg-white flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
+
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-14 h-14 rounded-xl bg-gray-900 flex items-center justify-center mb-4">
             <svg
-              className="w-8 h-8 text-white"
+              className="w-7 h-7 text-white"
+              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              viewBox="0 0 24 24"
+              strokeWidth={1.8}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+              <path d="M9 12l2 2 4-4" />
+              <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Hypervision Portal</h1>
-          <p className="text-gray-600">Access your workflow documentation</p>
+
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Hypervision Portal
+          </h1>
+          <p className="text-sm text-gray-500 mt-1 text-center">
+            Access your workflow documentation
+          </p>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Card */}
+        <div className="border border-gray-200 rounded-2xl p-6 shadow-sm">
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Error */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                <div className="flex">
-                  <svg className="h-5 w-5 text-red-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                  <p className="text-red-800 text-sm">{error}</p>
-                </div>
+              <div className="border border-red-200 bg-red-50 rounded-xl px-4 py-3 text-sm text-red-700">
+                {error}
               </div>
             )}
 
+            {/* Input */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Access Password
               </label>
               <input
-                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Enter the password shared with you"
+                placeholder="Enter password"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition"
               />
             </div>
 
+            {/* Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-gray-900 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-black transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
                   Verifying...
                 </div>
               ) : (
@@ -100,16 +102,12 @@ export default function CustomerLogin() {
               )}
             </button>
           </form>
-
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
-              This is a secure portal for authorized users only.
-              <br />
-              Contact your account manager if you need assistance.
-            </p>
-          </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-xs text-gray-400 text-center mt-6">
+          Secure access for authorized users only
+        </p>
       </div>
     </div>
   );
