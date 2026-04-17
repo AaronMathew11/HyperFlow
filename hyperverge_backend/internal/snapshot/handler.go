@@ -137,7 +137,7 @@ func GetWorkflow(c *gin.Context) {
 
 	data, _, err := db.Client.
 		From("test_workflows").
-		Select("flow_data, updated_at", "", false).
+		Select("flow_data, flow_type, updated_at", "", false).
 		Eq("id", workflowId).
 		Execute()
 
@@ -179,6 +179,13 @@ func GetWorkflow(c *gin.Context) {
 			"edges":       []interface{}{},
 			"flowInputs":  "",
 			"flowOutputs": "",
+		}
+	}
+
+	// If flow_data doesn't have flowType, fall back to the dedicated column
+	if ft, _ := flowData["flowType"].(string); ft == "" {
+		if colType, _ := workflow["flow_type"].(string); colType != "" {
+			flowData["flowType"] = colType
 		}
 	}
 
@@ -298,25 +305,55 @@ func SaveWorkflow(c *gin.Context) {
 		return
 	}
 
+	// If the request omits flowType, fetch the existing value so we never blank it out
+	flowType := req.FlowType
+	if flowType == "" {
+		existing, _, _ := db.Client.
+			From("test_workflows").
+			Select("flow_type, flow_data", "", false).
+			Eq("id", workflowId).
+			Execute()
+		var existingRows []map[string]interface{}
+		if json.Unmarshal(existing, &existingRows) == nil && len(existingRows) > 0 {
+			if col, _ := existingRows[0]["flow_type"].(string); col != "" {
+				flowType = col
+			} else {
+				// fall back to value stored inside flow_data JSON
+				var fd map[string]interface{}
+				if fdStr, _ := existingRows[0]["flow_data"].(string); fdStr != "" {
+					if json.Unmarshal([]byte(fdStr), &fd) == nil {
+						if ft, _ := fd["flowType"].(string); ft != "" {
+							flowType = ft
+						}
+					}
+				}
+			}
+		}
+	}
+
 	snapshotData := map[string]interface{}{
 		"nodes":       req.Nodes,
 		"edges":       req.Edges,
 		"flowInputs":  req.FlowInputs,
 		"flowOutputs": req.FlowOutputs,
-		"flowType":    req.FlowType,
+		"flowType":    flowType,
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	flowDataJSON, _ := json.Marshal(snapshotData)
 
+	dbUpdate := map[string]interface{}{
+		"flow_data":  string(flowDataJSON),
+		"updated_at": now,
+	}
+	if flowType != "" {
+		dbUpdate["flow_type"] = flowType
+	}
+
 	// Update the workflow's flow_data and flow_type directly in test_workflows table
 	_, _, err = db.Client.
 		From("test_workflows").
-		Update(map[string]interface{}{
-			"flow_data":  string(flowDataJSON),
-			"flow_type":  req.FlowType,
-			"updated_at": now,
-		}, "", "").
+		Update(dbUpdate, "", "").
 		Eq("id", workflowId).
 		Execute()
 
