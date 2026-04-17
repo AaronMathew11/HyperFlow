@@ -408,7 +408,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
               const { extent, ...rest } = n;
               return {
                 ...n,
-                parentNode: group.id,
+                parentNode: targetGroup.id,
                 extent: 'parent' as const,
                 zIndex: 1,
                 position: {

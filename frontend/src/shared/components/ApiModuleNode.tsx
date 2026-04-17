@@ -242,8 +242,8 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
         {/* Group indicator circle - top right corner */}
         {groupColor && (
           <div
-            className="absolute top-2 right-2 w-3 h-3 rounded-full border border-white shadow-sm z-10"
-            style={{ backgroundColor: groupColor }}
+            className="absolute top-2 right-2 w-3 h-3 rounded-full border border-white shadow-sm"
+            style={{ backgroundColor: groupColor, zIndex: 20 }}
             title="Part of group"
           />
         )}

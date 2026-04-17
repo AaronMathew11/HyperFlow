@@ -352,41 +352,6 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
           </button>
         )}
 
-        {/* Save Status Indicator */}
-        {!readOnly && statusDisplay && (
-          <>
-            <div className="w-px h-6 bg-primary-200" />
-            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${statusDisplay.bgColor} ${statusDisplay.color}`}>
-              {saveStatus === 'saving' && (
-                <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              )}
-              {saveStatus === 'saved' && (
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-              {saveStatus === 'error' && (
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-              <span className="text-xs font-medium">{statusDisplay.text}</span>
-            </div>
-          </>
-        )}
-
-        {/* Last saved timestamp */}
-        {!readOnly && lastSavedAt && saveStatus === 'idle' && (
-          <>
-            <div className="w-px h-6 bg-primary-200" />
-            <div className="text-xs text-primary-500 px-2">
-              Saved {new Date(lastSavedAt).toLocaleTimeString()}
-            </div>
-          </>
-        )}
       </div>
 
       {/* Main Toolbar */}
@@ -440,47 +405,6 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
         </button>
 
         <div className="w-px bg-primary-200" />
-        <button
-          onClick={() => zoomIn()}
-          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-          title="Zoom In"
-        >
-          +
-        </button>
-        <button
-          onClick={() => zoomOut()}
-          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-          title="Zoom Out"
-        >
-          -
-        </button>
-        <button
-          onClick={() => fitView()}
-          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-          title="Fit View"
-        >
-          Fit
-        </button>
-        <button
-          onClick={handleSelectAll}
-          className="px-3 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 rounded-lg transition-all duration-200"
-          title="Select All (Ctrl/Cmd + A)"
-        >
-          Select All
-        </button>
-        {!readOnly && (
-          <button
-            onClick={handleDeleteSelected}
-            className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 flex items-center gap-1"
-            title="Delete Selected (Delete key)"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-            Delete
-          </button>
-        )}
-        <div className="w-px bg-primary-200" />
         <div className="relative group">
           <button
             className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200"
@@ -512,21 +436,6 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
             </button>
           </div>
         </div>
-        {boardId && !readOnly && (
-          <>
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-200 flex items-center gap-1"
-              title="Share Board"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-              </svg>
-              Share
-            </button>
-            <div className="w-px bg-primary-200" />
-          </>
-        )}
         {!readOnly && (
           <button
             onClick={handleClear}
@@ -580,6 +489,78 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
             </div>
           </div>
         )}
+      </div>
+
+      {/* Save Status Notification - Bottom Left */}
+      {!readOnly && (statusDisplay || (lastSavedAt && saveStatus === 'idle')) && (
+        <div
+          className="fixed bottom-4 left-4 z-30 rounded-lg p-3 flex items-center gap-2 border shadow-lg"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)',
+            backdropFilter: 'blur(40px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+            borderColor: 'rgba(6, 6, 61, 0.08)',
+            boxShadow: 'inset -1px -1px 0 0 rgba(255, 255, 255, 0.5), 0 8px 32px rgba(6, 6, 61, 0.08)',
+          }}
+        >
+          {statusDisplay && (
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${statusDisplay.bgColor} ${statusDisplay.color}`}>
+              {saveStatus === 'saving' && (
+                <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {saveStatus === 'saved' && (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {saveStatus === 'error' && (
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              <span className="text-xs font-medium">{statusDisplay.text}</span>
+            </div>
+          )}
+          {lastSavedAt && saveStatus === 'idle' && (
+            <div className="text-xs text-primary-500">
+              Saved {new Date(lastSavedAt).toLocaleTimeString()}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Zoom Controls - Bottom Right */}
+      <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-1">
+        <button
+          onClick={() => zoomIn()}
+          className="w-10 h-10 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-200"
+          title="Zoom In"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+        </button>
+        <button
+          onClick={() => zoomOut()}
+          className="w-10 h-10 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-200"
+          title="Zoom Out"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" />
+          </svg>
+        </button>
+        <button
+          onClick={() => fitView()}
+          className="w-10 h-10 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-200"
+          title="Fit View"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+        </button>
       </div>
 
       {/* Share Link Modal */}
