@@ -13,23 +13,27 @@ interface ModuleNodeData {
   icon: string;
   cspUrls?: string[];
   ipAddresses?: string[];
+  isGeneric?: boolean;
 }
 
 function ModuleNode({ data, selected, id }: NodeProps<ModuleNodeData>) {
-  const { getNodes } = useReactFlow();
+  const { getNodes, setNodes } = useReactFlow();
   const viewMode = useFlowStore((state) => state.viewMode);
   const flowType = useFlowStore((state) => state.flowType);
   const sdkMode = useFlowStore((state) => state.sdkMode);
   const [showTechDetails, setShowTechDetails] = useState(false);
   const [showApiModal, setShowApiModal] = useState(false);
-  const [editingField, setEditingField] = useState<'description' | 'success' | 'failure' | null>(null);
+  const [editingField, setEditingField] = useState<'description' | 'success' | 'failure' | 'title' | 'moduleType' | null>(null);
   const [editValues, setEditValues] = useState({
     description: '',
     success: '',
-    failure: ''
+    failure: '',
+    title: data.label,
+    moduleType: ''
   });
 
-  const selectedModule = modules.find(m => m.id === data.moduleType) || null;
+  const isGeneric = data.isGeneric ?? false;
+  const selectedModule = isGeneric ? null : modules.find(m => m.id === data.moduleType) || null;
   
   // Get group information for this node
   const nodes = getNodes();
@@ -51,15 +55,35 @@ function ModuleNode({ data, selected, id }: NodeProps<ModuleNodeData>) {
     }
   };
 
-  const handleEditClick = (field: 'description' | 'success' | 'failure', currentValue: string) => {
+  const handleEditClick = (field: 'description' | 'success' | 'failure' | 'title' | 'moduleType', currentValue: string) => {
     setEditingField(field);
     setEditValues({ ...editValues, [field]: currentValue });
   };
 
-  const handleEditSave = (field: 'description' | 'success' | 'failure') => {
-    // Update the module data (this would typically save to a store/database)
+  const handleEditSave = (field: 'description' | 'success' | 'failure' | 'title' | 'moduleType') => {
     const newValue = editValues[field];
-    if (selectedModule) {
+    
+    if (isGeneric) {
+      // For generic modules, update the node data directly
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.id === id
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  label: field === 'title' ? newValue : node.data.label,
+                  description: field === 'description' ? newValue : (node.data as any).description,
+                  moduleType: field === 'moduleType' ? newValue : (node.data as any).moduleType,
+                  success: field === 'success' ? newValue : (node.data as any).success,
+                  failure: field === 'failure' ? newValue : (node.data as any).failure,
+                },
+              }
+            : node
+        )
+      );
+    } else if (selectedModule) {
+      // For regular modules, update the module data
       if (field === 'description') {
         selectedModule.description = newValue;
       } else if (field === 'success' && selectedModule.apiInfo) {
@@ -133,17 +157,87 @@ function ModuleNode({ data, selected, id }: NodeProps<ModuleNodeData>) {
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             <div className="flex items-center gap-2">
-              <div className="font-semibold text-primary-900 break-words" style={{ fontSize: 'clamp(13px, 3vw, 16px)' }}>
-                {data.label}
-              </div>
+              {isGeneric && editingField === 'title' ? (
+                <div className="flex-1 space-y-1">
+                  <input
+                    value={editValues.title}
+                    onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
+                    className="w-full text-sm font-semibold p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    autoFocus
+                  />
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditSave('title')}
+                      className="px-2 py-0.5 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleEditCancel}
+                      className="px-2 py-0.5 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  className={`font-semibold text-primary-900 break-words ${isGeneric ? 'cursor-pointer hover:bg-gray-100 px-1 rounded' : ''}`}
+                  style={{ fontSize: 'clamp(13px, 3vw, 16px)' }}
+                  onClick={isGeneric ? () => handleEditClick('title', data.label) : undefined}
+                  title={isGeneric ? 'Click to edit title' : undefined}
+                >
+                  {data.label}
+                </div>
+              )}
               {flowType === 'api' && selectedModule?.apiInfo && (
                 <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
                   API
                 </span>
               )}
+              {isGeneric && (
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">
+                  Generic
+                </span>
+              )}
             </div>
             <div className="text-primary-600 break-words mt-0.5" style={{ fontSize: 'clamp(11px, 2.5vw, 13px)' }}>
-              {data.moduleType}
+              {isGeneric ? (
+                editingField === 'moduleType' ? (
+                  <div className="space-y-1">
+                    <input
+                      value={editValues.moduleType || 'Custom Module'}
+                      onChange={(e) => setEditValues({ ...editValues, moduleType: e.target.value })}
+                      className="w-full text-xs p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      autoFocus
+                    />
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleEditSave('moduleType')}
+                        className="px-2 py-0.5 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleEditCancel}
+                        className="px-2 py-0.5 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="cursor-pointer hover:bg-gray-100 px-1 rounded"
+                    onClick={() => handleEditClick('moduleType', (data as any).moduleType || 'Custom Module')}
+                    title="Click to edit module type"
+                  >
+                    {(data as any).moduleType || 'Custom Module'}
+                  </div>
+                )
+              ) : (
+                data.moduleType
+              )}
             </div>
           </div>
         </div>
@@ -271,6 +365,141 @@ function ModuleNode({ data, selected, id }: NodeProps<ModuleNodeData>) {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Generic Module - Show editable description in SDK Flow */}
+        {isGeneric && flowType === 'sdk' && (
+          <div className="mt-3 space-y-2">
+            {/* Description */}
+            <div className="group relative">
+              {editingField === 'description' ? (
+                <div className="space-y-1">
+                  <textarea
+                    value={editValues.description}
+                    onChange={(e) => setEditValues({ ...editValues, description: e.target.value })}
+                    className="w-full text-xs p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    rows={2}
+                    autoFocus
+                    placeholder="Describe what this module does..."
+                  />
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditSave('description')}
+                      className="px-2 py-0.5 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleEditCancel}
+                      className="px-2 py-0.5 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="text-xs text-gray-700 break-words leading-relaxed cursor-pointer hover:bg-gray-50 p-2 rounded border border-dashed border-gray-300"
+                  onClick={() => handleEditClick('description', (data as any).description || 'Click to add description...')}
+                  title="Click to edit description"
+                >
+                  {(data as any).description || 'Click to add description...'}
+                  <svg className="w-3 h-3 text-gray-400 float-right mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+
+            {/* Success and Failure Criteria - Only in Advanced Mode */}
+            {sdkMode === 'advanced' && (
+              <div className="space-y-1">
+                {/* Success */}
+                <div className="group relative">
+                  <span className="text-xs font-semibold text-green-700">Success:</span>
+                  {editingField === 'success' ? (
+                    <div className="mt-0.5 space-y-1">
+                      <textarea
+                        value={editValues.success}
+                        onChange={(e) => setEditValues({ ...editValues, success: e.target.value })}
+                        className="w-full text-xs p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-1 focus:ring-green-500"
+                        rows={2}
+                        autoFocus
+                        placeholder="Define success criteria..."
+                      />
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleEditSave('success')}
+                          className="px-2 py-0.5 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleEditCancel}
+                          className="px-2 py-0.5 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="text-xs text-gray-800 mt-0.5 leading-relaxed cursor-pointer hover:bg-green-50 p-1 rounded relative"
+                      onClick={() => handleEditClick('success', (data as any).success || 'Click to add success criteria...')}
+                      title="Click to edit success criteria"
+                    >
+                      {(data as any).success || 'Click to add success criteria...'}
+                      <svg className="w-3 h-3 text-gray-400 absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Failure */}
+                <div className="group relative">
+                  <span className="text-xs font-semibold text-red-700">Failure:</span>
+                  {editingField === 'failure' ? (
+                    <div className="mt-0.5 space-y-1">
+                      <textarea
+                        value={editValues.failure}
+                        onChange={(e) => setEditValues({ ...editValues, failure: e.target.value })}
+                        className="w-full text-xs p-2 border border-gray-300 rounded resize-none focus:outline-none focus:ring-1 focus:ring-red-500"
+                        rows={2}
+                        autoFocus
+                        placeholder="Define failure criteria..."
+                      />
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleEditSave('failure')}
+                          className="px-2 py-0.5 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleEditCancel}
+                          className="px-2 py-0.5 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="text-xs text-gray-800 mt-0.5 leading-relaxed cursor-pointer hover:bg-red-50 p-1 rounded relative"
+                      onClick={() => handleEditClick('failure', (data as any).failure || 'Click to add failure criteria...')}
+                      title="Click to edit failure criteria"
+                    >
+                      {(data as any).failure || 'Click to add failure criteria...'}
+                      <svg className="w-3 h-3 text-gray-400 absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

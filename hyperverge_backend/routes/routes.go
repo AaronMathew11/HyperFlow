@@ -226,6 +226,47 @@ func Register(r *gin.Engine) {
 		c.JSON(http.StatusOK, data)
 	})
 
+	// Module Documentation routes for SDK flow
+	api.GET("/modules", func(c *gin.Context) {
+		category := c.Query("category")
+
+		url := os.Getenv("SUPABASE_URL") + "/rest/v1/module_documentation_new?select=*"
+		if category != "" {
+			url += "&category=eq." + category
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request: " + err.Error()})
+			return
+		}
+
+		req.Header.Set("apikey", os.Getenv("SUPABASE_ANON_KEY"))
+		req.Header.Set("Authorization", c.GetHeader("Authorization"))
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch modules: " + err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			c.JSON(resp.StatusCode, gin.H{"error": "Failed to fetch modules from DB: " + string(bodyBytes)})
+			return
+		}
+
+		var data []map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode modules"})
+			return
+		}
+
+		c.JSON(http.StatusOK, data)
+	})
+
 	// Public routes (no auth required)
 	public := r.Group("/api/public")
 	public.POST("/links/:linkId/verify", accesslinks.Verify)

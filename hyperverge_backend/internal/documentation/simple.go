@@ -4,13 +4,32 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"../../internal/db"
 )
 
-// Temporary simple handlers until we fix the build issue
+// ModuleDocumentation represents the module_documentation_new table structure
+type ModuleDocumentation struct {
+	ID          string `json:"id" db:"id"`
+	Name        string `json:"name" db:"name"`
+	Description string `json:"description" db:"description"`
+	Category    string `json:"category" db:"category"`
+	Color       string `json:"color" db:"color"`
+	Icon        string `json:"icon" db:"icon"`
+	CSPUrls     []string `json:"csp_urls" db:"csp_urls"`
+	IPAddresses []string `json:"ip_addresses" db:"ip_addresses"`
+}
 
 func GetAll(c *gin.Context) {
-	// Return empty array for now
-	c.JSON(http.StatusOK, []interface{}{})
+	var modules []ModuleDocumentation
+	
+	// Query the module_documentation_new table
+	err := db.ServiceClient.DB.From("module_documentation_new").Select("*").Execute(&modules)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch module documentation"})
+		return
+	}
+
+	c.JSON(http.StatusOK, modules)
 }
 
 func GetByID(c *gin.Context) {
