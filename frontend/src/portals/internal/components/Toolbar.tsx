@@ -26,6 +26,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
   const edges = useFlowStore((state) => state.edges);
   const flowInputs = useFlowStore((state) => state.flowInputs);
   const flowOutputs = useFlowStore((state) => state.flowOutputs);
+  const flowType = useFlowStore((state) => state.flowType);
   const viewMode = useFlowStore((state) => state.viewMode);
   const toggleViewMode = useFlowStore((state) => state.toggleViewMode);
   // Removed SDK mode toggle - now in Sidebar
@@ -56,6 +57,7 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
       edges,
       flowInputs: flowInputs.join(', '),
       flowOutputs: flowOutputs.join(', '),
+      flowType,
     });
   };
 
