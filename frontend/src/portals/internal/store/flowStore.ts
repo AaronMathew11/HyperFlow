@@ -62,14 +62,22 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       .filter((id): id is string => id !== undefined);
 
     // Update nodes with filtered changes
-    const updatedNodes = applyNodeChanges(filteredChanges, currentNodes);
+    let updatedNodes = applyNodeChanges(filteredChanges, currentNodes);
 
     // Remove edges connected to deleted nodes
-    const updatedEdges = removedNodeIds.length > 0
+    let updatedEdges = removedNodeIds.length > 0
       ? currentEdges.filter(
         (edge) => !removedNodeIds.includes(edge.source) && !removedNodeIds.includes(edge.target)
       )
       : currentEdges;
+
+    // If the only remaining node is a start node, remove it too
+    const nonStartNodes = updatedNodes.filter(n => n.type !== 'startNode');
+    if (nonStartNodes.length === 0 && updatedNodes.some(n => n.type === 'startNode')) {
+      const startNode = updatedNodes.find(n => n.type === 'startNode')!;
+      updatedEdges = updatedEdges.filter(e => e.source !== startNode.id && e.target !== startNode.id);
+      updatedNodes = [];
+    }
 
     set({
       nodes: updatedNodes,
@@ -102,7 +110,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   onConnect: (connection) => {
     let edgeProps: any = { ...connection };
 
-    if (connection.sourceHandle === 'success') {
+    const h = connection.sourceHandle ?? '';
+    if (h === 'success' || h.startsWith('success-')) {
       edgeProps = {
         ...edgeProps,
         style: { stroke: '#10B981', strokeWidth: 2 },
@@ -110,7 +119,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         labelStyle: { fill: '#10B981', fontWeight: 700, fontSize: 12 },
         labelBgStyle: { fill: '#ffffff', color: '#fff', fillOpacity: 0.8 },
       };
-    } else if (connection.sourceHandle === 'failure') {
+    } else if (h === 'failure' || h.startsWith('failure-')) {
       edgeProps = {
         ...edgeProps,
         style: { stroke: '#EF4444', strokeWidth: 2 },

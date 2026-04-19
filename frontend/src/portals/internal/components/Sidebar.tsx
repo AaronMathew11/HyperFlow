@@ -133,15 +133,15 @@ export default function Sidebar() {
   const endStatuses = [
     {
       id: 'end-status-auto-approved',
-      label: 'Auto Approved',
-      description: 'Automatically approved workflow end',
+      label: flowType === 'api' ? 'User Accepted' : 'Auto Approved',
+      description: flowType === 'api' ? 'User was accepted' : 'Automatically approved workflow end',
       color: '#10B981',
       icon: '',
     },
     {
       id: 'end-status-auto-declined',
-      label: 'Auto Declined',
-      description: 'Automatically declined workflow end',
+      label: flowType === 'api' ? 'User Rejected' : 'Auto Declined',
+      description: flowType === 'api' ? 'User was rejected' : 'Automatically declined workflow end',
       color: '#EF4444',
       icon: '',
     },
@@ -153,6 +153,13 @@ export default function Sidebar() {
       icon: '',
     },
   ];
+
+  const activityCard = {
+    id: 'ui-activity',
+    label: 'Custom Card',
+    description: 'UI or client-side step',
+    color: '#8B5CF6',
+  };
 
   return (
     <aside
@@ -373,6 +380,32 @@ export default function Sidebar() {
         </div>
       </div>
 
+
+      {/* Activity Card */}
+      <div className="mb-6 relative z-10">
+        <h3 className="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-3">Activities</h3>
+        <div
+          className="group p-3.5 bg-white/80 rounded-xl cursor-move hover:shadow-md transition-all duration-200 shadow-sm border"
+          style={{ borderColor: activityCard.color + '40' }}
+          draggable
+          onDragStart={(e) => onDragStart(e, activityCard.id)}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 flex items-center justify-center rounded-lg flex-shrink-0"
+              style={{ backgroundColor: activityCard.color + '18', color: activityCard.color }}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm text-primary-900 truncate">{activityCard.label}</div>
+              <div className="text-xs text-primary-600 truncate mt-0.5">{activityCard.description}</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Modules/APIs */}
       <div className="mb-6 relative z-10">

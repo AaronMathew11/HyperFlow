@@ -1,5 +1,5 @@
-import { memo, useState, useMemo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { memo, useState, useMemo, useEffect } from 'react';
+import { Handle, Position, NodeProps, useUpdateNodeInternals } from 'reactflow';
 import { useFlowStore } from '../../portals/internal/store/flowStore';
 import { modules } from '../data/modules';
 
@@ -12,7 +12,9 @@ interface EndStatusNodeData {
   reason?: string;
 }
 
-function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
+function EndStatusNode({ id, data }: NodeProps<EndStatusNodeData>) {
+  const updateNodeInternals = useUpdateNodeInternals();
+  useEffect(() => { updateNodeInternals(id); }, [id, updateNodeInternals]);
   const [editingField, setEditingField] = useState<'reason' | 'resumeFrom' | null>(null);
   const [editValues, setEditValues] = useState({
     reason: data.reason || '',
@@ -94,7 +96,10 @@ function EndStatusNode({ data }: NodeProps<EndStatusNodeData>) {
       className="relative shadow-md hover:shadow-lg"
       style={{ minWidth: shouldShowExtraInfo ? '200px' : '140px' }}
     >
-      <Handle type="target" position={Position.Top} className="w-3 h-3" />
+      <Handle type="target" position={Position.Top}    id="in-top"    style={{ background: 'transparent', border: 'none', width: 20, height: 20, left: '50%', transform: 'translateX(-50%)' }} />
+      <Handle type="target" position={Position.Bottom} id="in-bottom" style={{ background: 'transparent', border: 'none', width: 20, height: 20, left: '50%', transform: 'translateX(-50%)' }} />
+      <Handle type="target" position={Position.Left}   id="in-left"   style={{ background: 'transparent', border: 'none', width: 20, height: 20, top: '50%',  transform: 'translateY(-50%)' }} />
+      <Handle type="target" position={Position.Right}  id="in-right"  style={{ background: 'transparent', border: 'none', width: 20, height: 20, top: '50%',  transform: 'translateY(-50%)' }} />
 
       {/* Main Status Node */}
       <div

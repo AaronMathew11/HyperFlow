@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, memo } from 'react';
-import { EdgeLabelRenderer, EdgeProps, Position, useStoreApi } from 'reactflow';
+import { EdgeLabelRenderer, EdgeProps, Position, useStoreApi, useReactFlow } from 'reactflow';
 
 interface Pt { x: number; y: number; }
 
@@ -36,6 +36,16 @@ function CustomEditableEdge({
   // Single offset: moves the elbow segment on one axis only
   const [elbowOffset, setElbowOffset] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editedLabel, setEditedLabel] = useState(String(label || ''));
+  const { setEdges } = useReactFlow();
+
+  useEffect(() => { setEditedLabel(String(label || '')); }, [label]);
+
+  const saveLabel = (val: string) => {
+    setIsEditingLabel(false);
+    setEdges(edges => edges.map(e => e.id === id ? { ...e, label: val } : e));
+  };
 
   // Determine routing direction from the source handle position.
   // HVH (source on top/bottom): outer segments are vertical, middle segment is
@@ -123,6 +133,7 @@ function CustomEditableEdge({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onPointerDown={startDrag}
+        onDoubleClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
       />
 
       {/* Visible edge */}
@@ -163,19 +174,53 @@ function CustomEditableEdge({
         )}
 
         {/* Label */}
-        {label && (
+        {label && !isEditingLabel && (
           <div
             style={{
               position: 'absolute',
               transform: `translate(-50%,-50%) translate(${handlePt.x}px,${handlePt.y}px)`,
               background: (labelBgStyle as any)?.fill ?? '#fff',
               color: (labelStyle as any)?.fill ?? '#374151',
-              pointerEvents: 'none',
+              pointerEvents: 'all',
               marginTop: -22,
+              cursor: 'text',
             }}
             className="px-1.5 py-0.5 rounded text-[10px] font-bold whitespace-nowrap shadow-sm border border-gray-100"
+            onDoubleClick={(e) => { e.stopPropagation(); setIsEditingLabel(true); }}
+            title="Double-click to edit label"
           >
             {label}
+          </div>
+        )}
+        {isEditingLabel && (
+          <div
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%,-50%) translate(${handlePt.x}px,${handlePt.y}px)`,
+              marginTop: -22,
+              pointerEvents: 'all',
+              zIndex: 30,
+            }}
+          >
+            <input
+              autoFocus
+              value={editedLabel}
+              onChange={(e) => setEditedLabel(e.target.value)}
+              onBlur={() => saveLabel(editedLabel)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveLabel(editedLabel);
+                if (e.key === 'Escape') { setIsEditingLabel(false); setEditedLabel(String(label || '')); }
+                e.stopPropagation();
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm border border-indigo-400 focus:outline-none text-center"
+              style={{
+                background: (labelBgStyle as any)?.fill ?? '#fff',
+                color: (labelStyle as any)?.fill ?? '#374151',
+                minWidth: 40,
+                width: Math.max(40, editedLabel.length * 8) + 'px',
+              }}
+            />
           </div>
         )}
       </EdgeLabelRenderer>
