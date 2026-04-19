@@ -336,7 +336,7 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 </span>
               </div>
 
-              {/* Title — always single line */}
+              {/* Title — single-click to edit */}
               {isEditable && isEditingTitle ? (
                 <input
                   type="text"
@@ -350,12 +350,22 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
                 />
               ) : (
                 <div
-                  className="text-sm font-bold text-gray-900 truncate leading-snug"
-                  title={title}
-                  onDoubleClick={isEditable ? () => setIsEditingTitle(true) : undefined}
+                  className="group/title flex items-center gap-1"
+                  onClick={isEditable ? () => setIsEditingTitle(true) : undefined}
                   style={{ cursor: isEditable ? 'text' : 'default' }}
                 >
-                  {title}
+                  <div
+                    className="text-sm font-bold text-gray-900 leading-snug flex-1"
+                    title={title}
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                  >
+                    {title}
+                  </div>
+                  {isEditable && (
+                    <svg className="w-3 h-3 text-gray-300 group-hover/title:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  )}
                 </div>
               )}
             </div>
@@ -646,25 +656,13 @@ function ApiModuleNode({ id, data, selected }: NodeProps<ApiModuleNodeData>) {
         </div>
       </div>
 
-      {/* Success path — bottom left (green) */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="success"
-        className="!w-3 !h-3 !border-2 !border-white"
-        style={{ background: '#10B981', left: '25%' }}
-        title="Success path"
-      />
-
-      {/* Failure path — bottom right (red) */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="failure"
-        className="!w-3 !h-3 !border-2 !border-white"
-        style={{ background: '#EF4444', left: '75%' }}
-        title="Failure path"
-      />
+      {/* Source handles — one per side, centered, no overlapping targets */}
+      <Handle type="source" position={Position.Bottom} id="success"
+        style={{ background: '#10B981', width: 12, height: 12, border: '2px solid white' }} title="Success" />
+      <Handle type="source" position={Position.Right} id="failure"
+        style={{ background: '#EF4444', width: 12, height: 12, border: '2px solid white' }} title="Failure" />
+      <Handle type="source" position={Position.Left} id="failure-left"
+        style={{ background: '#EF4444', width: 12, height: 12, border: '2px solid white' }} title="Failure" />
 
       <style>{`
         .api-node-scroll::-webkit-scrollbar { width: 3px; }

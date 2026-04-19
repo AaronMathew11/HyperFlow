@@ -27,6 +27,7 @@ import NoteNode from '../../../shared/components/NoteNode';
 import SdkInputsNode from '../../../shared/components/SdkInputsNode';
 import ContextMenu from '../../../shared/components/ContextMenu';
 import CustomEditableEdge from '../../../shared/components/CustomEditableEdge';
+import GenericCardNode from '../../../shared/components/GenericCardNode';
 
 const nodeTypes = {
   moduleNode: ModuleNode,
@@ -37,6 +38,7 @@ const nodeTypes = {
   startNode: StartNode,
   noteNode: NoteNode,
   sdkInputsNode: SdkInputsNode,
+  genericCardNode: GenericCardNode,
 };
 
 const edgeTypes = {
@@ -517,8 +519,8 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         // Handle end status nodes
         const statusType = type.replace('end-status-', '') as 'auto-approved' | 'auto-declined' | 'needs-review';
         const statusConfig = {
-          'auto-approved': { label: 'Auto Approved', icon: '', color: '#10B981' },
-          'auto-declined': { label: 'Auto Declined', icon: '', color: '#EF4444' },
+          'auto-approved': { label: flowType === 'api' ? 'User Accepted' : 'Auto Approved', icon: '', color: '#10B981' },
+          'auto-declined': { label: flowType === 'api' ? 'User Rejected' : 'Auto Declined', icon: '', color: '#EF4444' },
           'needs-review': { label: 'Needs Review', icon: '', color: '#F59E0B' },
         };
 
@@ -562,6 +564,18 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
         if (!apiDocRaw) return;
         const apiDoc = JSON.parse(apiDocRaw);
 
+        // Create start node if this is the first node and no start node exists
+        if (isFirstNode && !existingStartNode) {
+          startNodeId = `start-${Date.now()}`;
+          const startNode = {
+            id: startNodeId,
+            type: 'startNode',
+            position: { x: position.x, y: position.y - 120 },
+            data: { label: 'Start', color: '#22C55E', icon: '' },
+          };
+          addNode(startNode);
+        }
+
         // Check if drop position is inside a group — auto-assign as child
         const currentNodes = useFlowStore.getState().nodes;
         const groups = currentNodes.filter(n => n.type === 'apiGroupNode');
@@ -604,9 +618,21 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             inputs: apiDoc.inputs,
             outputs: apiDoc.outputs,
           },
+          style: { width: 300 },
           ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
         };
         addNode(newNode);
+
+        // Auto-connect to start node if this is the first node
+        if (isFirstNode && startNodeId) {
+          const edge = {
+            id: `${startNodeId}-${newNode.id}`,
+            source: startNodeId,
+            target: newNode.id,
+            type: 'smoothstep',
+          };
+          addEdge(edge);
+        }
       } else if (type === 'api-module') {
         // Create start node if this is the first module and no start node exists
         if (isFirstNode && !existingStartNode) {
@@ -701,6 +727,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
               inputs: [],
               outputs: [],
             },
+            style: { width: 300 },
             ...(parentNodeId ? { parentNode: parentNodeId, extent: 'parent' as const, zIndex: 1 } : {}),
           };
           addNode(newNode);
@@ -715,6 +742,32 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
             };
             addEdge(edge);
           }
+        }
+      } else if (type === 'ui-activity') {
+        if (isFirstNode && !existingStartNode) {
+          startNodeId = `start-${Date.now()}`;
+          addNode({
+            id: startNodeId,
+            type: 'startNode',
+            position: { x: position.x, y: position.y - 120 },
+            data: { label: 'Start', color: '#22C55E', icon: '' },
+          });
+        }
+
+        const newNode: Node = {
+          id: `activity-${Date.now()}`,
+          type: 'genericCardNode',
+          position,
+          data: {
+            title: 'Custom Card',
+            description: '',
+            color: '#8B5CF6',
+          },
+        };
+        addNode(newNode);
+
+        if (isFirstNode && startNodeId) {
+          addEdge({ id: `${startNodeId}-${newNode.id}`, source: startNodeId, target: newNode.id, type: 'smoothstep' });
         }
       } else if (type === 'moduleNode') {
         // Handle database modules from module_documentation_new table
@@ -903,7 +956,7 @@ function FlowCanvas({ board, onBack, readOnly = false, breadcrumbData, onBreadcr
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#E8E8ED" />
         <Controls />
-        <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" />
+        <MiniMap nodeColor="#06063D" maskColor="rgba(255, 255, 255, 0.8)" zoomable pannable />
         <Toolbar
           onBack={onBack}
           boardName={board.name}

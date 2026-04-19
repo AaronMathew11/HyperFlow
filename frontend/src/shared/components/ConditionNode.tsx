@@ -1,5 +1,5 @@
-import { memo, useState } from 'react';
-import { Handle, Position, NodeProps, NodeResizer } from 'reactflow';
+import { memo, useState, useEffect } from 'react';
+import { Handle, Position, NodeProps, NodeResizer, useUpdateNodeInternals } from 'reactflow';
 
 interface ConditionNodeData {
   label: string;
@@ -8,23 +8,21 @@ interface ConditionNodeData {
   icon: string;
 }
 
-function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
+function ConditionNode({ id, data, selected }: NodeProps<ConditionNodeData>) {
   const [isEditing, setIsEditing] = useState(false);
   const [condition, setCondition] = useState(data.condition || 'Click to edit condition');
+  const updateNodeInternals = useUpdateNodeInternals();
 
-  const handleDoubleClick = () => {
-    setIsEditing(true);
-  };
-
+  useEffect(() => {
+    updateNodeInternals(id);
+  }, [id, updateNodeInternals]);
   const handleSaveCondition = () => {
     setIsEditing(false);
     data.condition = condition;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSaveCondition();
-    }
+    if (e.key === 'Enter') handleSaveCondition();
     if (e.key === 'Escape') {
       setCondition(data.condition || 'Click to edit condition');
       setIsEditing(false);
@@ -56,7 +54,6 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
       >
         {/* Content inside diamond (counter-rotated) */}
         <div className="transform -rotate-45 w-full h-full flex justify-center items-center p-4">
-          {/* Condition text */}
           {isEditing ? (
             <textarea
               value={condition}
@@ -72,7 +69,7 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
             <div
               className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-primary-50 transition-colors text-center font-semibold text-primary-900 p-1 rounded break-words"
               style={{ fontSize: 'clamp(10px, 2vw, 14px)' }}
-              onClick={handleDoubleClick}
+              onClick={() => setIsEditing(true)}
               title="Click to edit condition"
             >
               {condition}
@@ -81,7 +78,7 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
         </div>
       </div>
 
-      {/* Output handles for True/False paths */}
+      {/* False handle — left */}
       <Handle
         type="source"
         position={Position.Left}
@@ -89,6 +86,7 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
         className="w-3 h-3"
         style={{ top: '50%' }}
       />
+      {/* True handle — right */}
       <Handle
         type="source"
         position={Position.Right}
@@ -96,14 +94,6 @@ function ConditionNode({ data, selected }: NodeProps<ConditionNodeData>) {
         className="w-3 h-3"
         style={{ top: '50%' }}
       />
-
-      {/* Labels for outputs */}
-      <div className="absolute text-xs text-primary-700 font-semibold" style={{ top: '50%', left: '-35px', transform: 'translateY(-50%)' }}>
-        False
-      </div>
-      <div className="absolute text-xs text-primary-700 font-semibold" style={{ top: '50%', right: '-35px', transform: 'translateY(-50%)' }}>
-        True
-      </div>
 
     </div>
   );
