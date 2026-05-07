@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$1" = "staging" ]; then
+if [ "$1" = "dev" ]; then
     cp .env.development .env
     echo "✅ Switched to LOCALHOST environment (localhost:5173)"
 elif [ "$1" = "prod" ]; then
@@ -8,7 +8,6 @@ elif [ "$1" = "prod" ]; then
     echo "✅ Switched to PRODUCTION environment (hypervision.in)"
 else
     echo "Usage: ./switch-env.sh [localhost|domain|prod]"
-    echo "  localhost - Switch to localhost redirect"
-    echo "  domain    - Switch to hypervision.in redirect for testing"
+    echo "  dev - Switch to dev "
     echo "  prod      - Switch to production environment"
 fi
