@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useCustomerAuth } from '../contexts/CustomerAuthContext';
 import { Environment } from '../../../shared/types';
 import CustomerTopNav from './CustomerTopNav';
-import Breadcrumb from '../../../shared/components/Breadcrumb';
 
 export default function EnvironmentSelection() {
   const navigate = useNavigate();
@@ -56,8 +55,6 @@ export default function EnvironmentSelection() {
         };
     }
   };
-
-  const breadcrumbItems = [{ label: 'Environments' }];
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

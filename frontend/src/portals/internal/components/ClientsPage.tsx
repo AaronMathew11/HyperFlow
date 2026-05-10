@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClientStore } from '../store/clientStore';
 
-import FolderCard from './FolderCard';
 import CreateClientModal from './CreateClientModal';
 import TopNav from './TopNav';
 import Breadcrumb from '../../../shared/components/Breadcrumb';

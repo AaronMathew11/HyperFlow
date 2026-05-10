@@ -20,7 +20,7 @@ interface ToolbarProps {
 }
 
 export default function Toolbar({ onBack, boardName, boardId, readOnly = false, breadcrumbData, onBreadcrumbNavigation }: ToolbarProps) {
-  const { fitView, zoomIn, zoomOut, setNodes, deleteElements } = useReactFlow();
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
   const clearFlow = useFlowStore((state) => state.clearFlow);
   const nodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
@@ -76,34 +76,6 @@ export default function Toolbar({ onBack, boardName, boardId, readOnly = false, 
   };
 
   const statusDisplay = getSaveStatusDisplay();
-
-  const handleSelectAll = () => {
-    setNodes((nds) =>
-      nds.map((node) => ({
-        ...node,
-        selected: true,
-      }))
-    );
-  };
-
-  const handleDeleteSelected = () => {
-    const selectedNodes = nodes.filter(node => node.selected);
-    const selectedEdges = edges.filter(edge => edge.selected);
-
-    // Prevent deleting start nodes
-    const hasStartNode = selectedNodes.some(node => node.type === 'startNode');
-    if (hasStartNode) {
-      alert('Cannot delete Start node. The Start node is required for the flow.');
-      return;
-    }
-
-    if (selectedNodes.length === 0 && selectedEdges.length === 0) {
-      alert('Please select nodes or edges to delete.');
-      return;
-    }
-
-    deleteElements({ nodes: selectedNodes, edges: selectedEdges });
-  };
 
   const handleClear = () => {
     if (window.confirm('Are you sure you want to clear the entire flowchart?')) {

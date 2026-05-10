@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBoardStore } from '../store/boardStore';
 
-import BoardCard from './BoardCard';
 import CreateBoardModal from './CreateBoardModal';
 import { Board } from '../../../shared/types';
 import TopNav from './TopNav';

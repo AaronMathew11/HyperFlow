@@ -63,11 +63,6 @@ export default function WorkflowsPage() {
         }
     };
 
-    const handleDeleteEnvironment = async (environmentId: string) => {
-        await deleteEnvironment(environmentId);
-    };
-
-
     const breadcrumbItems = useMemo(() => [
         { label: 'Home', path: '/' },
         { label: client?.name || 'Loading...', path: `/client/${clientId}` },
