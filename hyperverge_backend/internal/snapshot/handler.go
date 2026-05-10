@@ -1,0 +1,369 @@
+// internal/snapshot/handler.go
+package snapshot
+
+import (
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"hypervision_backend/internal/db"
+
+	"github.com/gin-gonic/gin"
+	"github.com/supabase-community/postgrest-go"
+)
+
+type SaveSnapshotReq struct {
+	Nodes       []interface{} `json:"nodes"`
+	Edges       []interface{} `json:"edges"`
+	FlowInputs  string        `json:"flowInputs"`
+	FlowOutputs string        `json:"flowOutputs"`
+	FlowType    string        `json:"flowType"`
+}
+
+func Get(c *gin.Context) {
+	boardId := c.Param("id")
+
+	data, _, err := db.Client.
+		From("board_snapshots").
+		Select("*", "", false).
+		Eq("board_id", boardId).
+		Order("updated_at", &postgrest.OrderOpts{Ascending: false}).
+		Limit(1, "").
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "snapshot not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, data)
+}
+
+func Save(c *gin.Context) {
+	boardId := c.Param("id")
+	userId := c.GetString("userId")
+
+	// Verify user has access to this board (owner or editor permission)
+	boardData, _, err := db.Client.
+		From("board").
+		Select("owner_id", "", false).
+		Eq("id", boardId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "board not found"})
+		return
+	}
+
+	var boardResults []map[string]interface{}
+	if err := json.Unmarshal(boardData, &boardResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse board"})
+		return
+	}
+
+	if len(boardResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "board not found"})
+		return
+	}
+
+	board := boardResults[0]
+
+	ownerId, _ := board["owner_id"].(string)
+
+	// Check if user is owner or has editor permission
+	if ownerId != userId {
+		permData, _, err := db.Client.
+			From("board_permissions").
+			Select("role", "", false).
+			Eq("board_id", boardId).
+			Eq("user_id", userId).
+			Eq("role", "editor").
+			Execute()
+
+		if err != nil || string(permData) == "[]" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to edit this board"})
+			return
+		}
+	}
+
+	var req SaveSnapshotReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	snapshotData := map[string]interface{}{
+		"nodes":       req.Nodes,
+		"edges":       req.Edges,
+		"flowInputs":  req.FlowInputs,
+		"flowOutputs": req.FlowOutputs,
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	// Use upsert to insert or update the snapshot
+	_, _, err = db.Client.
+		From("board_snapshots").
+		Upsert(map[string]interface{}{
+			"board_id":   boardId,
+			"version":    1,
+			"data":       snapshotData,
+			"updated_at": now,
+		}, "board_id", "", "").
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save snapshot: " + err.Error()})
+		return
+	}
+
+	// Also update the board's updated_at timestamp
+	_, _, _ = db.Client.
+		From("board").
+		Update(map[string]interface{}{
+			"updated_at": now,
+		}, "", "").
+		Eq("id", boardId).
+		Execute()
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "snapshot saved successfully",
+		"updated_at": now,
+	})
+}
+
+func GetWorkflow(c *gin.Context) {
+	workflowId := c.Param("id")
+
+	data, _, err := db.Client.
+		From("test_workflows").
+		Select("flow_data, flow_type, updated_at", "", false).
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var workflows []map[string]interface{}
+	if err := json.Unmarshal(data, &workflows); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse workflow"})
+		return
+	}
+
+	if len(workflows) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	workflow := workflows[0]
+
+	// Parse the flow_data JSON string back into an object
+	flowDataStr, _ := workflow["flow_data"].(string)
+	var flowData map[string]interface{}
+	if flowDataStr != "" {
+		if err := json.Unmarshal([]byte(flowDataStr), &flowData); err != nil {
+			// If parsing fails, return empty flow data
+			flowData = map[string]interface{}{
+				"nodes":       []interface{}{},
+				"edges":       []interface{}{},
+				"flowInputs":  "",
+				"flowOutputs": "",
+			}
+		}
+	} else {
+		// Return empty flow data if no data exists
+		flowData = map[string]interface{}{
+			"nodes":       []interface{}{},
+			"edges":       []interface{}{},
+			"flowInputs":  "",
+			"flowOutputs": "",
+		}
+	}
+
+	// If flow_data doesn't have flowType, fall back to the dedicated column
+	if ft, _ := flowData["flowType"].(string); ft == "" {
+		if colType, _ := workflow["flow_type"].(string); colType != "" {
+			flowData["flowType"] = colType
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":       flowData,
+		"updated_at": workflow["updated_at"],
+	})
+}
+
+func SaveWorkflow(c *gin.Context) {
+	workflowId := c.Param("id")
+	userId := c.GetString("userId")
+
+	// Verify user has access to this workflow (check ownership via business unit)
+	workflowData, _, err := db.Client.
+		From("test_workflows").
+		Select("id, business_unit_id", "", false).
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var workflows []map[string]interface{}
+	if err := json.Unmarshal(workflowData, &workflows); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse workflow"})
+		return
+	}
+
+	if len(workflows) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	workflow := workflows[0]
+
+	businessUnitId, _ := workflow["business_unit_id"].(string)
+
+	// Check if user has access to the business unit (via client ownership or BU permissions)
+	buData, _, err := db.Client.
+		From("test_business_units").
+		Select("client_id", "", false).
+		Eq("id", businessUnitId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var businessUnits []map[string]interface{}
+	if err := json.Unmarshal(buData, &businessUnits); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse business unit"})
+		return
+	}
+
+	if len(businessUnits) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	businessUnit := businessUnits[0]
+
+	clientId, _ := businessUnit["client_id"].(string)
+
+	// Check if user owns the client
+	clientData, _, clientErr := db.Client.
+		From("test_clients").
+		Select("id", "", false).
+		Eq("id", clientId).
+		Eq("owner_id", userId).
+		Execute()
+
+	if clientErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
+		// Check if user has editor permission on the business unit
+		permData, _, permErr := db.Client.
+			From("test_bu_permissions").
+			Select("id", "", false).
+			Eq("business_unit_id", businessUnitId).
+			Eq("user_id", userId).
+			Eq("role", "editor").
+			Execute()
+
+		if permErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse permission data"})
+			return
+		}
+
+		if len(permResults) == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to edit this workflow"})
+			return
+		}
+	}
+
+	var req SaveSnapshotReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// If the request omits flowType, fetch the existing value so we never blank it out
+	flowType := req.FlowType
+	if flowType == "" {
+		existing, _, _ := db.Client.
+			From("test_workflows").
+			Select("flow_type, flow_data", "", false).
+			Eq("id", workflowId).
+			Execute()
+		var existingRows []map[string]interface{}
+		if json.Unmarshal(existing, &existingRows) == nil && len(existingRows) > 0 {
+			if col, _ := existingRows[0]["flow_type"].(string); col != "" {
+				flowType = col
+			} else {
+				// fall back to value stored inside flow_data JSON
+				var fd map[string]interface{}
+				if fdStr, _ := existingRows[0]["flow_data"].(string); fdStr != "" {
+					if json.Unmarshal([]byte(fdStr), &fd) == nil {
+						if ft, _ := fd["flowType"].(string); ft != "" {
+							flowType = ft
+						}
+					}
+				}
+			}
+		}
+	}
+
+	snapshotData := map[string]interface{}{
+		"nodes":       req.Nodes,
+		"edges":       req.Edges,
+		"flowInputs":  req.FlowInputs,
+		"flowOutputs": req.FlowOutputs,
+		"flowType":    flowType,
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	flowDataJSON, _ := json.Marshal(snapshotData)
+
+	dbUpdate := map[string]interface{}{
+		"flow_data":  string(flowDataJSON),
+		"updated_at": now,
+	}
+	if flowType != "" {
+		dbUpdate["flow_type"] = flowType
+	}
+
+	// Update the workflow's flow_data and flow_type directly in test_workflows table
+	_, _, err = db.Client.
+		From("test_workflows").
+		Update(dbUpdate, "", "").
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save workflow: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "snapshot saved successfully",
+		"updated_at": now,
+	})
+}

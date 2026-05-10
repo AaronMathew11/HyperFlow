@@ -1,0 +1,505 @@
+{
+  "modules": [
+    {
+      "id": "id-card-validation",
+      "label": "ID Card Validation",
+      "description": "Validate identity documents using Central Database Check",
+      "color": "#3B82F6",
+      "icon": "id-card-validation",
+      "cspUrls": ["ind-verify.hyperverge.co"],
+      "ipAddresses": ["52.195.10.45", "13.230.115.23"],
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/centralDBCheck",
+        "method": "POST",
+        "inputVariables": ["idNumber", "idType", "fileNumber", "dob"],
+        "outputVariables": ["status", "statusCode", "result", "details", "summary"],
+        "successCriteria": "status === \"success\" && result.summary.action === \"pass\"",
+        "documentationUrl": "https://docs.hyperverge.co/central-db-check",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/centralDBCheck' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"idNumber\": \"<Enter_PAN_Number>\",\n    \"idType\": \"pan\"\n  }'",
+        "nextApiRecommendations": ["face-match", "field-match"]
+      }
+    },
+    {
+      "id": "aml-search",
+      "label": "AML Search",
+      "description": "Anti-Money Laundering screening",
+      "color": "#EF4444",
+      "icon": "aml-search",
+      "cspUrls": ["aml.hypervision.ai", "watchlist.hypervision.ai"],
+      "ipAddresses": ["54.169.12.78", "18.142.85.34"],
+      "apiInfo": {
+        "endpoint": "/v1/aml-search",
+        "method": "POST",
+        "inputVariables": ["full_name", "date_of_birth", "country", "watchlist_types"],
+        "outputVariables": ["matches_found", "risk_score", "matched_entries", "search_id"],
+        "successCriteria": "risk_score < 0.3",
+        "documentationUrl": "https://docs.hypervision.ai/aml-search",
+        "curlExample": "curl -X POST https://api.hypervision.ai/v1/aml-search \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"full_name\": \"John Doe\",\n    \"date_of_birth\": \"1990-01-01\",\n    \"country\": \"US\",\n    \"watchlist_types\": [\"sanctions\", \"pep\"]\n  }'",
+        "nextApiRecommendations": ["nominee-collection"]
+      }
+    },
+    {
+      "id": "selfie-liveness",
+      "label": "Selfie Liveness",
+      "description": "Detect live selfie capture",
+      "color": "#10B981",
+      "icon": "selfie-liveness",
+      "cspUrls": ["liveness.hypervision.ai", "ml.hypervision.ai"],
+      "ipAddresses": ["13.250.45.12", "52.77.198.45"],
+      "apiInfo": {
+        "endpoint": "/v1/liveness-check",
+        "method": "POST",
+        "inputVariables": ["selfie_image", "challenge_type"],
+        "outputVariables": ["is_live", "liveness_score", "challenge_passed", "session_id"],
+        "successCriteria": "is_live === true && liveness_score > 0.85",
+        "documentationUrl": "https://docs.hypervision.ai/liveness-check",
+        "curlExample": "curl -X POST https://api.hypervision.ai/v1/liveness-check \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"selfie_image\": \"base64_image_string\",\n    \"challenge_type\": \"blink\"\n  }'",
+        "nextApiRecommendations": ["face-match"]
+      }
+    },
+    {
+      "id": "face-match",
+      "label": "Face Match",
+      "description": "Search, enrol or block user with face matching",
+      "color": "#8B5CF6",
+      "icon": "face-match",
+      "cspUrls": ["ind-orion.hyperverge.co"],
+      "ipAddresses": ["18.139.67.23", "13.228.34.89"],
+      "apiInfo": {
+        "endpoint": "https://ind-orion.hyperverge.co/v2/search",
+        "method": "POST",
+        "inputVariables": ["name", "idNumber", "idType", "dob", "transactionId", "block", "enrol", "selfie"],
+        "outputVariables": ["statusCode", "status", "metaData", "result", "isEnrolled", "matches"],
+        "successCriteria": "statusCode === 200 && status === \"success\"",
+        "documentationUrl": "https://docs.hyperverge.co/face-and-id-search",
+        "curlExample": "curl --request POST \\\n  --url https://ind-orion.hyperverge.co/v2/search \\\n  --header 'accept: application/json' \\\n  --header 'content-type: multipart/form-data' \\\n  --form name=<enter_the_name> \\\n  --form idNumber=<enter_the_id_number> \\\n  --form idType=<enter_the_id_type> \\\n  --form dob=<enter_the_dob> \\\n  --form transactionId=<enter_the_transaction_id> \\\n  --form block=no \\\n  --form enrol=no \\\n  --form selfie=<attach_the_image>",
+        "nextApiRecommendations": ["field-match"]
+      }
+    },
+    {
+      "id": "field-match",
+      "label": "Field Match",
+      "description": "Validate data field consistency",
+      "color": "#F59E0B",
+      "icon": "field-match",
+      "apiInfo": {
+        "endpoint": "/v1/field-match",
+        "method": "POST",
+        "inputVariables": ["extracted_fields", "user_input_fields"],
+        "outputVariables": ["fields_match", "discrepancies", "confidence_scores"],
+        "successCriteria": "fields_match === true && all confidence_scores > 0.7",
+        "documentationUrl": "https://docs.hypervision.ai/field-match",
+        "curlExample": "curl -X POST https://api.hypervision.ai/v1/field-match \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"extracted_fields\": {\"name\": \"John Doe\", \"dob\": \"1990-01-01\"},\n    \"user_input_fields\": {\"name\": \"John Doe\", \"dob\": \"1990-01-01\"}\n  }'",
+        "nextApiRecommendations": ["bank-account-verification"]
+      }
+    },
+    {
+      "id": "bank-account-verification",
+      "label": "Bank Account Verification",
+      "description": "Verify bank account with Penny Drop API",
+      "color": "#06B6D4",
+      "icon": "bank-account-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-engine.thomas.hyperverge.co/v1/checkBankAccount",
+        "method": "POST",
+        "inputVariables": ["ifsc", "accountNumber", "strictValidation"],
+        "outputVariables": ["status", "statusCode", "result", "verification_status", "account_holder_name"],
+        "successCriteria": "status === \"success\" && result.verification_status === \"verified\"",
+        "documentationUrl": "https://docs.hyperverge.co/penny-drop-bank-verification",
+        "curlExample": "curl --location --request POST 'https://ind-engine.thomas.hyperverge.co/v1/checkBankAccount' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"ifsc\": \"HDFC0000001\",\n    \"accountNumber\": \"1234567890123456\",\n    \"strictValidation\": true\n  }'",
+        "nextApiRecommendations": ["account-aggregator"]
+      }
+    },
+    {
+      "id": "nominee-collection",
+      "label": "Nominee Collection",
+      "description": "Collect nominee information",
+      "color": "#EC4899",
+      "icon": "nominee-collection",
+      "apiInfo": {
+        "endpoint": "/v1/nominee-collection",
+        "method": "POST",
+        "inputVariables": ["nominee_name", "relationship", "contact_info", "id_document"],
+        "outputVariables": ["collection_id", "verification_status", "nominee_details"],
+        "successCriteria": "verification_status === \"verified\"",
+        "documentationUrl": "https://docs.hypervision.ai/nominee-collection",
+        "curlExample": "curl -X POST https://api.hypervision.ai/v1/nominee-collection \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"nominee_name\": \"Jane Doe\",\n    \"relationship\": \"spouse\",\n    \"contact_info\": \"+1234567890\",\n    \"id_document\": \"base64_document\"\n  }'",
+        "nextApiRecommendations": ["email-mobile-verification"]
+      }
+    },
+    {
+      "id": "geo-ip",
+      "label": "Geo IP",
+      "description": "Detect geographic location",
+      "color": "#14B8A6",
+      "icon": "geo-ip",
+      "apiInfo": {
+        "endpoint": "/v1/geo-ip",
+        "method": "GET",
+        "inputVariables": ["ip_address"],
+        "outputVariables": ["country", "region", "city", "latitude", "longitude", "is_vpn"],
+        "successCriteria": "is_vpn === false",
+        "documentationUrl": "https://docs.hypervision.ai/geo-ip",
+        "curlExample": "curl -X GET \"https://api.hypervision.ai/v1/geo-ip?ip_address=192.168.1.1\" \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"",
+        "nextApiRecommendations": []
+      }
+    },
+    {
+      "id": "nsdl-pan-verification",
+      "label": "NSDL PAN Verification",
+      "description": "Verify PAN details against NSDL database",
+      "color": "#DC2626",
+      "icon": "nsdl-pan-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/centralDBCheck",
+        "method": "POST",
+        "inputVariables": ["idNumber", "idType"],
+        "outputVariables": ["status", "statusCode", "result", "firstName", "lastName", "dateOfBirth"],
+        "successCriteria": "status === \"success\" && statusCode === \"200\"",
+        "documentationUrl": "https://docs.hyperverge.co/central-db-check",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/centralDBCheck' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"idNumber\": \"ABCDE1234F\",\n    \"idType\": \"pan\"\n  }'",
+        "nextApiRecommendations": ["face-match"]
+      }
+    },
+    {
+      "id": "account-aggregator",
+      "label": "Account Aggregator",
+      "description": "Aggregate financial accounts",
+      "color": "#84CC16",
+      "icon": "account-aggregator",
+      "apiInfo": {
+        "endpoint": "/v1/account-aggregator",
+        "method": "POST",
+        "inputVariables": ["consent_token", "account_types", "date_range"],
+        "outputVariables": ["accounts", "transactions", "balances", "aggregation_id"],
+        "successCriteria": "accounts.length > 0",
+        "documentationUrl": "https://docs.hypervision.ai/account-aggregator",
+        "curlExample": "curl -X POST https://api.hypervision.ai/v1/account-aggregator \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"consent_token\": \"consent_abc123\",\n    \"account_types\": [\"savings\", \"current\"],\n    \"date_range\": {\"start\": \"2023-01-01\", \"end\": \"2023-12-31\"}\n  }'",
+        "nextApiRecommendations": []
+      }
+    },
+    {
+      "id": "email-mobile-verification",
+      "label": "Email and Mobile Verification",
+      "description": "Verify contact information",
+      "color": "#F97316",
+      "icon": "email-mobile-verification",
+      "apiInfo": {
+        "endpoint": "/v1/contact-verification",
+        "method": "POST",
+        "inputVariables": ["email", "mobile_number", "verification_method"],
+        "outputVariables": ["email_valid", "mobile_valid", "verification_codes", "session_id"],
+        "successCriteria": "email_valid === true && mobile_valid === true",
+        "documentationUrl": "https://docs.hypervision.ai/contact-verification",
+        "curlExample": "curl -X POST https://api.hypervision.ai/v1/contact-verification \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"email\": \"user@example.com\",\n    \"mobile_number\": \"+1234567890\",\n    \"verification_method\": \"otp\"\n  }'",
+        "nextApiRecommendations": []
+      }
+    },
+    {
+      "id": "driving-license-verification",
+      "label": "Driving License Verification",
+      "description": "Verify driving license details from central database",
+      "color": "#6366F1",
+      "icon": "driving-license-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/checkDL",
+        "method": "POST",
+        "inputVariables": ["dlNumber", "dob", "returnState"],
+        "outputVariables": ["status", "statusCode", "result", "name", "validity", "address"],
+        "successCriteria": "status === \"success\" && statusCode === \"200\"",
+        "documentationUrl": "https://docs.hyperverge.co/driving-license-verification",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/checkDL' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"dlNumber\": \"<Enter_The_DL_Number>\",\n    \"dob\": \"<DD-MM-YYYY>\",\n    \"returnState\": \"<yes_or_no>\"\n  }'",
+        "nextApiRecommendations": ["field-match"]
+      }
+    },
+    {
+      "id": "voter-id-verification",
+      "label": "Voter ID Verification",
+      "description": "Verify Electoral Photo Identity Card details",
+      "color": "#8B5A2B",
+      "icon": "voter-id-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/checkVoterId",
+        "method": "POST",
+        "inputVariables": ["epicNumber"],
+        "outputVariables": ["status", "statusCode", "result", "name", "district", "state", "dob"],
+        "successCriteria": "status === \"success\" && statusCode === \"200\"",
+        "documentationUrl": "https://docs.hyperverge.co/voter-id-verification",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/checkVoterId' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"epicNumber\": \"<Enter_Voter_ID_Number>\"\n  }'",
+        "nextApiRecommendations": ["face-match"]
+      }
+    },
+    {
+      "id": "passport-verification",
+      "label": "Passport Verification",
+      "description": "Verify passport details against central database",
+      "color": "#2D4A22",
+      "icon": "passport-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/verifyPassport",
+        "method": "POST",
+        "inputVariables": ["fileNo", "dob", "doi", "passportNo", "name"],
+        "outputVariables": ["status", "statusCode", "result", "nameMatch", "passportNumberMatch", "dateOfIssueMatch"],
+        "successCriteria": "status === \"success\" && result.nameMatch === true",
+        "documentationUrl": "https://docs.hyperverge.co/passport-verification",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/verifyPassport' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"fileNo\": \"<passport_reference_file_number>\",\n    \"dob\": \"<Date_of_Birth>\",\n    \"doi\": \"<Date_of_issue>\",\n    \"passportNo\": \"<Passport_Number>\",\n    \"name\": \"<Name_on_Passport>\"\n  }'",
+        "nextApiRecommendations": ["face-match"]
+      }
+    },
+    {
+      "id": "cheque-ocr",
+      "label": "Cheque OCR",
+      "description": "Extract textual information from cheque images",
+      "color": "#0EA5E9",
+      "icon": "cheque-ocr",
+      "apiInfo": {
+        "endpoint": "https://ind.thomas.hyperverge.co/v1/readCheque",
+        "method": "POST",
+        "inputVariables": ["image", "outputImageBase64", "outputAccountType", "returnS3Url"],
+        "outputVariables": ["status", "statusCode", "result", "account_number", "name", "ifsc_code", "cheque_number"],
+        "successCriteria": "status === \"success\" && statusCode === \"200\"",
+        "documentationUrl": "https://docs.hyperverge.co/cheque-ocr",
+        "curlExample": "curl --location --request POST 'https://ind.thomas.hyperverge.co/v1/readCheque' \\\n  --header 'Content-Type: multipart/form-data' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --form 'image=@\"<path_to_cheque_image>\"' \\\n  --form 'outputImageBase64=\"no\"' \\\n  --form 'outputAccountType=\"yes\"'",
+        "nextApiRecommendations": ["bank-account-verification"]
+      }
+    },
+    {
+      "id": "mask-aadhaar",
+      "label": "Mask Aadhaar",
+      "description": "Hide Aadhaar numbers and QR codes for privacy",
+      "color": "#7C3AED",
+      "icon": "mask-aadhaar",
+      "apiInfo": {
+        "endpoint": "https://ind-ckyc.hyperverge.co/api/v1/maskAadhaar",
+        "method": "POST",
+        "inputVariables": ["file", "maskStandardAadhaarOnly", "maskFullAadhaar", "maskQR", "returnMaskingInfo"],
+        "outputVariables": ["status", "statusCode", "result", "docType", "maskedFileUrl", "maskedOccurrences"],
+        "successCriteria": "status === \"success\" && result.maskedOccurrences",
+        "documentationUrl": "https://docs.hyperverge.co/mask-aadhaar",
+        "curlExample": "curl --location --request POST 'https://ind-ckyc.hyperverge.co/api/v1/maskAadhaar' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --form 'file=@\"<Path_to_the_File(s)>\"' \\\n  --form 'maskQR=\"yes\"'",
+        "nextApiRecommendations": ["id-card-validation"]
+      }
+    },
+    {
+      "id": "ckyc-validation",
+      "label": "CKYC Validation",
+      "description": "Validate Central KYC records and details",
+      "color": "#059669",
+      "icon": "ckyc-validation",
+      "apiInfo": {
+        "endpoint": "https://ind-ckyc.hyperverge.co/api/v1/validate",
+        "method": "POST",
+        "inputVariables": ["ckycNumber", "name", "dateOfBirth", "mobile"],
+        "outputVariables": ["status", "statusCode", "result", "validation_status", "match_score"],
+        "successCriteria": "status === \"success\" && result.validation_status === \"validated\"",
+        "documentationUrl": "https://docs.hyperverge.co/ckyc-validation",
+        "curlExample": "curl --location --request POST 'https://ind-ckyc.hyperverge.co/api/v1/validate' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"ckycNumber\": \"CKYC123456789\",\n    \"name\": \"John Doe\",\n    \"dateOfBirth\": \"01-01-1990\"\n  }'",
+        "nextApiRecommendations": ["id-card-validation"]
+      }
+    },
+    {
+      "id": "penny-drop",
+      "label": "Penny Drop",
+      "description": "Verifies bank account details by depositing a small amount",
+      "color": "#16A34A",
+      "icon": "penny-drop",
+      "apiInfo": {
+        "endpoint": "https://ind-engine.thomas.hyperverge.co/v1/checkBankAccount",
+        "method": "POST",
+        "inputVariables": ["ifsc", "accountNumber", "strictValidation"],
+        "outputVariables": ["status", "statusCode", "result", "bankResponse", "accountName", "bankTxnStatus"],
+        "successCriteria": "status === \"success\" && result.bankTxnStatus === true",
+        "documentationUrl": "https://docs.hyperverge.co/penny-drop-bank-verification",
+        "curlExample": "curl --location --request POST 'https://ind-engine.thomas.hyperverge.co/v1/checkBankAccount' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"ifsc\": \"<IFSC code>\",\n    \"accountNumber\": \"<Account number>\",\n    \"strictValidation\": \"<Enter_Yes_or_No>\"\n  }'",
+        "nextApiRecommendations": ["account-aggregator"]
+      }
+    },
+    {
+      "id": "passbook-ocr",
+      "label": "Passbook OCR",
+      "description": "Extract textual data from passbook images using OCR technology",
+      "color": "#DC2626",
+      "icon": "passbook-ocr",
+      "apiInfo": {
+        "endpoint": "https://ind-engine.thomas.hyperverge.co/v1/readPassbook",
+        "method": "POST",
+        "inputVariables": ["image"],
+        "outputVariables": ["status", "statusCode", "result", "customerName", "bankName", "accountNumber", "IFSCCode", "accountType"],
+        "successCriteria": "status === \"success\" && statusCode === \"200\"",
+        "documentationUrl": "https://docs.hyperverge.co/passbook-ocr",
+        "curlExample": "curl --location --request POST 'https://ind-engine.thomas.hyperverge.co/v1/readPassbook' \\\n  --header 'Content-Type: multipart/form-data' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --form 'image=@\"<path_to_passbook_image>\"'",
+        "nextApiRecommendations": ["penny-drop", "bank-account-verification"]
+      }
+    },
+    {
+      "id": "ckyc-upload",
+      "label": "CKYC Upload",
+      "description": "Upload customer documents to Central KYC database",
+      "color": "#7C2D12",
+      "icon": "ckyc-upload",
+      "apiInfo": {
+        "endpoint": "https://ind-ckyc.hyperverge.co/api/v1/upload",
+        "method": "POST",
+        "inputVariables": ["applicantDetails", "documents", "kycType", "institutionCode"],
+        "outputVariables": ["status", "statusCode", "result", "ckycNumber", "uploadStatus", "uploadId"],
+        "successCriteria": "status === \"success\" && result.uploadStatus === \"completed\"",
+        "documentationUrl": "https://docs.hyperverge.co/ckyc-upload",
+        "curlExample": "curl --location --request POST 'https://ind-ckyc.hyperverge.co/api/v1/upload' \\\n  --header 'Content-Type: multipart/form-data' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --form 'applicantDetails=@\"applicant_data.json\"' \\\n  --form 'documents=@\"identity_document.pdf\"'",
+        "nextApiRecommendations": ["ckyc-validation"]
+      }
+    },
+    {
+      "id": "ckyc-search-download",
+      "label": "CKYC Search & Download",
+      "description": "Search and download CKYC records from the central database",
+      "color": "#1F2937",
+      "icon": "ckyc-search-download",
+      "apiInfo": {
+        "endpoint": "https://ind-ckyc.hyperverge.co/api/v1/search",
+        "method": "POST",
+        "inputVariables": ["searchCriteria", "customerName", "dateOfBirth", "idNumber", "idType"],
+        "outputVariables": ["status", "statusCode", "result", "records", "downloadUrls", "searchId"],
+        "successCriteria": "status === \"success\" && result.records.length > 0",
+        "documentationUrl": "https://docs.hyperverge.co/ckyc-search-download",
+        "curlExample": "curl --location --request POST 'https://ind-ckyc.hyperverge.co/api/v1/search' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"customerName\": \"John Doe\",\n    \"dateOfBirth\": \"01-01-1990\",\n    \"idNumber\": \"ABCDE1234F\",\n    \"idType\": \"PAN\"\n  }'",
+        "nextApiRecommendations": ["ckyc-validation"]
+      }
+    },
+    {
+      "id": "digilocker-consent",
+      "label": "DigiLocker Consent URL",
+      "description": "Generate consent URL for DigiLocker document access",
+      "color": "#0F766E",
+      "icon": "digilocker-consent",
+      "apiInfo": {
+        "endpoint": "https://ind-digilocker.hyperverge.co/v1/getConsentUrl",
+        "method": "POST",
+        "inputVariables": ["redirectUrl", "purpose", "documentTypes", "validityPeriod"],
+        "outputVariables": ["status", "statusCode", "result", "consentUrl", "sessionId", "expiryTime"],
+        "successCriteria": "status === \"success\" && result.consentUrl",
+        "documentationUrl": "https://docs.hyperverge.co/digilocker-consent",
+        "curlExample": "curl --location --request POST 'https://ind-digilocker.hyperverge.co/v1/getConsentUrl' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"redirectUrl\": \"https://yourapp.com/callback\",\n    \"purpose\": \"KYC Verification\",\n    \"documentTypes\": [\"AADHAAR\", \"PAN\"]\n  }'",
+        "nextApiRecommendations": ["digilocker-fetch-documents"]
+      }
+    },
+    {
+      "id": "digilocker-fetch-documents",
+      "label": "DigiLocker Fetch Documents",
+      "description": "Fetch documents from DigiLocker after user consent",
+      "color": "#0369A1",
+      "icon": "digilocker-fetch-documents",
+      "apiInfo": {
+        "endpoint": "https://ind-digilocker.hyperverge.co/v1/fetchDocuments",
+        "method": "POST",
+        "inputVariables": ["sessionId", "consentToken", "documentTypes"],
+        "outputVariables": ["status", "statusCode", "result", "documents", "fetchedCount", "documentUrls"],
+        "successCriteria": "status === \"success\" && result.fetchedCount > 0",
+        "documentationUrl": "https://docs.hyperverge.co/digilocker-fetch-documents",
+        "curlExample": "curl --location --request POST 'https://ind-digilocker.hyperverge.co/v1/fetchDocuments' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"sessionId\": \"<session_id_from_consent>\",\n    \"consentToken\": \"<consent_token>\",\n    \"documentTypes\": [\"AADHAAR\", \"PAN\"]\n  }'",
+        "nextApiRecommendations": ["id-card-validation"]
+      }
+    },
+    {
+      "id": "reverse-penny-drop",
+      "label": "Reverse Penny Drop",
+      "description": "Initiate payment links for bank account verification",
+      "color": "#B45309",
+      "icon": "reverse-penny-drop",
+      "apiInfo": {
+        "endpoint": "https://ind-engine.thomas.hyperverge.co/v1/reversePennyDrop",
+        "method": "POST",
+        "inputVariables": ["customerName", "customerContact", "amount", "purpose", "validityHours"],
+        "outputVariables": ["status", "statusCode", "result", "paymentLink", "paymentId", "expiryTime"],
+        "successCriteria": "status === \"success\" && result.paymentLink",
+        "documentationUrl": "https://docs.hyperverge.co/reverse-penny-drop",
+        "curlExample": "curl --location --request POST 'https://ind-engine.thomas.hyperverge.co/v1/reversePennyDrop' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"customerName\": \"John Doe\",\n    \"customerContact\": \"+919999999999\",\n    \"amount\": \"1.00\",\n    \"purpose\": \"Account Verification\"\n  }'",
+        "nextApiRecommendations": ["bank-account-verification"]
+      }
+    },
+    {
+      "id": "pennyless-verification",
+      "label": "Pennyless Bank Verification",
+      "description": "Verify bank accounts without monetary transactions",
+      "color": "#4338CA",
+      "icon": "pennyless-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-engine.thomas.hyperverge.co/v1/pennylessVerification",
+        "method": "POST",
+        "inputVariables": ["ifsc", "accountNumber", "holderName", "verificationType"],
+        "outputVariables": ["status", "statusCode", "result", "verificationStatus", "holderNameMatch", "accountStatus"],
+        "successCriteria": "status === \"success\" && result.verificationStatus === \"verified\"",
+        "documentationUrl": "https://docs.hyperverge.co/pennyless-verification",
+        "curlExample": "curl --location --request POST 'https://ind-engine.thomas.hyperverge.co/v1/pennylessVerification' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"ifsc\": \"HDFC0000001\",\n    \"accountNumber\": \"1234567890123456\",\n    \"holderName\": \"John Doe\",\n    \"verificationType\": \"NAME_MATCH\"\n  }'",
+        "nextApiRecommendations": ["account-aggregator"]
+      }
+    },
+    {
+      "id": "crime-detection",
+      "label": "Crime Detection",
+      "description": "Detect criminal records and background verification",
+      "color": "#7F1D1D",
+      "icon": "crime-detection",
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/crimeVerification",
+        "method": "POST",
+        "inputVariables": ["name", "fatherName", "dateOfBirth", "address", "idNumber"],
+        "outputVariables": ["status", "statusCode", "result", "crimeRecords", "riskScore", "verificationId"],
+        "successCriteria": "status === \"success\" && result.riskScore < 0.3",
+        "documentationUrl": "https://docs.hyperverge.co/crime-detection",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/crimeVerification' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"name\": \"John Doe\",\n    \"fatherName\": \"Robert Doe\",\n    \"dateOfBirth\": \"01-01-1990\",\n    \"idNumber\": \"ABCDE1234F\"\n  }'",
+        "nextApiRecommendations": ["criminal-risk-verification"]
+      }
+    },
+    {
+      "id": "criminal-risk-verification",
+      "label": "Criminal Risk Verification",
+      "description": "Comprehensive criminal background risk assessment",
+      "color": "#991B1B",
+      "icon": "criminal-risk-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/criminalRiskVerification",
+        "method": "POST",
+        "inputVariables": ["personalDetails", "addressHistory", "idDocuments", "verificationDepth"],
+        "outputVariables": ["status", "statusCode", "result", "riskLevel", "criminalHistory", "courtCases", "reportId"],
+        "successCriteria": "status === \"success\" && result.riskLevel === \"LOW\"",
+        "documentationUrl": "https://docs.hyperverge.co/criminal-risk-verification",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/criminalRiskVerification' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"personalDetails\": {\n      \"name\": \"John Doe\",\n      \"dateOfBirth\": \"01-01-1990\",\n      \"fatherName\": \"Robert Doe\"\n    },\n    \"verificationDepth\": \"COMPREHENSIVE\"\n  }'",
+        "nextApiRecommendations": ["aml-search"]
+      }
+    },
+    {
+      "id": "efir-verification",
+      "label": "eFIR Verification",
+      "description": "Verify electronic First Information Report records",
+      "color": "#1E40AF",
+      "icon": "efir-verification",
+      "apiInfo": {
+        "endpoint": "https://ind-verify.hyperverge.co/api/eFirVerification",
+        "method": "POST",
+        "inputVariables": ["firNumber", "policeStation", "dateOfFir", "applicantName"],
+        "outputVariables": ["status", "statusCode", "result", "firDetails", "verificationStatus", "firId"],
+        "successCriteria": "status === \"success\" && result.verificationStatus === \"verified\"",
+        "documentationUrl": "https://docs.hyperverge.co/efir-verification",
+        "curlExample": "curl --location --request POST 'https://ind-verify.hyperverge.co/api/eFirVerification' \\\n  --header 'Content-Type: application/json' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --data '{\n    \"firNumber\": \"FIR123456789\",\n    \"policeStation\": \"Central Police Station\",\n    \"dateOfFir\": \"01-01-2023\",\n    \"applicantName\": \"John Doe\"\n  }'",
+        "nextApiRecommendations": ["crime-detection"]
+      }
+    },
+    {
+      "id": "deduplication",
+      "label": "Deduplication",
+      "description": "Identify and prevent duplicate customer registrations",
+      "color": "#065F46",
+      "icon": "deduplication",
+      "apiInfo": {
+        "endpoint": "https://ind-orion.hyperverge.co/v2/deduplication",
+        "method": "POST",
+        "inputVariables": ["customerDetails", "biometricData", "documentImages", "searchRadius"],
+        "outputVariables": ["status", "statusCode", "result", "duplicateFound", "matchScore", "duplicateCustomerId"],
+        "successCriteria": "status === \"success\" && result.duplicateFound === false",
+        "documentationUrl": "https://docs.hyperverge.co/deduplication",
+        "curlExample": "curl --location --request POST 'https://ind-orion.hyperverge.co/v2/deduplication' \\\n  --header 'Content-Type: multipart/form-data' \\\n  --header 'appId: <Enter_the_HyperVerge_appId>' \\\n  --header 'appKey: <Enter_the_HyperVerge_appKey>' \\\n  --header 'transactionId: <Enter_the_HyperVerge_transactionID>' \\\n  --form 'customerDetails=@\"customer_data.json\"' \\\n  --form 'selfie=@\"customer_selfie.jpg\"' \\\n  --form 'idDocument=@\"id_document.jpg\"'",
+        "nextApiRecommendations": ["face-match"]
+      }
+    }
+  ]
+}

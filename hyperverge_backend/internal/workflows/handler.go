@@ -1,0 +1,550 @@
+// internal/workflows/handler.go
+package workflows
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"hypervision_backend/internal/db"
+
+	"github.com/gin-gonic/gin"
+)
+
+type CreateWorkflowReq struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	FlowType    string `json:"flowType"`
+}
+
+type UpdateWorkflowReq struct {
+	Name        string                 `json:"name,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	FlowData    map[string]interface{} `json:"flow_data,omitempty"`
+}
+
+type FlowData struct {
+	Nodes       []interface{} `json:"nodes"`
+	Edges       []interface{} `json:"edges"`
+	FlowInputs  string        `json:"flowInputs"`
+	FlowOutputs string        `json:"flowOutputs"`
+	FlowType    string        `json:"flowType"`
+}
+
+type WorkflowResponse struct {
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	Description    string   `json:"description"`
+	BusinessUnitID string   `json:"business_unit_id"`
+	OwnerID        string   `json:"owner_id"`
+	FlowType       string   `json:"flow_type"`
+	FlowData       FlowData `json:"flow_data"`
+	CreatedAt      string   `json:"created_at"`
+	UpdatedAt      string   `json:"updated_at"`
+}
+
+func getString(m map[string]interface{}, key string) string {
+	if val, ok := m[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+func Create(c *gin.Context) {
+	buId := c.Param("buId")
+	var req CreateWorkflowReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userId := c.GetString("userId")
+
+	// Verify user owns the client that contains this BU or has editor access to the BU
+	buData, _, err := db.Client.
+		From("test_business_units").
+		Select("client_id", "", false).
+		Eq("id", buId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse BU data"})
+		return
+	}
+
+	if len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	clientId := getString(buResults[0], "client_id")
+
+	// Check if user owns the client
+	clientData, _, clientErr := db.Client.
+		From("test_clients").
+		Select("id", "", false).
+		Eq("id", clientId).
+		Eq("owner_id", userId).
+		Execute()
+
+	if clientErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
+		// Check if user has editor permission
+		permData, _, permErr := db.Client.
+			From("test_bu_permissions").
+			Select("id", "", false).
+			Eq("business_unit_id", buId).
+			Eq("user_id", userId).
+			Eq("role", "editor").
+			Execute()
+
+		if permErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse permission data"})
+			return
+		}
+
+		if len(permResults) == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to create workflow in this BU"})
+			return
+		}
+	}
+
+	// Create default flow data
+	defaultFlowData := map[string]interface{}{
+		"nodes":       []interface{}{},
+		"edges":       []interface{}{},
+		"flowInputs":  "",
+		"flowOutputs": "",
+		"flowType":    req.FlowType,
+	}
+	flowDataJSON, _ := json.Marshal(defaultFlowData)
+
+	data, _, err := db.Client.
+		From("test_workflows").
+		Insert(map[string]interface{}{
+			"name":             req.Name,
+			"description":      req.Description,
+			"business_unit_id": buId,
+			"flow_data":        string(flowDataJSON),
+			"flow_type":        req.FlowType,
+		}, false, "", "", "").
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var dbResult []map[string]interface{}
+	if err := json.Unmarshal(data, &dbResult); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
+		return
+	}
+
+	if len(dbResult) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "no workflow created"})
+		return
+	}
+
+	workflow := dbResult[0]
+	response := WorkflowResponse{
+		ID:             getString(workflow, "id"),
+		Name:           getString(workflow, "name"),
+		Description:    getString(workflow, "description"),
+		BusinessUnitID: getString(workflow, "business_unit_id"),
+		OwnerID:        userId,
+		FlowType:       req.FlowType,
+		FlowData: FlowData{
+			Nodes:       []interface{}{},
+			Edges:       []interface{}{},
+			FlowInputs:  "",
+			FlowOutputs: "",
+			FlowType:    req.FlowType,
+		},
+		CreatedAt: getString(workflow, "created_at"),
+		UpdatedAt: getString(workflow, "updated_at"),
+	}
+
+	c.JSON(http.StatusCreated, response)
+}
+
+func List(c *gin.Context) {
+	buId := c.Param("buId")
+	userId := c.GetString("userId")
+
+	// Verify user owns the client that contains this BU or has access to the BU
+	buData, _, err := db.Client.
+		From("test_business_units").
+		Select("client_id", "", false).
+		Eq("id", buId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse BU data"})
+		return
+	}
+
+	if len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	clientId := getString(buResults[0], "client_id")
+
+	// Check if user owns the client
+	clientData, _, clientErr := db.Client.
+		From("test_clients").
+		Select("id", "", false).
+		Eq("id", clientId).
+		Eq("owner_id", userId).
+		Execute()
+
+	if clientErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		return
+	}
+
+	var clientResults []map[string]interface{}
+	if err := json.Unmarshal(clientData, &clientResults); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse client data"})
+		return
+	}
+
+	if len(clientResults) == 0 {
+		// Check if user has permission (for collaborative access)
+		permData, _, permErr := db.Client.
+			From("test_bu_permissions").
+			Select("id", "", false).
+			Eq("business_unit_id", buId).
+			Eq("user_id", userId).
+			Execute()
+
+		if permErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse permission data"})
+			return
+		}
+
+		if len(permResults) == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized"})
+			return
+		}
+	}
+
+	data, _, err := db.Client.
+		From("test_workflows").
+		Select("*", "", false).
+		Eq("business_unit_id", buId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var workflows []map[string]interface{}
+	if err := json.Unmarshal(data, &workflows); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse workflows"})
+		return
+	}
+
+	c.JSON(http.StatusOK, workflows)
+}
+
+func Get(c *gin.Context) {
+	workflowId := c.Param("id")
+
+	data, _, err := db.Client.
+		From("test_workflows").
+		Select("*", "", false).
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var results []map[string]interface{}
+	if err := json.Unmarshal(data, &results); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse response"})
+		return
+	}
+
+	if len(results) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	result := results[0]
+
+	// Read dedicated flow_type column; fall back to value inside flow_data JSON
+	flowType := getString(result, "flow_type")
+
+	// Parse flow_data from JSON string to FlowData struct
+	var flowData FlowData
+	flowDataStr := getString(result, "flow_data")
+	if flowDataStr != "" {
+		if err := json.Unmarshal([]byte(flowDataStr), &flowData); err != nil {
+			flowData = FlowData{
+				Nodes:       []interface{}{},
+				Edges:       []interface{}{},
+				FlowInputs:  "",
+				FlowOutputs: "",
+			}
+		}
+	} else {
+		flowData = FlowData{
+			Nodes:       []interface{}{},
+			Edges:       []interface{}{},
+			FlowInputs:  "",
+			FlowOutputs: "",
+		}
+	}
+
+	// Prefer dedicated column; fall back to what was stored in flow_data JSON
+	if flowType == "" {
+		flowType = flowData.FlowType
+	}
+	if flowType == "" {
+		flowType = "sdk"
+	}
+	flowData.FlowType = flowType
+
+	// Build properly formatted response
+	response := WorkflowResponse{
+		ID:             getString(result, "id"),
+		Name:           getString(result, "name"),
+		Description:    getString(result, "description"),
+		BusinessUnitID: getString(result, "business_unit_id"),
+		OwnerID:        getString(result, "owner_id"),
+		FlowType:       flowType,
+		FlowData:       flowData,
+		CreatedAt:      getString(result, "created_at"),
+		UpdatedAt:      getString(result, "updated_at"),
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func Update(c *gin.Context) {
+	workflowId := c.Param("id")
+	userId := c.GetString("userId")
+
+	var req UpdateWorkflowReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Build update map
+	updates := make(map[string]interface{})
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+	if req.FlowData != nil {
+		flowDataJSON, _ := json.Marshal(req.FlowData)
+		updates["flow_data"] = string(flowDataJSON)
+	}
+
+	if len(updates) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no updates provided"})
+		return
+	}
+
+	// First get the workflow to check ownership or BU access
+	workflowData, _, err := db.Client.
+		From("test_workflows").
+		Select("owner_id, business_unit_id", "", false).
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	var workflowResults []map[string]interface{}
+	if err := json.Unmarshal(workflowData, &workflowResults); err != nil || len(workflowResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	workflow := workflowResults[0]
+
+	ownerId := getString(workflow, "owner_id")
+	buId := getString(workflow, "business_unit_id")
+
+	// Check if user owns the workflow
+	if ownerId != userId {
+		// Check if user has editor access to the BU
+		permData, _, permErr := db.Client.
+			From("test_bu_permissions").
+			Select("id", "", false).
+			Eq("business_unit_id", buId).
+			Eq("user_id", userId).
+			Eq("role", "editor").
+			Execute()
+
+		if permErr != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update this workflow"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to update this workflow"})
+			return
+		}
+	}
+
+	_, _, err = db.Client.
+		From("test_workflows").
+		Update(updates, "", "").
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "workflow updated"})
+}
+
+func Delete(c *gin.Context) {
+	workflowId := c.Param("id")
+	userId := c.GetString("userId")
+
+	// First get the workflow to check business unit
+	workflowData, _, err := db.Client.
+		From("test_workflows").
+		Select("business_unit_id", "", false).
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	var workflowResults []map[string]interface{}
+	if err := json.Unmarshal(workflowData, &workflowResults); err != nil || len(workflowResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "workflow not found"})
+		return
+	}
+
+	workflow := workflowResults[0]
+	buId := getString(workflow, "business_unit_id")
+
+	// Check if user has access via client ownership or BU permissions
+	buData, _, err := db.Client.
+		From("test_business_units").
+		Select("client_id", "", false).
+		Eq("id", buId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	var buResults []map[string]interface{}
+	if err := json.Unmarshal(buData, &buResults); err != nil || len(buResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "business unit not found"})
+		return
+	}
+
+	businessUnit := buResults[0]
+	clientId := getString(businessUnit, "client_id")
+
+	// Check if user owns the client
+	clientData, _, clientErr := db.Client.
+		From("test_clients").
+		Select("id", "", false).
+		Eq("id", clientId).
+		Eq("owner_id", userId).
+		Execute()
+
+	if clientErr == nil {
+		var clientResults []map[string]interface{}
+		if err := json.Unmarshal(clientData, &clientResults); err == nil && len(clientResults) > 0 {
+			clientErr = nil
+		} else {
+			clientErr = fmt.Errorf("client not found")
+		}
+	}
+
+	if clientErr != nil {
+		// Check if user has editor permission
+		permData, _, permErr := db.Client.
+			From("test_bu_permissions").
+			Select("id", "", false).
+			Eq("business_unit_id", buId).
+			Eq("user_id", userId).
+			Eq("role", "editor").
+			Execute()
+
+		if permErr != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this workflow"})
+			return
+		}
+
+		var permResults []map[string]interface{}
+		if err := json.Unmarshal(permData, &permResults); err != nil || len(permResults) == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "not authorized to delete this workflow"})
+			return
+		}
+	}
+
+	_, _, err = db.Client.
+		From("test_workflows").
+		Delete("", "").
+		Eq("id", workflowId).
+		Execute()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete workflow"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}

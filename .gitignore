@@ -1,25 +1,49 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
+# Environment files
 .env
+.env.*
+!.env.example
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# ========================
+# Vite / React Frontend
+# ========================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/*.local
+frontend/.cache/
+
+# ========================
+# Go Backend
+# ========================
+hyperverge_backend/tmp/
+hyperverge_backend/*.exe
+hyperverge_backend/*.exe~
+hyperverge_backend/*.dll
+hyperverge_backend/*.so
+hyperverge_backend/*.dylib
+hyperverge_backend/*.test
+hyperverge_backend/*.out
+hyperverge_backend/vendor/
+hyperverge_backend/bin/
+hyperverge_backend/server
+
+# ========================
+# Editor / OS
+# ========================
 .DS_Store
+.idea/
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
