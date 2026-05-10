@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { WorkflowVersion } from '../../../shared/types';
+
+interface WorkflowVersion {
+  id: string;
+  version_number: string | number;
+  version_details?: string;
+  published_at: string;
+}
 
 interface VersionsPanelProps {
   isOpen: boolean;
