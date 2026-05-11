@@ -113,7 +113,7 @@ export default function CustomerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       {/* Left Sidebar */}
-      <aside className="w-65 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+      <aside className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
@@ -307,7 +307,7 @@ export default function CustomerDashboard() {
               </div>
 
               {/* Documentation Links */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Integration Documentation</h3>
                 <p className="text-sm text-gray-500 mb-6">Explore our comprehensive guides and API references</p>
 
@@ -325,12 +325,12 @@ export default function CustomerDashboard() {
                   </a>
                 </div> */}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 ">
                   {environment?.integration_type === 'sdk' && (() => {
                     const platform = environment?.variables?.sdk_platform;
                     let sdkUrl = 'https://documentation.hyperverge.co/sdks/web/quick_start_web_sdk'; // default
                     let platformName = 'Web';
-                    
+
                     switch (platform) {
                       case 'android':
                         sdkUrl = 'https://documentation.hyperverge.co/sdks/android-hyperKYC-sdk/quick_start_android_sdk';
@@ -357,7 +357,7 @@ export default function CustomerDashboard() {
                         platformName = 'LinkKYC Web';
                         break;
                     }
-                    
+
                     return (
                       <a
                         href={sdkUrl}
